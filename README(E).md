@@ -155,7 +155,29 @@ Rich MCP ecosystem
 <tr><th>Version</th><th>Release Date</th><th>Core Updates</th></tr>
 
 <tr>
-<td><b>v1.6.0</b><br><sub>Latest</sub></td>
+<td><b>v1.6.2</b><br><sub>Latest</sub></td>
+<td>2025-11-20</td>
+<td>
+• <b>Conversation Management</b>: Long-press branching, classified history display, batch migration<br>
+• <b>Model Configuration</b>: Rename configs, context binding, Google native search<br>
+• <b>Bug Fixes</b>: UI switching, bold line breaks, bubble mode issues<br>
+• Added crossref academic paper search, upgraded code editor
+</td>
+</tr>
+
+<tr>
+<td><b>v1.6.1</b></td>
+<td>2025-11-05</td>
+<td>
+• <b>Performance Boost</b>: Redesigned UI rendering, significantly improved fluidity<br>
+• <b>AI Vision Enhanced</b>: Direct image recognition, indirect recognition capabilities<br>
+• <b>Terminal SSH</b>: SSH connection support and reverse-mount phone filesystem<br>
+• Auto-summary mechanism, deep search, new authorization system
+</td>
+</tr>
+
+<tr>
+<td><b>v1.6.0</b></td>
 <td>2025-10-21</td>
 <td>
 • <b>MNN Local Model</b> support<br>

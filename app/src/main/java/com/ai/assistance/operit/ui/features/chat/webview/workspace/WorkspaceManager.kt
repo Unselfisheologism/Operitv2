@@ -8,8 +8,10 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,10 +22,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlin.math.roundToInt
 import androidx.compose.ui.zIndex
 import com.ai.assistance.operit.R
 import com.ai.assistance.operit.core.tools.AIToolHandler
@@ -38,6 +44,11 @@ import com.ai.assistance.operit.ui.features.chat.webview.workspace.editor.CodeFo
 import com.ai.assistance.operit.ui.features.chat.webview.workspace.editor.LanguageDetector
 import kotlinx.coroutines.launch
 import java.io.File
+import kotlinx.serialization.Serializable
+
+/** 可序列化的位置数据类，用于持久化FAB位置 */
+@Serializable
+data class FabPosition(val x: Float = 0f, val y: Float = 0f)
 
 /** 为[OpenFileInfo]添加扩展属性，用于判断是否为HTML文件 */
 val OpenFileInfo.isHtml: Boolean
@@ -538,13 +549,50 @@ fun ExpandableFabMenu(
     canFormat: Boolean = false
 ) {
     val context = LocalContext.current
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.Bottom
+    
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize()
     ) {
+        val density = LocalDensity.current
+        val maxWidthPx = with(density) { maxWidth.toPx() }
+        val maxHeightPx = with(density) { maxHeight.toPx() }
+        
+        // 使用 rememberLocal 持久化FAB位置，默认为null表示使用默认右下角位置
+        var fabPosition by rememberLocal<FabPosition?>("fab_menu_offset", null)
+        
+        // 计算实际的显示位置：如果没有自定义位置，使用右下角
+        val actualX = fabPosition?.x ?: 0f
+        val actualY = fabPosition?.y ?: 0f
+        
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .offset { IntOffset(actualX.roundToInt(), actualY.roundToInt()) }
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            val currentPos = fabPosition ?: FabPosition(0f, 0f)
+                            val paddingPx = with(density) { 16.dp.toPx() }
+                            fabPosition = FabPosition(
+                                x = (currentPos.x + dragAmount.x).coerceIn(
+                                    -(maxWidthPx - paddingPx * 2 - 100f),
+                                    0f
+                                ),
+                                y = (currentPos.y + dragAmount.y).coerceIn(
+                                    -(maxHeightPx - paddingPx * 2 - 100f),
+                                    0f
+                                )
+                            )
+                        }
+                    },
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.Bottom
+            ) {
         // 展开的菜单项
         if (isExpanded) {
             FabMenuItem(icon = Icons.Default.Undo, text = context.getString(R.string.undo), onClick = onUndoClick)
@@ -573,6 +621,8 @@ fun ExpandableFabMenu(
                 imageVector = if (isExpanded) Icons.Default.Close else Icons.Default.MoreVert,
                 contentDescription = if (isExpanded) "关闭菜单" else "打开菜单"
             )
+        }
+            }
         }
     }
 }

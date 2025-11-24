@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -38,6 +39,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -668,8 +672,26 @@ private fun SettingItem(
     onToggle: () -> Unit,
     onInfoClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val stateDescription = if (isChecked) {
+        context.getString(R.string.enabled)
+    } else {
+        context.getString(R.string.disabled)
+    }
+    
     Row(
-        modifier = Modifier.fillMaxWidth().height(36.dp).padding(horizontal = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .padding(horizontal = 12.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$title, $stateDescription"
+            }
+            .toggleable(
+                value = isChecked,
+                onValueChange = { onToggle() },
+                role = Role.Switch
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 图标
@@ -699,7 +721,7 @@ private fun SettingItem(
         // 开关
         Switch(
             checked = isChecked,
-            onCheckedChange = { onToggle() },
+            onCheckedChange = null, // 由Row的toggleable处理
             modifier = Modifier.scale(0.65f),
                 colors =
                         SwitchDefaults.colors(
@@ -1221,7 +1243,13 @@ private fun ActionSettingItem(
                                 RoundedCornerShape(8.dp)
                         )
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable(onClick = onClick)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = title
+                        }
+                        .clickable(
+                            onClick = onClick,
+                            role = Role.Button
+                        )
                         .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

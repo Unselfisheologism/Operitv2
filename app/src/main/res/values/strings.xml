@@ -2184,6 +2184,9 @@
     <string name="delete_group_only">仅删除分组</string>
     <string name="chats_move_to_ungrouped">对话将移至"未分组"</string>
     <string name="edit_title">编辑标题</string>
+    <string name="move_up">上移</string>
+    <string name="move_down">下移</string>
+    <string name="drag_item">拖动项目 %1$s</string>
     <string name="new_title">新标题</string>
     <string name="new_group">新建分组</string>
     <string name="group_name">分组名称</string>
@@ -2588,6 +2591,8 @@
     <string name="api_name_format">API名称: %s</string>
     <string name="collapse">收起</string>
     <string name="expand">展开</string>
+    <string name="collapsed">已收起</string>
+    <string name="expanded">已展开</string>
     <string name="must_be_integer">必须是整数</string>
     <string name="value">值</string>
     <string name="range_format">范围: %1$s - %2$s</string>

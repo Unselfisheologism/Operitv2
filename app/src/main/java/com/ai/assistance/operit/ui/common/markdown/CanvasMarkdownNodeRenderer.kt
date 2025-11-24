@@ -28,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -242,6 +244,34 @@ private data class LayoutResult(
     val actualWidth: Float,  // 实际使用的最大宽度
     val instructions: List<DrawInstruction>
 )
+
+/**
+ * 从绘制指令中提取文本内容用于无障碍朗读
+ */
+private fun extractAccessibleText(instructions: List<DrawInstruction>): String {
+    return buildString {
+        instructions.forEach { instruction ->
+            when (instruction) {
+                is DrawInstruction.Text -> {
+                    if (isNotEmpty()) append(" ")
+                    append(instruction.text)
+                }
+                is DrawInstruction.TextLayout -> {
+                    if (isNotEmpty()) append(" ")
+                    // 优先使用原始文本，否则从layout中提取
+                    if (instruction.text != null) {
+                        append(instruction.text.toString())
+                    } else {
+                        append(instruction.layout.text.toString())
+                    }
+                }
+                is DrawInstruction.Line -> {
+                    // 线条不需要朗读
+                }
+            }
+        }
+    }.trim()
+}
 
 /**
  * Canvas 版本的 Markdown 节点渲染器
@@ -617,6 +647,11 @@ private fun UnifiedCanvasRenderer(
             )
         }
         
+        // 提取文本内容用于无障碍朗读
+        val accessibleText = remember(layoutResult.instructions) {
+            extractAccessibleText(layoutResult.instructions)
+        }
+        
         // 使用单个 Canvas 绘制所有内容
         Canvas(
             modifier = (if (fillMaxWidth) {
@@ -630,6 +665,9 @@ private fun UnifiedCanvasRenderer(
                 }
             })
                 .height(with(density) { layoutResult.height.toDp() })
+                .semantics {
+                    contentDescription = accessibleText
+                }
                 .pointerInput(layoutResult.instructions, onLinkClick) {
                     // 使用 awaitEachGesture 来精确控制事件消费
                     awaitEachGesture {
@@ -856,7 +894,10 @@ private fun calculateLayout(
             val itemContent = content.trimAll()
             val numberMatch = Regex("""^(\d+)\.\s*""").find(itemContent)
             val numberStr = numberMatch?.groupValues?.getOrNull(1) ?: ""
-            val itemText = numberMatch?.let { itemContent.substring(it.range.last + 1) } ?: itemContent
+            val itemText = numberMatch?.let { 
+                val startIndex = (it.range.last + 1).coerceAtMost(itemContent.length)
+                itemContent.substring(startIndex)
+            } ?: itemContent
             
             val startPadding = 4f * density.density
             val markerEndPadding = 4f * density.density
@@ -881,7 +922,8 @@ private fun calculateLayout(
                 val modifiedChildren = node.children.toMutableList()
                 val firstChild = modifiedChildren[0]
                 val newContent = numberMatch?.let {
-                    firstChild.content.substring(it.range.last + 1)
+                    val startIndex = (it.range.last + 1).coerceAtMost(firstChild.content.length)
+                    firstChild.content.substring(startIndex)
                 } ?: firstChild.content
                 val newFirstChild = MarkdownNodeStable(firstChild.type, content = newContent, children = firstChild.children)
                 modifiedChildren[0] = newFirstChild
@@ -911,7 +953,10 @@ private fun calculateLayout(
         MarkdownProcessorType.UNORDERED_LIST -> {
             val itemContent = content.trimAll()
             val markerMatch = Regex("""^[-*+]\s+""").find(itemContent)
-            val itemText = markerMatch?.let { itemContent.substring(it.range.last + 1) } ?: itemContent
+            val itemText = markerMatch?.let { 
+                val startIndex = (it.range.last + 1).coerceAtMost(itemContent.length)
+                itemContent.substring(startIndex)
+            } ?: itemContent
             
             val startPadding = 4f * density.density
             val markerEndPadding = 4f * density.density
@@ -936,7 +981,8 @@ private fun calculateLayout(
                 val modifiedChildren = node.children.toMutableList()
                 val firstChild = modifiedChildren[0]
                 val newContent = markerMatch?.let {
-                    firstChild.content.substring(it.range.last + 1)
+                    val startIndex = (it.range.last + 1).coerceAtMost(firstChild.content.length)
+                    firstChild.content.substring(startIndex)
                 } ?: firstChild.content
                 val newFirstChild = MarkdownNodeStable(firstChild.type, content = newContent, children = firstChild.children)
                 modifiedChildren[0] = newFirstChild
@@ -1143,6 +1189,9 @@ private fun SingleTextCanvas(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(with(density) { totalHeight.toDp() })
+                .semantics {
+                    contentDescription = text
+                }
         ) {
             drawIntoCanvas { canvas ->
                 // 获取可见区域

@@ -84,6 +84,8 @@
     <string name="dragon_bones_config">DragonBones Config</string>
     <string name="collapse">Collapse</string>
     <string name="expand">Expand</string>
+    <string name="collapsed">Collapsed</string>
+    <string name="expanded">Expanded</string>
     <string name="select_model">Select Model</string>
     <string name="current_model">Current Model</string>
     <string name="scale">Scale: %1$s</string>
@@ -2185,6 +2187,9 @@
     <string name="delete_group_only">Delete group only</string>
     <string name="chats_move_to_ungrouped">Chats will be moved to \"Ungrouped\"</string>
     <string name="edit_title">Edit Title</string>
+    <string name="move_up">Move Up</string>
+    <string name="move_down">Move Down</string>
+    <string name="drag_item">Drag item %1$s</string>
     <string name="new_title">New title</string>
     <string name="new_group">New Group</string>
     <string name="group_name">Group name</string>

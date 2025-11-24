@@ -74,6 +74,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -149,6 +151,7 @@ fun ChatHistorySelector(
         activeCharacterCard: CharacterCard? = null
 ) {
     var chatToEdit by remember { mutableStateOf<ChatHistory?>(null) }
+    var chatItemActionTarget by remember { mutableStateOf<ChatHistory?>(null) }
     var showNewGroupDialog by remember { mutableStateOf(false) }
     var newGroupName by remember { mutableStateOf("") }
     var collapsedGroups by rememberLocal("chat_history_collapsed_groups", emptySet<String>())
@@ -352,6 +355,207 @@ fun ChatHistorySelector(
         }
 
         onUpdateChatOrderAndGroup(newOrderedHistories, finalMovedItem, finalMovedItem.group)
+    }
+
+    if (chatItemActionTarget != null) {
+        Dialog(onDismissRequest = { chatItemActionTarget = null }) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = 6.dp
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(R.string.chat_history),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+
+                    Text(
+                        text = chatItemActionTarget!!.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // 编辑选项
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .clickable {
+                                chatToEdit = chatItemActionTarget
+                                chatItemActionTarget = null
+                            },
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.edit_title),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                stringResource(R.string.edit_title), 
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    // 上移选项
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .clickable {
+                                val targetChat = chatItemActionTarget!!
+                                val currentIndex = filteredHistories.indexOfFirst { it.id == targetChat.id }
+                                if (currentIndex > 0) {
+                                    val newHistories = filteredHistories.toMutableList()
+                                    newHistories.removeAt(currentIndex)
+                                    newHistories.add(currentIndex - 1, targetChat)
+                                    val reorderedHistories = newHistories.mapIndexed { index, history ->
+                                        history.copy(displayOrder = index.toLong())
+                                    }
+                                    onUpdateChatOrderAndGroup(reorderedHistories, targetChat, targetChat.group)
+                                }
+                                chatItemActionTarget = null
+                            },
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowUp,
+                                contentDescription = stringResource(R.string.move_up),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                stringResource(R.string.move_up), 
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    // 下移选项
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .clickable {
+                                val targetChat = chatItemActionTarget!!
+                                val currentIndex = filteredHistories.indexOfFirst { it.id == targetChat.id }
+                                if (currentIndex >= 0 && currentIndex < filteredHistories.size - 1) {
+                                    val newHistories = filteredHistories.toMutableList()
+                                    newHistories.removeAt(currentIndex)
+                                    newHistories.add(currentIndex + 1, targetChat)
+                                    val reorderedHistories = newHistories.mapIndexed { index, history ->
+                                        history.copy(displayOrder = index.toLong())
+                                    }
+                                    onUpdateChatOrderAndGroup(reorderedHistories, targetChat, targetChat.group)
+                                }
+                                chatItemActionTarget = null
+                            },
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = stringResource(R.string.move_down),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                stringResource(R.string.move_down), 
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    
+                    // 删除选项
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                            .clip(MaterialTheme.shapes.medium)
+                            .clickable {
+                                onDeleteChat(chatItemActionTarget!!.id)
+                                chatItemActionTarget = null
+                            },
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Delete,
+                                contentDescription = stringResource(R.string.delete),
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                stringResource(R.string.delete), 
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = { chatItemActionTarget = null },
+                        modifier = Modifier.align(Alignment.End).padding(horizontal = 16.dp)
+                    ) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            }
+        }
     }
 
     if (groupActionTarget != null) {
@@ -1110,10 +1314,20 @@ fun ChatHistorySelector(
                             characterCard?.id ?: ""
                         ).collectAsState(initial = null)
                         
+                        val isExpanded = !collapsedCharacters.contains(item.key)
+                        val stateDescription = if (isExpanded) {
+                            stringResource(R.string.expanded)
+                        } else {
+                            stringResource(R.string.collapsed)
+                        }
+                        
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 16.dp, bottom = 8.dp)
+                                .semantics(mergeDescendants = true) {
+                                    contentDescription = "${item.name}, $stateDescription"
+                                }
                                 .pointerInput(Unit) {
                                     detectTapGestures(
                                         onTap = {
@@ -1199,6 +1413,13 @@ fun ChatHistorySelector(
                         }
                     }
                     is HistoryListItem.Header -> {
+                        val isExpanded = !collapsedGroups.contains(item.key)
+                        val stateDescription = if (isExpanded) {
+                            stringResource(R.string.expanded)
+                        } else {
+                            stringResource(R.string.collapsed)
+                        }
+                        
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1227,6 +1448,9 @@ fun ChatHistorySelector(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(MaterialTheme.shapes.medium)
+                                    .semantics(mergeDescendants = true) {
+                                        contentDescription = "${item.name}, $stateDescription"
+                                    }
                                     .pointerInput(Unit) {
                                         detectTapGestures(
                                             onTap = {
@@ -1374,22 +1598,35 @@ fun ChatHistorySelector(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                             ) {
+                                                val titlePreview = item.history.title.take(20)
+                                                val groupName = item.history.group ?: ungroupedText
                                                 Row(
                                                     modifier = Modifier
                                                         .fillMaxWidth()
                                                         .padding(horizontal = 10.dp)
+                                                        .semantics(mergeDescendants = false) {
+                                                            contentDescription = "$titlePreview, $groupName"
+                                                        }
                                                         .pointerInput(Unit) {
-                                                            detectTapGestures(onTap = { onSelectChat(item.history.id) })
+                                                            detectTapGestures(
+                                                                onTap = { onSelectChat(item.history.id) },
+                                                                onLongPress = { chatItemActionTarget = item.history }
+                                                            )
                                                         },
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
+                                                    val dragDescription = stringResource(R.string.drag_item, item.history.title)
                                                     IconButton(
-                                                        modifier = Modifier.draggableHandle(),
+                                                        modifier = Modifier
+                                                            .draggableHandle()
+                                                            .semantics {
+                                                                contentDescription = dragDescription
+                                                            },
                                                         onClick = {}
                                                     ) {
                                                         Icon(
                                                             imageVector = Icons.Default.DragHandle,
-                                                            contentDescription = "Reorder",
+                                                            contentDescription = null,
                                                             tint = contentColor
                                                         )
                                                     }
@@ -1400,7 +1637,9 @@ fun ChatHistorySelector(
                                                         color = contentColor,
                                                         maxLines = 1,
                                                         overflow = TextOverflow.Ellipsis,
-                                                        modifier = Modifier.weight(1f)
+                                                        modifier = Modifier
+                                                            .weight(1f)
+                                                            .semantics { contentDescription = "" }
                                                     )
                                                     // 如果是分支，在右侧显示分支图标和父对话标题
                                                     if (item.history.parentChatId != null) {
@@ -1409,7 +1648,7 @@ fun ChatHistorySelector(
                                                             Spacer(modifier = Modifier.width(8.dp))
                                                             Icon(
                                                                 imageVector = Icons.Default.AccountTree,
-                                                                contentDescription = stringResource(id = R.string.branch),
+                                                                contentDescription = null,
                                                                 tint = contentColor.copy(alpha = 0.6f),
                                                                 modifier = Modifier.size(16.dp)
                                                             )
@@ -1420,7 +1659,9 @@ fun ChatHistorySelector(
                                                                 color = contentColor.copy(alpha = 0.6f),
                                                                 maxLines = 1,
                                                                 overflow = TextOverflow.Ellipsis,
-                                                                modifier = Modifier.widthIn(max = 120.dp) // 限制最大宽度以便省略
+                                                                modifier = Modifier
+                                                                    .widthIn(max = 120.dp)
+                                                                    .semantics { contentDescription = "" } // 限制最大宽度以便省略
                                                             )
                                                         }
                                                     }
