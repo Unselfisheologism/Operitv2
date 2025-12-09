@@ -3,7 +3,7 @@ package com.ai.assistance.operit.core.tools.system.shell
 import android.content.Context
 import android.os.ParcelFileDescriptor
 import android.os.RemoteException
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import com.ai.assistance.operit.core.tools.system.ShizukuAuthorizer
 import java.io.BufferedReader
@@ -85,11 +85,11 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
                     return@withContext ShellExecutor.CommandResult(false, "", permStatus.reason)
                 }
 
-                Log.d(TAG, "Executing command: $command")
+                AppLogger.d(TAG, "Executing command: $command")
 
                 // 使用更精确的方法检测shell操作符
                 if (containsShellOperators(command)) {
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "Command contains shell operators or redirections, executing with shell"
                     )
@@ -192,7 +192,7 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
 
                 if (isInterruptedRead) {
                     lastException = e
-                    Log.w(
+                    AppLogger.w(
                             TAG,
                             "Read interrupted on attempt ${attempt + 1}/$maxRetries, retrying in $delayMs ms",
                             e
@@ -278,14 +278,14 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
                             exitCode
                     )
                 } catch (e: RemoteException) {
-                    Log.e(TAG, "Remote exception while executing command", e)
+                    AppLogger.e(TAG, "Remote exception while executing command", e)
                     return@withContext ShellExecutor.CommandResult(
                             false,
                             "",
                             "Remote exception: ${e.message}"
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error executing command", e)
+                    AppLogger.e(TAG, "Error executing command", e)
                     return@withContext ShellExecutor.CommandResult(false, "", "Error: ${e.message}")
                 } finally {
                     // 安全关闭文件描述符
@@ -298,7 +298,7 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
                                                 ParcelFileDescriptor?
                                 inputStream?.close()
                             } catch (e: Exception) {
-                                Log.e(TAG, "Error closing input stream", e)
+                                AppLogger.e(TAG, "Error closing input stream", e)
                             }
 
                             try {
@@ -307,11 +307,11 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
                                                 ParcelFileDescriptor?
                                 errorStream?.close()
                             } catch (e: Exception) {
-                                Log.e(TAG, "Error closing error stream", e)
+                                AppLogger.e(TAG, "Error closing error stream", e)
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error in cleanup", e)
+                        AppLogger.e(TAG, "Error in cleanup", e)
                     }
                 }
             }
@@ -319,7 +319,7 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
     /** 通过shell解释器执行包含特殊操作符的命令 */
     private suspend fun executeWithShell(command: String): ShellExecutor.CommandResult =
             withContext(Dispatchers.IO) {
-                Log.d(TAG, "Executing through shell: $command")
+                AppLogger.d(TAG, "Executing through shell: $command")
 
                 try {
                     val service =
@@ -353,7 +353,7 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
 
                     // 构建shell命令，使用-e确保出错时立即退出
                     val shellArgs = arrayOf("sh", "-e", "-c", enhancedCommand)
-                    Log.d(TAG, "Enhanced shell command: ${shellArgs.joinToString(", ", "[", "]")}")
+                    AppLogger.d(TAG, "Enhanced shell command: ${shellArgs.joinToString(", ", "[", "]")}")
 
                     // 创建进程
                     val process =
@@ -401,13 +401,13 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
                     try {
                         inputStream?.close()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error closing input stream in shell execution", e)
+                        AppLogger.e(TAG, "Error closing input stream in shell execution", e)
                     }
 
                     try {
                         errorStream?.close()
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error closing error stream in shell execution", e)
+                        AppLogger.e(TAG, "Error closing error stream in shell execution", e)
                     }
 
                     // 确定命令是否成功
@@ -427,7 +427,7 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
                             exitCode
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error executing shell command", e)
+                    AppLogger.e(TAG, "Error executing shell command", e)
                     return@withContext ShellExecutor.CommandResult(false, "", "Error: ${e.message}")
                 }
             }
@@ -438,7 +438,7 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
         try {
             val uid = Shizuku.getUid()
             if (uid <= 0) {
-                Log.d(TAG, "Invalid Shizuku UID: $uid")
+                AppLogger.d(TAG, "Invalid Shizuku UID: $uid")
                 return null
             }
 
@@ -449,14 +449,14 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
                         try {
                             cached.asBinder().pingBinder()
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error pinging cached binder", e)
+                            AppLogger.e(TAG, "Error pinging cached binder", e)
                             false
                         }
 
                 if (isCachedAlive) {
                     return cached
                 } else {
-                    Log.d(TAG, "Cached Shizuku service is dead, removing from cache")
+                    AppLogger.d(TAG, "Cached Shizuku service is dead, removing from cache")
                     serviceCache.remove(uid)
                 }
             }
@@ -464,22 +464,22 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
             // 获取新的Binder
             val binder = Shizuku.getBinder()
             if (binder == null) {
-                Log.d(TAG, "Shizuku binder is null")
+                AppLogger.d(TAG, "Shizuku binder is null")
                 return null
             }
 
             if (!binder.isBinderAlive) {
-                Log.d(TAG, "Shizuku binder is not alive")
+                AppLogger.d(TAG, "Shizuku binder is not alive")
                 return null
             }
 
             // 创建新的服务实例
-            Log.d(TAG, "Creating new Shizuku service interface")
+            AppLogger.d(TAG, "Creating new Shizuku service interface")
             val service = IShizukuService.Stub.asInterface(binder)
             serviceCache[uid] = service
             return service
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting Shizuku service", e)
+            AppLogger.e(TAG, "Error getting Shizuku service", e)
             return null
         }
     }
@@ -546,7 +546,7 @@ class DebuggerShellExecutor(private val context: Context) : ShellExecutor {
 
         // 检查未闭合的引号
         if (inSingleQuotes || inDoubleQuotes) {
-            Log.w(TAG, "Warning: Unclosed quotes in command: $command")
+            AppLogger.w(TAG, "Warning: Unclosed quotes in command: $command")
         }
 
         return result.toTypedArray()

@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.packages.screens
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -187,7 +187,7 @@ fun PackageManagerScreen(
                                 }
                             }
                         } catch (e: Exception) {
-                            Log.e("PackageManagerScreen", "Failed to import file", e)
+                            AppLogger.e("PackageManagerScreen", "Failed to import file", e)
                             snackbarHostState.showSnackbar(message = context.getString(R.string.import_failed, e.message))
                         }
                     }
@@ -210,7 +210,7 @@ fun PackageManagerScreen(
 
             automationConfigs.value = automationManager.getAllPackageInfo()
         } catch (e: Exception) {
-            Log.e("PackageManagerScreen", "Failed to load packages or configs", e)
+            AppLogger.e("PackageManagerScreen", "Failed to load packages or configs", e)
         }
     }
 
@@ -463,7 +463,7 @@ fun PackageManagerScreen(
                                                             // 操作成功后，更新真实的导入状态
                                                             importedPackages.value = packageManager.getImportedPackages()
                                                         } catch (e: Exception) {
-                                                            Log.e(
+                                                            AppLogger.e(
                                                                 "PackageManagerScreen",
                                                                 if (isChecked) "Failed to import package" else "Failed to remove package",
                                                                 e
@@ -522,12 +522,12 @@ fun PackageManagerScreen(
                         onPackageDeleted = {
                             showDetails = false
                             scope.launch {
-                                Log.d("PackageManagerScreen", "onPackageDeleted callback triggered. Refreshing package lists.")
+                                AppLogger.d("PackageManagerScreen", "onPackageDeleted callback triggered. Refreshing package lists.")
                                 // Refresh the package lists after deletion
                                 availablePackages.value = packageManager.getAvailablePackages()
                                 importedPackages.value = packageManager.getImportedPackages()
                                 visibleImportedPackages.value = importedPackages.value.toList()
-                                Log.d("PackageManagerScreen", "Lists refreshed. Available: ${availablePackages.value.keys}, Imported: ${importedPackages.value}")
+                                AppLogger.d("PackageManagerScreen", "Lists refreshed. Available: ${availablePackages.value.keys}, Imported: ${importedPackages.value}")
                                 snackbarHostState.showSnackbar("Package deleted successfully.")
                             }
                         }

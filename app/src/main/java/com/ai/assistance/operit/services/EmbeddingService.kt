@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.services
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.model.Embedding
 import com.google.mediapipe.tasks.components.containers.Embedding as MediaPipeEmbedding
 import com.google.mediapipe.tasks.core.BaseOptions
@@ -26,7 +26,7 @@ object EmbeddingService {
 
     fun initialize(context: Context) {
         if (isInitialized) {
-            Log.d(TAG, "EmbeddingService is already initialized.")
+            AppLogger.d(TAG, "EmbeddingService is already initialized.")
             return
         }
 
@@ -50,15 +50,15 @@ object EmbeddingService {
 
             textEmbedder = TextEmbedder.createFromOptions(context, options)
             isInitialized = true
-            Log.d(TAG, "EmbeddingService initialized successfully with L2 normalization.")
+            AppLogger.d(TAG, "EmbeddingService initialized successfully with L2 normalization.")
         } catch (e: Exception) {
-            Log.e(TAG, "Error initializing EmbeddingService", e)
+            AppLogger.e(TAG, "Error initializing EmbeddingService", e)
         }
     }
 
     fun generateEmbedding(text: String): Embedding? {
         if (!isInitialized || textEmbedder == null) {
-            Log.w(TAG, "EmbeddingService is not initialized, cannot generate embedding.")
+            AppLogger.w(TAG, "EmbeddingService is not initialized, cannot generate embedding.")
             return null
         }
         if (text.isBlank()) {
@@ -71,12 +71,12 @@ object EmbeddingService {
             // Log the first few dimensions of the generated embedding for debugging
             floatArray?.let {
                 val preview = it.take(5).joinToString(", ") { "%.4f".format(it) }
-                Log.d(TAG, "Generated embedding for \"$text\": [$preview ...]")
+                AppLogger.d(TAG, "Generated embedding for \"$text\": [$preview ...]")
             }
             
             return floatArray?.let { Embedding(it) }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to generate embedding for text: $text", e)
+            AppLogger.e(TAG, "Failed to generate embedding for text: $text", e)
             return null
         }
     }

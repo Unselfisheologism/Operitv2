@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.util
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.github.junrar.Archive
 import java.io.*
 import java.util.zip.ZipEntry
@@ -30,13 +30,13 @@ object ArchiveUtil {
             extraParams: String? = null,
             password: String? = null
     ): Boolean {
-        Log.d(TAG, "Converting archive from $sourceExt to $targetExt")
+        AppLogger.d(TAG, "Converting archive from $sourceExt to $targetExt")
 
         try {
             // If target is "extract", extract the archive
             if (targetExt == "extract") {
                 val extractDir = targetFile
-                Log.d(TAG, "Extracting ${sourceFile.name} to directory ${extractDir.absolutePath}")
+                AppLogger.d(TAG, "Extracting ${sourceFile.name} to directory ${extractDir.absolutePath}")
                 val extractResult = extractArchive(sourceFile, extractDir, sourceExt, password)
 
                 // Check if extraction failed due to encryption
@@ -56,13 +56,13 @@ object ArchiveUtil {
             }
 
             // For archive format conversion, we extract to temp directory then repackage
-            Log.d(TAG, "Converting archive from $sourceExt to $targetExt format")
+            AppLogger.d(TAG, "Converting archive from $sourceExt to $targetExt format")
             val tempDir = File(context.cacheDir, "temp_extract_${System.currentTimeMillis()}")
 
             try {
                 if (extractArchive(sourceFile, tempDir, sourceExt, password)) {
                     val result = createArchive(tempDir, targetFile, targetExt)
-                    Log.d(TAG, "Archive conversion ${if (result) "successful" else "failed"}")
+                    AppLogger.d(TAG, "Archive conversion ${if (result) "successful" else "failed"}")
                     return result
                 } else {
                     // Check if extraction failed due to encryption
@@ -82,18 +82,18 @@ object ArchiveUtil {
                         }
                     }
 
-                    Log.e(TAG, "Failed to extract source archive for conversion")
+                    AppLogger.e(TAG, "Failed to extract source archive for conversion")
                     return false
                 }
             } finally {
                 // Always clean up temporary directory
                 if (tempDir.exists()) {
-                    Log.d(TAG, "Cleaning up temporary directory")
+                    AppLogger.d(TAG, "Cleaning up temporary directory")
                     tempDir.deleteRecursively()
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting archive", e)
+            AppLogger.e(TAG, "Error converting archive", e)
             throw e // Re-throw to allow proper error handling by caller
         }
     }
@@ -127,7 +127,7 @@ object ArchiveUtil {
                 else -> false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error extracting archive", e)
+            AppLogger.e(TAG, "Error extracting archive", e)
             false
         }
     }
@@ -181,7 +181,7 @@ object ArchiveUtil {
                                             "Please use a dedicated archive manager with password support."
                                 }
 
-                        Log.e(
+                        AppLogger.e(
                                 TAG,
                                 "Encrypted ZIP file detected. Password-protected ZIP files are not supported",
                                 e
@@ -197,7 +197,7 @@ object ArchiveUtil {
             }
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Error extracting zip", e)
+            AppLogger.e(TAG, "Error extracting zip", e)
             return false
         }
     }
@@ -239,7 +239,7 @@ object ArchiveUtil {
             if (e.message?.contains("encrypted", ignoreCase = true) == true ||
                             e.message?.contains("password", ignoreCase = true) == true
             ) {
-                Log.e(TAG, "Encrypted TAR file detected", e)
+                AppLogger.e(TAG, "Encrypted TAR file detected", e)
                 // Create a note file in the target directory to inform the user
                 val noteFile = File(targetDir, "EXTRACTION_FAILED.txt")
                 noteFile.writeText(
@@ -250,7 +250,7 @@ object ArchiveUtil {
                 return false
             }
 
-            Log.e(TAG, "Error extracting tar", e)
+            AppLogger.e(TAG, "Error extracting tar", e)
             return false
         }
     }
@@ -266,7 +266,7 @@ object ArchiveUtil {
                                 SevenZFile(sevenZFile, password.toCharArray())
                             } catch (e: Exception) {
                                 // If password doesn't work, try without password
-                                Log.w(
+                                AppLogger.w(
                                         TAG,
                                         "Failed to open 7z with password, trying without password",
                                         e
@@ -330,7 +330,7 @@ object ArchiveUtil {
                                         "Please provide a password to extract this archive."
                             }
 
-                    Log.e(TAG, "Encrypted 7z file detected", e)
+                    AppLogger.e(TAG, "Encrypted 7z file detected", e)
                     // Create a note file in the target directory to inform the user
                     val noteFile = File(targetDir, "EXTRACTION_FAILED.txt")
                     noteFile.writeText(msg)
@@ -340,7 +340,7 @@ object ArchiveUtil {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error extracting 7z", e)
+            AppLogger.e(TAG, "Error extracting 7z", e)
             return false
         }
     }
@@ -356,7 +356,7 @@ object ArchiveUtil {
                                 Archive(rarFile, password)
                             } catch (e: Exception) {
                                 // If password doesn't work, try without password
-                                Log.w(
+                                AppLogger.w(
                                         TAG,
                                         "Failed to open RAR with password, trying without password",
                                         e
@@ -372,7 +372,7 @@ object ArchiveUtil {
 
                     // Check if RAR is password protected
                     if (archive.isEncrypted && password == null) {
-                        Log.e(TAG, "Encrypted RAR file detected, but no password provided")
+                        AppLogger.e(TAG, "Encrypted RAR file detected, but no password provided")
                         // Create a note file in the target directory to inform the user
                         val noteFile = File(targetDir, "EXTRACTION_FAILED.txt")
                         noteFile.writeText(
@@ -416,7 +416,7 @@ object ArchiveUtil {
                                         "Please provide a password to extract this archive."
                             }
 
-                    Log.e(TAG, "Encrypted RAR file detected", e)
+                    AppLogger.e(TAG, "Encrypted RAR file detected", e)
                     // Create a note file in the target directory to inform the user
                     val noteFile = File(targetDir, "EXTRACTION_FAILED.txt")
                     noteFile.writeText(msg)
@@ -426,7 +426,7 @@ object ArchiveUtil {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error extracting RAR", e)
+            AppLogger.e(TAG, "Error extracting RAR", e)
             return false
         }
     }
@@ -442,7 +442,7 @@ object ArchiveUtil {
                 else -> false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating archive", e)
+            AppLogger.e(TAG, "Error creating archive", e)
             false
         }
     }
@@ -455,7 +455,7 @@ object ArchiveUtil {
             }
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating zip", e)
+            AppLogger.e(TAG, "Error creating zip", e)
             return false
         }
     }
@@ -498,7 +498,7 @@ object ArchiveUtil {
             }
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating tar", e)
+            AppLogger.e(TAG, "Error creating tar", e)
             return false
         }
     }
@@ -538,7 +538,7 @@ object ArchiveUtil {
             SevenZOutputFile(sevenZFile).use { szof -> addTo7z(sourceDir, sourceDir, szof) }
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating 7z", e)
+            AppLogger.e(TAG, "Error creating 7z", e)
             return false
         }
     }

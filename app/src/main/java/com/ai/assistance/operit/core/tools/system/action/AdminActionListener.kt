@@ -4,7 +4,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -49,7 +49,7 @@ class AdminActionListener(private val context: Context) : ActionListener {
     }
 
     override fun initialize() {
-        Log.d(TAG, "设备管理员UI操作监听器初始化完成")
+        AppLogger.d(TAG, "设备管理员UI操作监听器初始化完成")
     }
 
     override suspend fun requestPermission(onResult: (Boolean) -> Unit) {
@@ -59,7 +59,7 @@ class AdminActionListener(private val context: Context) : ActionListener {
         }
 
         if (adminComponentName == null) {
-            Log.e(TAG, "管理员组件名称未设置")
+            AppLogger.e(TAG, "管理员组件名称未设置")
             onResult(false)
             return
         }
@@ -74,7 +74,7 @@ class AdminActionListener(private val context: Context) : ActionListener {
 
             onResult(false)
         } catch (e: Exception) {
-            Log.e(TAG, "打开设备管理员设置失败", e)
+            AppLogger.e(TAG, "打开设备管理员设置失败", e)
             onResult(false)
         }
     }
@@ -96,14 +96,14 @@ class AdminActionListener(private val context: Context) : ActionListener {
                 actionCallback = onAction
                 isListening.set(true)
 
-                Log.d(TAG, "开始设备管理员级别的UI操作监听")
+                AppLogger.d(TAG, "开始设备管理员级别的UI操作监听")
 
                 // 启动管理员级别的事件监控
                 startAdminEventMonitoring()
 
                 return@withContext ActionListener.ListeningResult.success("设备管理员UI操作监听已启动")
             } catch (e: Exception) {
-                Log.e(TAG, "启动设备管理员UI操作监听失败", e)
+                AppLogger.e(TAG, "启动设备管理员UI操作监听失败", e)
                 isListening.set(false)
                 return@withContext ActionListener.ListeningResult.failure("启动失败: ${e.message}")
             }
@@ -120,10 +120,10 @@ class AdminActionListener(private val context: Context) : ActionListener {
 
             stopAdminEventMonitoring()
 
-            Log.d(TAG, "设备管理员UI操作监听已停止")
+            AppLogger.d(TAG, "设备管理员UI操作监听已停止")
             return@withContext true
         } catch (e: Exception) {
-            Log.e(TAG, "停止设备管理员UI操作监听失败", e)
+            AppLogger.e(TAG, "停止设备管理员UI操作监听失败", e)
             return@withContext false
         }
     }
@@ -133,7 +133,7 @@ class AdminActionListener(private val context: Context) : ActionListener {
         return try {
             adminComponentName?.let { devicePolicyManager.isAdminActive(it) } ?: false
         } catch (e: Exception) {
-            Log.e(TAG, "检查设备管理员状态出错", e)
+            AppLogger.e(TAG, "检查设备管理员状态出错", e)
             false
         }
     }
@@ -143,7 +143,7 @@ class AdminActionListener(private val context: Context) : ActionListener {
      * 设备管理员可以监听系统状态变化、锁屏事件等
      */
     private fun startAdminEventMonitoring() {
-        Log.d(TAG, "开始管理员级别事件监控 - 可监听系统状态和安全事件")
+        AppLogger.d(TAG, "开始管理员级别事件监控 - 可监听系统状态和安全事件")
         
         // 设备管理员可以监听：
         // - 锁屏/解锁事件
@@ -156,7 +156,7 @@ class AdminActionListener(private val context: Context) : ActionListener {
      * 停止管理员级别的事件监控
      */
     private fun stopAdminEventMonitoring() {
-        Log.d(TAG, "停止管理员级别事件监控")
+        AppLogger.d(TAG, "停止管理员级别事件监控")
     }
 
     /**

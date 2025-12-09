@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.settings.sections
 
 import android.annotation.SuppressLint
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -127,7 +127,7 @@ fun ModelApiSettingsSection(
             // 允许用户自定义模型名称，即使使用默认API密钥
             val modelToSave = modelNameInput
 
-            Log.d(
+            AppLogger.d(
                     TAG,
                     "保存API设置: apiKey=${apiKeyInput.take(5)}..., endpoint=$apiEndpointInput, model=$modelToSave, providerType=${selectedApiProvider.name}"
             )
@@ -172,7 +172,7 @@ fun ModelApiSettingsSection(
                     configManager.appContext
             )
 
-            Log.d(TAG, "API设置保存完成并刷新服务")
+            AppLogger.d(TAG, "API设置保存完成并刷新服务")
             showNotification(context.getString(R.string.api_settings_saved))
         }
     }
@@ -218,16 +218,16 @@ fun ModelApiSettingsSection(
 
     // 当API提供商改变时更新端点
     LaunchedEffect(selectedApiProvider) {
-        Log.d("ModelApiSettingsSection", "API提供商改变")
+        AppLogger.d("ModelApiSettingsSection", "API提供商改变")
         if (selectedApiProvider == ApiProviderType.OPENAI || selectedApiProvider == ApiProviderType.GOOGLE
             || selectedApiProvider == ApiProviderType.ANTHROPIC || selectedApiProvider == ApiProviderType.MISTRAL) {
             val inChina = LocationUtils.isDeviceInMainlandChina(context)
             showRegionWarning = inChina
             if (inChina) {
-                Log.d("ModelApiSettingsSection", "检测到位于中国大陆")
+                AppLogger.d("ModelApiSettingsSection", "检测到位于中国大陆")
                 showNotification(context.getString(R.string.overseas_provider_warning))
             } else {
-                Log.d("ModelApiSettingsSection", "检测到位于海外")
+                AppLogger.d("ModelApiSettingsSection", "检测到位于海外")
             }
         } else {
             showRegionWarning = false
@@ -366,7 +366,7 @@ fun ModelApiSettingsSection(
                 IconButton(
                         onClick = {
                                     if (isMnnProvider) {
-                                        Log.d(TAG, "获取MNN本地模型列表")
+                                        AppLogger.d(TAG, "获取MNN本地模型列表")
                                         val gettingModelsText =
                                                 context.getString(R.string.getting_models_list)
                                         val modelsListSuccessText =
@@ -381,7 +381,7 @@ fun ModelApiSettingsSection(
                                                 val result = ModelListFetcher.getMnnLocalModels(context)
                                                 if (result.isSuccess) {
                                                     val models = result.getOrThrow()
-                                                    Log.d(TAG, "MNN模型列表获取成功，共 ${models.size} 个模型")
+                                                    AppLogger.d(TAG, "MNN模型列表获取成功，共 ${models.size} 个模型")
                                                     modelsList = models
                                                     showModelsDialog = true
                                                     showNotification(modelsListSuccessText.format(models.size))
@@ -389,7 +389,7 @@ fun ModelApiSettingsSection(
                                                     val errorMsg =
                                                             result.exceptionOrNull()?.message
                                                                     ?: context.getString(R.string.unknown_error)
-                                                    Log.e(TAG, "MNN模型列表获取失败: $errorMsg")
+                                                    AppLogger.e(TAG, "MNN模型列表获取失败: $errorMsg")
                                                     modelLoadError =
                                                             context.getString(
                                                                     R.string.get_models_list_failed,
@@ -398,7 +398,7 @@ fun ModelApiSettingsSection(
                                                     showNotification(modelLoadError!!)
                                                 }
                                             } catch (e: Exception) {
-                                                Log.e(TAG, "获取MNN模型列表发生异常", e)
+                                                AppLogger.e(TAG, "获取MNN模型列表发生异常", e)
                                                 modelLoadError =
                                                         context.getString(
                                                                 R.string.get_models_list_failed,
@@ -410,7 +410,7 @@ fun ModelApiSettingsSection(
                                             }
                                         }
                                     } else {
-                            Log.d(
+                            AppLogger.d(
                                     TAG,
                                     "模型列表按钮被点击 - API端点: $apiEndpointInput, API类型: ${selectedApiProvider.name}"
                             )
@@ -431,7 +431,7 @@ fun ModelApiSettingsSection(
                                 ) {
                                     isLoadingModels = true
                                     modelLoadError = null
-                                    Log.d(
+                                    AppLogger.d(
                                             TAG,
                                             "开始获取模型列表: 端点=$apiEndpointInput, API类型=${selectedApiProvider.name}"
                                     )
@@ -445,30 +445,30 @@ fun ModelApiSettingsSection(
                                                 )
                                         if (result.isSuccess) {
                                             val models = result.getOrThrow()
-                                            Log.d(TAG, "模型列表获取成功，共 ${models.size} 个模型")
+                                            AppLogger.d(TAG, "模型列表获取成功，共 ${models.size} 个模型")
                                             modelsList = models
                                             showModelsDialog = true
                                             showNotification(modelsListSuccessText.format(models.size))
                                         } else {
                                             val errorMsg =
                                                     result.exceptionOrNull()?.message ?: unknownErrorText
-                                            Log.e(TAG, "模型列表获取失败: $errorMsg")
+                                            AppLogger.e(TAG, "模型列表获取失败: $errorMsg")
                                             modelLoadError = getModelsFailedText.format(errorMsg)
                                             showNotification(modelLoadError ?: getModelsFailedText.format(""))
                                         }
                                     } catch (e: Exception) {
-                                        Log.e(TAG, "获取模型列表发生异常", e)
+                                        AppLogger.e(TAG, "获取模型列表发生异常", e)
                                         modelLoadError = getModelsFailedText.format(e.message ?: "")
                                         showNotification(modelLoadError ?: getModelsFailedText.format(""))
                                     } finally {
                                         isLoadingModels = false
-                                        Log.d(TAG, "模型列表获取流程完成")
+                                        AppLogger.d(TAG, "模型列表获取流程完成")
                                     }
                                 } else if (isUsingDefaultApiKey) {
-                                    Log.d(TAG, "使用默认配置，不获取模型列表")
+                                    AppLogger.d(TAG, "使用默认配置，不获取模型列表")
                                     showNotification(defaultConfigNoModelsText)
                                 } else {
-                                    Log.d(TAG, "API端点或密钥为空")
+                                    AppLogger.d(TAG, "API端点或密钥为空")
                                     showNotification(fillEndpointKeyText)
                                 }
                                 }
@@ -814,7 +814,7 @@ fun ModelApiSettingsSection(
                                     // 将选中的模型用逗号连接
                                     modelNameInput = selectedModels.value.joinToString(",")
                                     if (selectedApiProvider == ApiProviderType.MNN) {
-                                        Log.d(TAG, "选择MNN模型: $modelNameInput")
+                                        AppLogger.d(TAG, "选择MNN模型: $modelNameInput")
                                     }
                                     showModelsDialog = false
                                 },

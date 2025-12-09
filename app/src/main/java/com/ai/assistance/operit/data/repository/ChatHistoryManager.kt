@@ -3,7 +3,7 @@ package com.ai.assistance.operit.data.repository
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -78,15 +78,15 @@ class ChatHistoryManager private constructor(private val context: Context) {
 
     init {
         // 确保数据库被初始化
-        Log.d(TAG, "ChatHistoryManager初始化，预加载数据库")
+        AppLogger.d(TAG, "ChatHistoryManager初始化，预加载数据库")
         // 使用独立的协程作用域触发数据库初始化
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 // 预先尝试执行一个简单查询
                 val chats = chatDao.getAllChats().first()
-                Log.d(TAG, "数据库预加载完成，现有聊天数：${chats.size}")
+                AppLogger.d(TAG, "数据库预加载完成，现有聊天数：${chats.size}")
             } catch (e: Exception) {
-                Log.e(TAG, "数据库预加载失败", e)
+                AppLogger.e(TAG, "数据库预加载失败", e)
             }
         }
     }
@@ -130,7 +130,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
     private val _chatHistoriesFlow: Flow<List<ChatHistory>> =
         // 使用原始的Flow方式，这样可以确保数据库变化时会自动刷新
         chatDao.getAllChats().map { chatEntities ->
-            // Log.d(TAG, "加载聊天列表，共 ${chatEntities.size} 个聊天")
+            // AppLogger.d(TAG, "加载聊天列表，共 ${chatEntities.size} 个聊天")
 
             // 使用withContext将处理移至IO线程
             kotlinx.coroutines.withContext(Dispatchers.IO) {
@@ -275,7 +275,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to add message for chat $chatId", e)
+                AppLogger.e(TAG, "Failed to add message for chat $chatId", e)
                 throw e
             }
         }
@@ -300,7 +300,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                 }
                 chatDao.updateChats(entitiesToUpdate)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to update chat order and group", e)
+                AppLogger.e(TAG, "Failed to update chat order and group", e)
                 throw e
             }
         }
@@ -323,7 +323,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     chatDao.updateGroupName(oldName, newName)
                 }
             } catch (e: Exception) {
-                Log.e(
+                AppLogger.e(
                     TAG,
                     "Failed to rename group from $oldName to $newName (character: $characterCardName)",
                     e
@@ -358,7 +358,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(
+                AppLogger.e(
                     TAG,
                     "Failed to delete group $groupName (deleteChats: $deleteChats, character: $characterCardName)",
                     e
@@ -376,9 +376,9 @@ class ChatHistoryManager private constructor(private val context: Context) {
     suspend fun deleteMessage(chatId: String, timestamp: Long) {
         mutex.withLock {
             try {
-                Log.d(TAG, "正在从数据库删除消息. ChatId: $chatId, Timestamp: $timestamp")
+                AppLogger.d(TAG, "正在从数据库删除消息. ChatId: $chatId, Timestamp: $timestamp")
                 messageDao.deleteMessageByTimestamp(chatId, timestamp)
-                Log.d(TAG, "消息从数据库删除成功.")
+                AppLogger.d(TAG, "消息从数据库删除成功.")
 
                 // Update chat metadata
                 chatDao.getChatById(chatId)?.let { chat ->
@@ -392,7 +392,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to delete message with timestamp $timestamp for chat $chatId", e)
+                AppLogger.e(TAG, "Failed to delete message with timestamp $timestamp for chat $chatId", e)
                 throw e
             }
         }
@@ -443,9 +443,9 @@ class ChatHistoryManager private constructor(private val context: Context) {
     suspend fun deleteMessagesFrom(chatId: String, timestamp: Long) {
         mutex.withLock {
             try {
-                Log.d(TAG, "正在从数据库删除消息. ChatId: $chatId, Timestamp >=: $timestamp")
+                AppLogger.d(TAG, "正在从数据库删除消息. ChatId: $chatId, Timestamp >=: $timestamp")
                 messageDao.deleteMessagesFrom(chatId, timestamp)
-                Log.d(TAG, "后续消息从数据库删除成功.")
+                AppLogger.d(TAG, "后续消息从数据库删除成功.")
                 // 更新聊天元数据时间戳
                 chatDao.getChatById(chatId)?.let { chat ->
                     chatDao.updateChatMetadata(
@@ -458,7 +458,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "从 $timestamp 开始为聊天 $chatId 删除消息失败", e)
+                AppLogger.e(TAG, "从 $timestamp 开始为聊天 $chatId 删除消息失败", e)
                 throw e
             }
         }
@@ -489,7 +489,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "为聊天 $chatId 清除消息失败", e)
+                AppLogger.e(TAG, "为聊天 $chatId 清除消息失败", e)
                 throw e
             }
         }
@@ -501,7 +501,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 chatDao.updateChatTitle(chatId, title)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to update chat title for chat $chatId", e)
+                AppLogger.e(TAG, "Failed to update chat title for chat $chatId", e)
                 throw e
             }
         }
@@ -513,7 +513,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 chatDao.updateChatCharacterCardName(chatId, characterCardName)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to update chat character card for chat $chatId", e)
+                AppLogger.e(TAG, "Failed to update chat character card for chat $chatId", e)
                 throw e
             }
         }
@@ -624,7 +624,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 chatDao.updateChatWorkspace(chatId, workspace)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to update chat workspace for chat $chatId", e)
+                AppLogger.e(TAG, "Failed to update chat workspace for chat $chatId", e)
                 throw e
             }
         }
@@ -636,7 +636,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 chatDao.updateChatGroup(chatId, group)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to update chat group for chat $chatId", e)
+                AppLogger.e(TAG, "Failed to update chat group for chat $chatId", e)
                 throw e
             }
         }
@@ -646,12 +646,12 @@ class ChatHistoryManager private constructor(private val context: Context) {
     suspend fun loadChatMessages(chatId: String): List<ChatMessage> {
         return kotlinx.coroutines.withContext(Dispatchers.IO) {
             try {
-                // Log.d(TAG, "直接从数据库加载聊天 $chatId 的消息")
+                // AppLogger.d(TAG, "直接从数据库加载聊天 $chatId 的消息")
                 val messages = messageDao.getMessagesForChat(chatId)
-                // Log.d(TAG, "聊天 $chatId 共加载 ${messages.size} 条消息")
+                // AppLogger.d(TAG, "聊天 $chatId 共加载 ${messages.size} 条消息")
                 messages.map { it.toChatMessage() }
             } catch (e: Exception) {
-                Log.e(TAG, "加载聊天消息失败", e)
+                AppLogger.e(TAG, "加载聊天消息失败", e)
                 emptyList()
             }
         }
@@ -667,7 +667,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                 val chatIds = messageDao.searchChatIdsByContent(query)
                 chatIds.toSet()
             } catch (e: Exception) {
-                Log.e(TAG, "搜索聊天内容失败: $query", e)
+                AppLogger.e(TAG, "搜索聊天内容失败: $query", e)
                 emptySet()
             }
         }
@@ -728,13 +728,13 @@ class ChatHistoryManager private constructor(private val context: Context) {
                 // 设置为当前聊天
                 setCurrentChatId(branchHistory.id)
 
-                Log.d(
+                AppLogger.d(
                     TAG,
                     "创建分支对话: ${branchHistory.id}, 父对话: $parentChatId, 消息数: ${messagesToCopy.size}"
                 )
                 branchHistory
             } catch (e: Exception) {
-                Log.e(TAG, "创建分支对话失败", e)
+                AppLogger.e(TAG, "创建分支对话失败", e)
                 throw e
             }
         }
@@ -774,7 +774,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "获取分支对话失败: $parentChatId", e)
+                AppLogger.e(TAG, "获取分支对话失败: $parentChatId", e)
                 emptyList()
             }
         }
@@ -914,7 +914,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
 
                 exportFile.absolutePath
             } catch (e: Exception) {
-                Log.e(TAG, "导出聊天记录失败", e)
+                AppLogger.e(TAG, "导出聊天记录失败", e)
                 null
             }
         }
@@ -961,7 +961,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                             }
                         }
                     } catch (e: Exception) {
-                        Log.w(TAG, "尝试解析 Zip 失败，将尝试作为普通文件读取: ${e.message}")
+                        AppLogger.w(TAG, "尝试解析 Zip 失败，将尝试作为普通文件读取: ${e.message}")
                     }
                 }
 
@@ -974,7 +974,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                         throw Exception("导入的文件为空")
                     }
 
-                    Log.d(TAG, "使用指定格式导入: $format")
+                    AppLogger.d(TAG, "使用指定格式导入: $format")
                     
                     // 转换为 ChatHistory 列表
                     chatHistories.addAll(convertToOperitFormat(content, format))
@@ -1006,10 +1006,10 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     saveChatHistory(chatHistory)
                 }
 
-                Log.d(TAG, "导入完成: 新增=$newCount, 更新=$updatedCount, 跳过=$skippedCount")
+                AppLogger.d(TAG, "导入完成: 新增=$newCount, 更新=$updatedCount, 跳过=$skippedCount")
                 ChatImportResult(newCount, updatedCount, skippedCount)
             } catch (e: Exception) {
-                Log.e(TAG, "导入聊天记录失败", e)
+                AppLogger.e(TAG, "导入聊天记录失败", e)
                 throw e
             }
         }
@@ -1040,28 +1040,28 @@ class ChatHistoryManager private constructor(private val context: Context) {
                 }
                 
                 ChatFormat.CHATGPT -> {
-                    Log.d(TAG, "使用 ChatGPT 转换器")
+                    AppLogger.d(TAG, "使用 ChatGPT 转换器")
                     ChatGPTConverter().convert(content)
                 }
                 
                 ChatFormat.CHATBOX -> {
-                    Log.d(TAG, "使用 ChatBox 转换器")
+                    AppLogger.d(TAG, "使用 ChatBox 转换器")
                     ChatBoxConverter().convert(content)
                 }
                 
                 ChatFormat.MARKDOWN -> {
-                    Log.d(TAG, "使用 Markdown 转换器")
+                    AppLogger.d(TAG, "使用 Markdown 转换器")
                     MarkdownConverter().convert(content)
                 }
                 
                 ChatFormat.GENERIC_JSON -> {
-                    Log.d(TAG, "使用通用 JSON 转换器")
+                    AppLogger.d(TAG, "使用通用 JSON 转换器")
                     GenericJsonConverter().convert(content)
                 }
                 
                 ChatFormat.CLAUDE -> {
                     // Claude 格式暂不支持，回退到通用 JSON
-                    Log.d(TAG, "Claude 格式回退到通用 JSON 转换器")
+                    AppLogger.d(TAG, "Claude 格式回退到通用 JSON 转换器")
                     GenericJsonConverter().convert(content)
                 }
                 
@@ -1084,10 +1084,10 @@ class ChatHistoryManager private constructor(private val context: Context) {
         try {
             withContext(Dispatchers.IO) {
                 chatDao.clearCharacterCardBinding(characterCardName)
-                Log.d(TAG, "已清理绑定角色卡 '$characterCardName' 的对话")
+                AppLogger.d(TAG, "已清理绑定角色卡 '$characterCardName' 的对话")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "清理角色卡绑定失败: $characterCardName", e)
+            AppLogger.e(TAG, "清理角色卡绑定失败: $characterCardName", e)
         }
     }
 
@@ -1106,13 +1106,13 @@ class ChatHistoryManager private constructor(private val context: Context) {
                 } else {
                     chatDao.renameCharacterCardBinding(sourceCharacterCardName, targetCharacterCardName)
                 }
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "角色卡聊天重分配: ${sourceCharacterCardName ?: "未绑定"} -> $targetCharacterCardName, 更新 $updated 条记录"
                 )
                 updated
             } catch (e: Exception) {
-                Log.e(
+                AppLogger.e(
                         TAG,
                         "重命名角色卡绑定失败: ${sourceCharacterCardName ?: "未绑定"} -> $targetCharacterCardName",
                         e
@@ -1137,7 +1137,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 chatDao.updateCharacterCardForChats(chatIds, targetCharacterCardName)
             } catch (e: Exception) {
-                Log.e(TAG, "批量更新聊天角色卡失败: $targetCharacterCardName, chatIds=$chatIds", e)
+                AppLogger.e(TAG, "批量更新聊天角色卡失败: $targetCharacterCardName, chatIds=$chatIds", e)
                 throw e
             }
         }
@@ -1158,7 +1158,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 chatDao.updateGroupForChats(chatIds, groupName)
             } catch (e: Exception) {
-                Log.e(TAG, "批量更新聊天分组失败: $groupName, chatIds=$chatIds", e)
+                AppLogger.e(TAG, "批量更新聊天分组失败: $groupName, chatIds=$chatIds", e)
                 throw e
             }
         }
@@ -1173,7 +1173,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 chatDao.renameCharacterCardBinding(oldName, newName)
             } catch (e: Exception) {
-                Log.e(TAG, "批量重命名对话绑定角色卡失败: $oldName -> $newName", e)
+                AppLogger.e(TAG, "批量重命名对话绑定角色卡失败: $oldName -> $newName", e)
                 throw e
             }
         }
@@ -1188,7 +1188,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 messageDao.renameRoleName(oldName, newName)
             } catch (e: Exception) {
-                Log.e(TAG, "批量重命名消息中的角色名失败: $oldName -> $newName", e)
+                AppLogger.e(TAG, "批量重命名消息中的角色名失败: $oldName -> $newName", e)
                 throw e
             }
         }

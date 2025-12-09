@@ -5,7 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -466,7 +466,7 @@ private suspend fun saveImageFromUrl(context: Context, imageUrl: String): Boolea
 
                 return@withContext false
             } catch (e: Exception) {
-                Log.e(TAG, "保存图片失败", e)
+                AppLogger.e(TAG, "保存图片失败", e)
                 return@withContext false
             }
         }

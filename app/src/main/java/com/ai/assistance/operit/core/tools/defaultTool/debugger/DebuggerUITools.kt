@@ -3,7 +3,7 @@ package com.ai.assistance.operit.core.tools.defaultTool.debugger
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.SimplifiedUINode
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.core.tools.UIActionResultData
@@ -30,7 +30,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
     /** 使用Shell命令实现点击操作 */
     override suspend fun tap(tool: AITool): ToolResult {
         if (UIHierarchyManager.isAccessibilityServiceEnabled(context)) {
-            Log.d(TAG, "无障碍服务已启用，使用无障碍点击")
+            AppLogger.d(TAG, "无障碍服务已启用，使用无障碍点击")
             return super.tap(tool)
         }
 
@@ -52,12 +52,12 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
         // 使用Shell命令执行点击
         try {
-            Log.d(TAG, "Attempting to tap at coordinates: ($x, $y) via shell command")
+            AppLogger.d(TAG, "Attempting to tap at coordinates: ($x, $y) via shell command")
             val command = "input tap $x $y"
             val result = AndroidShellExecutor.executeShellCommand(command)
 
             if (result.success) {
-                Log.d(TAG, "Tap successful at coordinates: ($x, $y)")
+                AppLogger.d(TAG, "Tap successful at coordinates: ($x, $y)")
                 // 成功后主动隐藏overlay
                 withContext(Dispatchers.Main) { operationOverlay.hide() }
                 return ToolResult(
@@ -73,7 +73,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                         error = ""
                 )
             } else {
-                Log.e(TAG, "Tap failed at coordinates: ($x, $y), error: ${result.stderr}")
+                AppLogger.e(TAG, "Tap failed at coordinates: ($x, $y), error: ${result.stderr}")
                 withContext(Dispatchers.Main) {
                     operationOverlay.hide() // 隐藏反馈（在主线程上执行）
                 }
@@ -86,7 +86,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error tapping at coordinates ($x, $y)", e)
+            AppLogger.e(TAG, "Error tapping at coordinates ($x, $y)", e)
             withContext(Dispatchers.Main) {
                 operationOverlay.hide() // 隐藏反馈（在主线程上执行）
             }
@@ -102,7 +102,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
     /** 使用Shell命令实现滑动操作 */
     override suspend fun swipe(tool: AITool): ToolResult {
         if (UIHierarchyManager.isAccessibilityServiceEnabled(context)) {
-            Log.d(TAG, "无障碍服务已启用，使用无障碍滑动")
+            AppLogger.d(TAG, "无障碍服务已启用，使用无障碍滑动")
             return super.swipe(tool)
         }
 
@@ -126,7 +126,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
         withContext(Dispatchers.Main) { operationOverlay.showSwipe(startX, startY, endX, endY) }
 
         try {
-            Log.d(
+            AppLogger.d(
                     TAG,
                     "Attempting to swipe from ($startX, $startY) to ($endX, $endY) with duration $duration ms via shell command"
             )
@@ -134,7 +134,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
             val result = AndroidShellExecutor.executeShellCommand(command)
 
             if (result.success) {
-                Log.d(TAG, "Swipe successful from ($startX, $startY) to ($endX, $endY)")
+                AppLogger.d(TAG, "Swipe successful from ($startX, $startY) to ($endX, $endY)")
                 // 成功后主动隐藏overlay
                 withContext(Dispatchers.Main) { operationOverlay.hide() }
                 return ToolResult(
@@ -149,7 +149,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                         error = ""
                 )
             } else {
-                Log.e(TAG, "Swipe failed: ${result.stderr}")
+                AppLogger.e(TAG, "Swipe failed: ${result.stderr}")
                 withContext(Dispatchers.Main) {
                     operationOverlay.hide() // 隐藏反馈（在主线程上执行）
                 }
@@ -161,7 +161,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error performing swipe", e)
+            AppLogger.e(TAG, "Error performing swipe", e)
             withContext(Dispatchers.Main) {
                 operationOverlay.hide() // 隐藏反馈（在主线程上执行）
             }
@@ -177,7 +177,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
     /** 使用Shell命令点击元素 */
     override suspend fun clickElement(tool: AITool): ToolResult {
         if (UIHierarchyManager.isAccessibilityServiceEnabled(context)) {
-            Log.d(TAG, "无障碍服务已启用，使用无障碍点击元素")
+            AppLogger.d(TAG, "无障碍服务已启用，使用无障碍点击元素")
             return super.clickElement(tool)
         }
 
@@ -242,7 +242,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
                 return tap(tapTool)
             } catch (e: Exception) {
-                Log.e(TAG, "Error processing bounds", e)
+                AppLogger.e(TAG, "Error processing bounds", e)
                 return ToolResult(
                         toolName = tool.name,
                         success = false,
@@ -259,7 +259,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
     /** 使用Shell命令设置输入文本 */
     override suspend fun setInputText(tool: AITool): ToolResult {
         if (UIHierarchyManager.isAccessibilityServiceEnabled(context)) {
-            Log.d(TAG, "无障碍服务已启用，使用无障碍设置文本")
+            AppLogger.d(TAG, "无障碍服务已启用，使用无障碍设置文本")
             return super.setInputText(tool)
         }
 
@@ -275,7 +275,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
             withContext(Dispatchers.Main) { operationOverlay.showTextInput(centerX, centerY, text) }
 
             // 使用KEYCODE_CLEAR清除字段，这比模拟CTRL+A和DEL更直接
-            Log.d(TAG, "Clearing text field with KEYCODE_CLEAR")
+            AppLogger.d(TAG, "Clearing text field with KEYCODE_CLEAR")
             val clearCommand = "input keyevent KEYCODE_CLEAR"
             AndroidShellExecutor.executeShellCommand(clearCommand)
 
@@ -300,7 +300,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
             }
 
             // 使用原生复制和ADB粘贴来输入文本，这比'input text'更可靠
-            Log.d(TAG, "Setting text to clipboard and pasting via ADB: $text")
+            AppLogger.d(TAG, "Setting text to clipboard and pasting via ADB: $text")
             withContext(Dispatchers.Main) {
                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 val clip = ClipData.newPlainText("operit_input", text)
@@ -340,7 +340,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error setting input text", e)
+            AppLogger.e(TAG, "Error setting input text", e)
             withContext(Dispatchers.Main) {
                 operationOverlay.hide() // 隐藏反馈（在主线程上执行）
             }
@@ -394,7 +394,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error pressing key", e)
+            AppLogger.e(TAG, "Error pressing key", e)
             ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -409,7 +409,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
     /** 使用Shell命令获取页面信息 */
     override suspend fun getPageInfo(tool: AITool): ToolResult {
         if (UIHierarchyManager.isAccessibilityServiceEnabled(context)) {
-            Log.d(TAG, "无障碍服务已启用，使用无障碍获取页面信息")
+            AppLogger.d(TAG, "无障碍服务已启用，使用无障碍获取页面信息")
             return super.getPageInfo(tool)
         }
 
@@ -453,7 +453,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting page info", e)
+            AppLogger.e(TAG, "Error getting page info", e)
             ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -470,22 +470,22 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
     private suspend fun getUIDataFromShell(): UIData? {
         try {
             // 使用ADB命令获取UI dump
-            Log.d(TAG, "使用ADB命令获取UI数据")
+            AppLogger.d(TAG, "使用ADB命令获取UI数据")
 
             // 执行UI dump命令
             val dumpCommand = "uiautomator dump /sdcard/window_dump.xml"
             val dumpResult = AndroidShellExecutor.executeShellCommand(dumpCommand)
             if (!dumpResult.success) {
-                Log.e(TAG, "uiautomator dump失败: ${dumpResult.stderr}")
+                AppLogger.e(TAG, "uiautomator dump失败: ${dumpResult.stderr}")
                 return null
             }
-            Log.d(TAG, "uiautomator dump成功: ${dumpResult.stdout}")
+            AppLogger.d(TAG, "uiautomator dump成功: ${dumpResult.stdout}")
 
             // 读取dump文件内容
             val readCommand = "cat /sdcard/window_dump.xml"
             val readResult = AndroidShellExecutor.executeShellCommand(readCommand)
             if (!readResult.success) {
-                Log.e(TAG, "读取UI dump文件失败: ${readResult.stderr}")
+                AppLogger.e(TAG, "读取UI dump文件失败: ${readResult.stderr}")
                 return null
             }
 
@@ -494,14 +494,14 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
             // 如果窗口信息为空，尝试延迟后重试一次
             if (windowInfo.isEmpty()) {
-                Log.w(TAG, "首次获取窗口信息失败，延迟500ms后重试")
+                AppLogger.w(TAG, "首次获取窗口信息失败，延迟500ms后重试")
                 kotlinx.coroutines.delay(500)
                 windowInfo = getWindowInfoFromShell()
             }
 
             return UIData(readResult.stdout, windowInfo)
         } catch (e: Exception) {
-            Log.e(TAG, "获取UI数据时出错", e)
+            AppLogger.e(TAG, "获取UI数据时出错", e)
             return null
         }
     }
@@ -528,13 +528,13 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
             try {
                 val result = AndroidShellExecutor.executeShellCommand(command)
                 if (result.success && result.stdout.isNotEmpty()) {
-                    Log.d(TAG, "成功获取窗口信息: ${result.stdout.take(100)}")
+                    AppLogger.d(TAG, "成功获取窗口信息: ${result.stdout.take(100)}")
                     return result.stdout
                 }
                 // 如果命令执行失败或返回空结果，尝试下一个命令
-                Log.w(TAG, "窗口信息命令 '$command' 失败或返回空结果")
+                AppLogger.w(TAG, "窗口信息命令 '$command' 失败或返回空结果")
             } catch (e: Exception) {
-                Log.e(TAG, "执行窗口信息命令 '$command' 出错", e)
+                AppLogger.e(TAG, "执行窗口信息命令 '$command' 出错", e)
                 // 继续尝试下一个命令
             }
         }
@@ -545,14 +545,14 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                     "dumpsys activity activities | grep -E 'topResumedActivity|topActivity'"
             val result = AndroidShellExecutor.executeShellCommand(topActivityCommand)
             if (result.success && result.stdout.isNotEmpty()) {
-                Log.d(TAG, "使用topActivity作为窗口信息替代: ${result.stdout.take(100)}")
+                AppLogger.d(TAG, "使用topActivity作为窗口信息替代: ${result.stdout.take(100)}")
                 return result.stdout
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取topActivity失败", e)
+            AppLogger.e(TAG, "获取topActivity失败", e)
         }
 
-        Log.e(TAG, "所有获取窗口信息的尝试均失败")
+        AppLogger.e(TAG, "所有获取窗口信息的尝试均失败")
         return ""
     }
 
@@ -655,14 +655,14 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
         try {
             if (windowInfo.isBlank()) {
-                Log.w(TAG, "Window info is empty, cannot extract focus information")
+                AppLogger.w(TAG, "Window info is empty, cannot extract focus information")
                 // 即使窗口信息为空，也设置默认值，确保不会返回Unknown
                 result.packageName = "android"
                 result.activityName = "ForegroundActivity"
                 return result
             }
 
-            Log.d(TAG, "Window info for extraction: ${windowInfo.take(200)}")
+            AppLogger.d(TAG, "Window info for extraction: ${windowInfo.take(200)}")
 
             // 尝试不同的提取方法，按照特异性顺序
             if (!extractFromCurrentFocusShell(windowInfo, result) &&
@@ -672,7 +672,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                             !extractUsingGenericPatternsShell(windowInfo, result)
             ) {
 
-                Log.w(TAG, "Could not extract focus information using any method")
+                AppLogger.w(TAG, "Could not extract focus information using any method")
             }
 
             // 最后的回退：如果我们仍然无法确定任何信息，使用默认值
@@ -680,25 +680,25 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                 if (windowInfo.contains("statusbar") || windowInfo.contains("SystemUI")) {
                     result.packageName = "com.android.systemui"
                     result.activityName = "SystemUI"
-                    Log.d(TAG, "Using SystemUI fallback")
+                    AppLogger.d(TAG, "Using SystemUI fallback")
                 } else if (windowInfo.contains("recents")) {
                     result.packageName = "com.android.systemui"
                     result.activityName = "Recents"
-                    Log.d(TAG, "Using Recents fallback")
+                    AppLogger.d(TAG, "Using Recents fallback")
                 } else {
                     result.packageName = "android"
                     result.activityName = "ForegroundActivity"
-                    Log.d(TAG, "Using last-resort fallback values")
+                    AppLogger.d(TAG, "Using last-resort fallback values")
                 }
             }
 
             // 记录提取结果
-            Log.d(
+            AppLogger.d(
                     TAG,
                     "Final extraction result - package: ${result.packageName}, activity: ${result.activityName}"
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing window info", e)
+            AppLogger.e(TAG, "Error parsing window info", e)
             // 确保即使出现异常，我们也有至少一些默认值
             if (result.packageName == null) result.packageName = "android"
             if (result.activityName == null) result.activityName = "ForegroundActivity"
@@ -730,12 +730,12 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                     // 包含包和活动的模式
                     result.packageName = match.groupValues[1]
                     result.activityName = match.groupValues[2]
-                    Log.d(TAG, "Extracted from mCurrentFocus pattern (full): ${pattern.pattern}")
+                    AppLogger.d(TAG, "Extracted from mCurrentFocus pattern (full): ${pattern.pattern}")
                     return true
                 } else if (match.groupValues.size >= 2) {
                     // 只有包名的模式
                     result.packageName = match.groupValues[1]
-                    Log.d(TAG, "Extracted package from mCurrentFocus pattern: ${pattern.pattern}")
+                    AppLogger.d(TAG, "Extracted package from mCurrentFocus pattern: ${pattern.pattern}")
                     // 返回false以允许其他方法提取活动名称
                     return false
                 }
@@ -767,12 +767,12 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                     // 包含包和活动的完全匹配
                     result.packageName = match.groupValues[1]
                     result.activityName = match.groupValues[2]
-                    Log.d(TAG, "Extracted from mFocusedApp pattern (full): ${pattern.pattern}")
+                    AppLogger.d(TAG, "Extracted from mFocusedApp pattern (full): ${pattern.pattern}")
                     return true
                 } else if (match.groupValues.size >= 2) {
                     // 只有包的部分匹配
                     result.packageName = match.groupValues[1]
-                    Log.d(TAG, "Extracted package from mFocusedApp pattern: ${pattern.pattern}")
+                    AppLogger.d(TAG, "Extracted package from mFocusedApp pattern: ${pattern.pattern}")
                     // 返回false以允许通过其他方法提取活动名称
                     return false
                 }
@@ -797,7 +797,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                 if (match != null && match.groupValues.size >= 2) {
                     result.packageName = match.groupValues[1]
                     result.activityName = "Launcher"
-                    Log.d(TAG, "Extracted launcher info")
+                    AppLogger.d(TAG, "Extracted launcher info")
                     return true
                 }
             }
@@ -806,7 +806,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
             // 使用默认的启动器包和名称
             result.packageName = "com.android.launcher3"
             result.activityName = "Launcher"
-            Log.d(TAG, "Using default launcher info")
+            AppLogger.d(TAG, "Using default launcher info")
             return true
         }
         return false
@@ -830,7 +830,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
             if (match != null && match.groupValues.size >= 3) {
                 result.packageName = match.groupValues[1]
                 result.activityName = match.groupValues[2]
-                Log.d(TAG, "Extracted from topActivity pattern: ${pattern.pattern}")
+                AppLogger.d(TAG, "Extracted from topActivity pattern: ${pattern.pattern}")
                 return true
             }
         }
@@ -841,7 +841,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
         if (recentMatch != null && recentMatch.groupValues.size >= 3) {
             result.packageName = recentMatch.groupValues[1]
             result.activityName = recentMatch.groupValues[2]
-            Log.d(TAG, "Extracted from Recent tasks pattern")
+            AppLogger.d(TAG, "Extracted from Recent tasks pattern")
             return true
         }
 
@@ -878,7 +878,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
                         result.packageName = potentialPackage
                         foundAny = true
-                        Log.d(TAG, "Found package name using fallback pattern: ${pattern.pattern}")
+                        AppLogger.d(TAG, "Found package name using fallback pattern: ${pattern.pattern}")
                         break
                     }
                 }
@@ -908,7 +908,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
                         result.activityName = activityName
                         foundAny = true
-                        Log.d(TAG, "Found activity name using fallback pattern: ${pattern.pattern}")
+                        AppLogger.d(TAG, "Found activity name using fallback pattern: ${pattern.pattern}")
                         break
                     }
                 }
@@ -922,7 +922,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
             if (packageParts.isNotEmpty()) {
                 val lastPart = packageParts.last().capitalize()
                 result.activityName = "${lastPart}Activity"
-                Log.d(TAG, "Guessed activity name from package: ${result.activityName}")
+                AppLogger.d(TAG, "Guessed activity name from package: ${result.activityName}")
                 foundAny = true
             }
         }
@@ -935,7 +935,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
     /** 使用uiautomator点击元素 */
     private suspend fun clickElementWithUiautomator(tool: AITool): ToolResult {
-        Log.d(TAG, "Using uiautomator to click element")
+        AppLogger.d(TAG, "Using uiautomator to click element")
 
         val resourceId = tool.parameters.find { it.name == "resourceId" }?.value
         val className = tool.parameters.find { it.name == "className" }?.value
@@ -944,7 +944,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
         try {
             // 先尝试获取UI dump
-            Log.d(TAG, "Dumping UI hierarchy to find element")
+            AppLogger.d(TAG, "Dumping UI hierarchy to find element")
             val dumpCommand = "uiautomator dump /sdcard/window_dump.xml"
             val result = AndroidShellExecutor.executeShellCommand(dumpCommand)
 
@@ -1108,7 +1108,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error clicking element with uiautomator", e)
+            AppLogger.e(TAG, "Error clicking element with uiautomator", e)
             withContext(Dispatchers.Main) {
                 operationOverlay.hide() // 隐藏反馈（在主线程上执行）
             }
@@ -1123,7 +1123,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
             try {
                 Runtime.getRuntime().exec("rm /sdcard/window_dump.xml")
             } catch (cleanupEx: Exception) {
-                Log.e(TAG, "Error cleaning up temp file", cleanupEx)
+                AppLogger.e(TAG, "Error cleaning up temp file", cleanupEx)
             }
         }
     }

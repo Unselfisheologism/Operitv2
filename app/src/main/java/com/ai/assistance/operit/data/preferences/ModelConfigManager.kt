@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.data.preferences
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.core.edit
@@ -81,7 +81,7 @@ class ModelConfigManager(private val context: Context) {
                 preferences[CONFIG_LIST_KEY] = json.encodeToString(listOf(DEFAULT_CONFIG_ID))
             }
         } else {
-            Log.d("CONFIG_TIMING", "配置列表不为空，跳过初始化")
+            AppLogger.d("CONFIG_TIMING", "配置列表不为空，跳过初始化")
         }
     }
 
@@ -169,7 +169,7 @@ class ModelConfigManager(private val context: Context) {
     fun getModelConfigFlow(configId: String): Flow<ModelConfigData> {
         return context.modelConfigDataStore.data.map { preferences ->
             val config = loadConfigFromDataStore(configId) ?: ModelConfigData(id = configId, name = "配置 $configId")
-            Log.d("CONFIG_TIMING", "getModelConfigFlow($configId) 返回配置，apiKey: '${config.apiKey}'")
+            AppLogger.d("CONFIG_TIMING", "getModelConfigFlow($configId) 返回配置，apiKey: '${config.apiKey}'")
             config
         }
     }
@@ -571,7 +571,7 @@ class ModelConfigManager(private val context: Context) {
                     parameters.add(convertedParam)
                 }
             } catch (e: Exception) {
-                Log.e("ModelConfigManager", "Failed to parse or convert custom parameters", e)
+                AppLogger.e("ModelConfigManager", "Failed to parse or convert custom parameters", e)
             }
         }
 
@@ -640,7 +640,7 @@ class ModelConfigManager(private val context: Context) {
             
             return Triple(newCount, updatedCount, skippedCount)
         } catch (e: Exception) {
-            Log.e("ModelConfigManager", "导入配置失败", e)
+            AppLogger.e("ModelConfigManager", "导入配置失败", e)
             throw Exception("导入失败：${e.localizedMessage ?: e.message}")
         }
     }

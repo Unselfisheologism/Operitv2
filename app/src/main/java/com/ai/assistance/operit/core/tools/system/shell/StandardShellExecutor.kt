@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.system.shell
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -38,7 +38,7 @@ class StandardShellExecutor(private val context: Context) : ShellExecutor {
 
     override suspend fun executeCommand(command: String): ShellExecutor.CommandResult =
             withContext(Dispatchers.IO) {
-                Log.d(TAG, "Executing standard command: $command")
+                AppLogger.d(TAG, "Executing standard command: $command")
 
                 try {
                     // 判断是否包含shell特殊字符
@@ -82,7 +82,7 @@ class StandardShellExecutor(private val context: Context) : ShellExecutor {
                             exitCode
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error executing standard command", e)
+                    AppLogger.e(TAG, "Error executing standard command", e)
                     return@withContext ShellExecutor.CommandResult(
                             false,
                             "",
@@ -144,7 +144,7 @@ class StandardShellExecutor(private val context: Context) : ShellExecutor {
                             exitCode
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error executing shell command", e)
+                    AppLogger.e(TAG, "Error executing shell command", e)
                     return@withContext ShellExecutor.CommandResult(
                             false,
                             "",

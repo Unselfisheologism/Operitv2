@@ -3,7 +3,7 @@ package com.ai.assistance.operit.util
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
@@ -22,7 +22,7 @@ object ImagePoolManager {
         set(value) {
             if (value > 0) {
                 field = value
-                Log.d(TAG, "池子大小限制已更新为: $value")
+                AppLogger.d(TAG, "池子大小限制已更新为: $value")
             }
         }
     
@@ -43,7 +43,7 @@ object ImagePoolManager {
         cacheDir = File(cacheDirPath, "image_pool")
         if (!cacheDir!!.exists()) {
             cacheDir!!.mkdirs()
-            Log.d(TAG, "创建图片缓存目录: ${cacheDir!!.absolutePath}")
+            AppLogger.d(TAG, "创建图片缓存目录: ${cacheDir!!.absolutePath}")
         }
         loadFromDisk()
     }
@@ -57,7 +57,7 @@ object ImagePoolManager {
         override fun removeEldestEntry(eldest: Map.Entry<String, ImageData>?): Boolean {
             val shouldRemove = size > maxPoolSize
             if (shouldRemove && eldest != null) {
-                Log.d(TAG, "池子已满，移除最旧的图片: ${eldest.key}")
+                AppLogger.d(TAG, "池子已满，移除最旧的图片: ${eldest.key}")
                 // 从磁盘删除
                 deleteFromDisk(eldest.key)
             }
@@ -75,20 +75,20 @@ object ImagePoolManager {
         try {
             val file = File(filePath)
             if (!file.exists() || !file.isFile) {
-                Log.e(TAG, "文件不存在或不是文件: $filePath")
+                AppLogger.e(TAG, "文件不存在或不是文件: $filePath")
                 return "error"
             }
 
             val mimeType = getMimeTypeFromFile(file)
             if (mimeType == null) {
-                Log.e(TAG, "无法识别的图片格式: $filePath")
+                AppLogger.e(TAG, "无法识别的图片格式: $filePath")
                 return "error"
             }
 
             val fileBytes = try {
                 FileInputStream(file).use { it.readBytes() }
             } catch (e: Exception) {
-                Log.e(TAG, "读取文件失败", e)
+                AppLogger.e(TAG, "读取文件失败", e)
                 return "error"
             }
 
@@ -96,11 +96,11 @@ object ImagePoolManager {
             val supportedMimeTypes = listOf("image/jpeg", "image/png", "image/gif", "image/webp")
 
             val (finalBytes, finalMimeType) = if (!supportedMimeTypes.contains(mimeType)) {
-                Log.d(TAG, "尝试转换不受支持的图片格式: $mimeType -> image/png")
+                AppLogger.d(TAG, "尝试转换不受支持的图片格式: $mimeType -> image/png")
                 try {
                     val bitmap = BitmapFactory.decodeByteArray(fileBytes, 0, fileBytes.size)
                     if (bitmap == null) {
-                        Log.e(TAG, "无法将文件解码为位图: $filePath")
+                        AppLogger.e(TAG, "无法将文件解码为位图: $filePath")
                         return "error"
                     }
                     ByteArrayOutputStream().use { outputStream ->
@@ -110,7 +110,7 @@ object ImagePoolManager {
                         Pair(pngBytes, "image/png")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "图片转换失败: $filePath", e)
+                    AppLogger.e(TAG, "图片转换失败: $filePath", e)
                     return "error"
                 }
             } else {
@@ -126,10 +126,10 @@ object ImagePoolManager {
             // 保存到本地缓存
             saveToDisk(id, imageData)
 
-            Log.d(TAG, "成功添加图片到池子: $id, MIME类型: $finalMimeType, 大小: ${base64.length} 字符")
+            AppLogger.d(TAG, "成功添加图片到池子: $id, MIME类型: $finalMimeType, 大小: ${base64.length} 字符")
             return id
         } catch (e: Exception) {
-            Log.e(TAG, "添加图片时发生异常: $filePath", e)
+            AppLogger.e(TAG, "添加图片时发生异常: $filePath", e)
             return "error"
         }
     }
@@ -141,10 +141,10 @@ object ImagePoolManager {
             val imageData = ImageData(base64, mimeType)
             imagePool[id] = imageData
             saveToDisk(id, imageData)
-            Log.d(TAG, "成功从base64添加图片到池子: $id, MIME类型: $mimeType, 大小: ${base64.length} 字符")
+            AppLogger.d(TAG, "成功从base64添加图片到池子: $id, MIME类型: $mimeType, 大小: ${base64.length} 字符")
             id
         } catch (e: Exception) {
-            Log.e(TAG, "从base64添加图片时发生异常", e)
+            AppLogger.e(TAG, "从base64添加图片时发生异常", e)
             "error"
         }
     }
@@ -159,19 +159,19 @@ object ImagePoolManager {
         // 先从内存缓存获取
         var imageData = imagePool[id]
         if (imageData != null) {
-            Log.d(TAG, "从内存缓存获取图片: $id")
+            AppLogger.d(TAG, "从内存缓存获取图片: $id")
             return imageData
         }
         
         // 如果内存中没有，尝试从磁盘加载
         imageData = loadFromDisk(id)
         if (imageData != null) {
-            Log.d(TAG, "从磁盘缓存加载图片到内存: $id")
+            AppLogger.d(TAG, "从磁盘缓存加载图片到内存: $id")
             imagePool[id] = imageData
             return imageData
         }
         
-        Log.w(TAG, "图片不存在: $id")
+        AppLogger.w(TAG, "图片不存在: $id")
         return null
     }
 
@@ -192,7 +192,7 @@ object ImagePoolManager {
     @Synchronized
     fun removeImage(id: String) {
         if (imagePool.remove(id) != null) {
-            Log.d(TAG, "从内存缓存移除图片: $id")
+            AppLogger.d(TAG, "从内存缓存移除图片: $id")
         }
         deleteFromDisk(id)
     }
@@ -204,7 +204,7 @@ object ImagePoolManager {
     fun clear() {
         imagePool.clear()
         clearDiskCache()
-        Log.d(TAG, "清空图片池和磁盘缓存")
+        AppLogger.d(TAG, "清空图片池和磁盘缓存")
     }
 
     /**
@@ -234,7 +234,7 @@ object ImagePoolManager {
                     BitmapFactory.decodeFile(file.absolutePath, options)
                     options.outMimeType
                 } catch (e: Exception) {
-                    Log.e(TAG, "无法通过文件头识别MIME类型", e)
+                    AppLogger.e(TAG, "无法通过文件头识别MIME类型", e)
                     null
                 }
             }
@@ -251,7 +251,7 @@ object ImagePoolManager {
                 Base64.encodeToString(bytes, Base64.NO_WRAP)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "读取文件失败", e)
+            AppLogger.e(TAG, "读取文件失败", e)
             null
         }
     }
@@ -261,7 +261,7 @@ object ImagePoolManager {
      */
     private fun saveToDisk(id: String, imageData: ImageData) {
         if (cacheDir == null) {
-            Log.w(TAG, "缓存目录未初始化，跳过磁盘保存")
+            AppLogger.w(TAG, "缓存目录未初始化，跳过磁盘保存")
             return
         }
         
@@ -274,9 +274,9 @@ object ImagePoolManager {
             // 保存MIME类型
             FileOutputStream(metaFile).use { it.write(imageData.mimeType.toByteArray()) }
             
-            Log.d(TAG, "图片已保存到磁盘: $id")
+            AppLogger.d(TAG, "图片已保存到磁盘: $id")
         } catch (e: Exception) {
-            Log.e(TAG, "保存图片到磁盘失败: $id", e)
+            AppLogger.e(TAG, "保存图片到磁盘失败: $id", e)
         }
     }
     
@@ -299,7 +299,7 @@ object ImagePoolManager {
             
             return ImageData(base64, mimeType)
         } catch (e: Exception) {
-            Log.e(TAG, "从磁盘加载图片失败: $id", e)
+            AppLogger.e(TAG, "从磁盘加载图片失败: $id", e)
             return null
         }
     }
@@ -323,9 +323,9 @@ object ImagePoolManager {
                 }
             }
             
-            Log.d(TAG, "从磁盘加载了 $loadedCount 张图片到内存")
+            AppLogger.d(TAG, "从磁盘加载了 $loadedCount 张图片到内存")
         } catch (e: Exception) {
-            Log.e(TAG, "从磁盘加载图片失败", e)
+            AppLogger.e(TAG, "从磁盘加载图片失败", e)
         }
     }
     
@@ -342,9 +342,9 @@ object ImagePoolManager {
             dataFile.delete()
             metaFile.delete()
             
-            Log.d(TAG, "从磁盘删除图片: $id")
+            AppLogger.d(TAG, "从磁盘删除图片: $id")
         } catch (e: Exception) {
-            Log.e(TAG, "从磁盘删除图片失败: $id", e)
+            AppLogger.e(TAG, "从磁盘删除图片失败: $id", e)
         }
     }
     
@@ -356,9 +356,9 @@ object ImagePoolManager {
         
         try {
             cacheDir!!.listFiles()?.forEach { it.delete() }
-            Log.d(TAG, "已清空磁盘缓存")
+            AppLogger.d(TAG, "已清空磁盘缓存")
         } catch (e: Exception) {
-            Log.e(TAG, "清空磁盘缓存失败", e)
+            AppLogger.e(TAG, "清空磁盘缓存失败", e)
         }
     }
 }

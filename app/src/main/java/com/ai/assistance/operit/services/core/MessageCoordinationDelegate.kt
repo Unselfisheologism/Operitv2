@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.services.core
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.EnhancedAIService
 import com.ai.assistance.operit.core.chat.AIMessageManager
 import com.ai.assistance.operit.data.model.FunctionType
@@ -58,7 +58,7 @@ class MessageCoordinationDelegate(
     fun sendUserMessage(promptFunctionType: PromptFunctionType = PromptFunctionType.CHAT) {
         // 检查是否有当前对话，如果没有则创建一个新对话
         if (chatHistoryDelegate.currentChatId.value == null) {
-            Log.d(TAG, "当前没有活跃对话，自动创建新对话")
+            AppLogger.d(TAG, "当前没有活跃对话，自动创建新对话")
 
             // 使用 coroutineScope 启动协程
             coroutineScope.launch {
@@ -73,12 +73,12 @@ class MessageCoordinationDelegate(
                 }
 
                 if (chatHistoryDelegate.currentChatId.value == null) {
-                    Log.e(TAG, "创建新对话超时，无法发送消息")
+                    AppLogger.e(TAG, "创建新对话超时，无法发送消息")
                     uiStateDelegate.showErrorMessage("无法创建新对话，请重试")
                     return@launch
                 }
 
-                Log.d(
+                AppLogger.d(
                     TAG,
                     "新对话创建完成，ID: ${chatHistoryDelegate.currentChatId.value}，现在发送消息"
                 )
@@ -240,7 +240,7 @@ class MessageCoordinationDelegate(
                 )
                 uiStateDelegate.showToast("记忆已手动更新")
             } catch (e: Exception) {
-                Log.e(TAG, "手动更新记忆失败", e)
+                AppLogger.e(TAG, "手动更新记忆失败", e)
                 uiStateDelegate.showErrorMessage("手动更新记忆失败: ${e.message}")
             }
         }
@@ -268,7 +268,7 @@ class MessageCoordinationDelegate(
      * 处理Token超限的情况，触发一次历史总结并继续。
      */
     fun handleTokenLimitExceeded() {
-        Log.d(TAG, "接收到Token超限信号，开始执行总结并继续...")
+        AppLogger.d(TAG, "接收到Token超限信号，开始执行总结并继续...")
         summaryJob = coroutineScope.launch {
             summarizeHistory(autoContinue = true)
             summaryJob = null
@@ -280,7 +280,7 @@ class MessageCoordinationDelegate(
      */
     fun cancelSummary() {
         if (_isSummarizing.value) {
-            Log.d(TAG, "取消正在进行的总结操作")
+            AppLogger.d(TAG, "取消正在进行的总结操作")
             summaryJob?.cancel()
             summaryJob = null
             _isSummarizing.value = false
@@ -298,7 +298,7 @@ class MessageCoordinationDelegate(
         promptFunctionType: PromptFunctionType? = null
     ): Boolean {
         if (_isSummarizing.value) {
-            Log.d(TAG, "已在总结中，忽略本次请求")
+            AppLogger.d(TAG, "已在总结中，忽略本次请求")
             return false
         }
         _isSummarizing.value = true
@@ -317,7 +317,7 @@ class MessageCoordinationDelegate(
 
             val currentMessages = chatHistoryDelegate.chatHistory.value
             if (currentMessages.isEmpty()) {
-                Log.d(TAG, "历史记录为空，无需总结")
+                AppLogger.d(TAG, "历史记录为空，无需总结")
                 return false
             }
 
@@ -337,17 +337,17 @@ class MessageCoordinationDelegate(
                 withContext(Dispatchers.Main) {
                     tokenStatsDelegate.setTokenCounts(inputTokens, outputTokens, newWindowSize)
                 }
-                Log.d(TAG, "总结完成，更新窗口大小为: $newWindowSize")
+                AppLogger.d(TAG, "总结完成，更新窗口大小为: $newWindowSize")
                 summarySuccess = true
             } else {
-                Log.w(TAG, "总结失败或无需总结")
+                AppLogger.w(TAG, "总结失败或无需总结")
             }
         } catch (e: CancellationException) {
             // 总结被取消，这是正常流程
-            Log.d(TAG, "总结操作被取消")
+            AppLogger.d(TAG, "总结操作被取消")
             throw e // 重新抛出取消异常，让协程正确取消
         } catch (e: Exception) {
-            Log.e(TAG, "生成总结时出错: ${e.message}", e)
+            AppLogger.e(TAG, "生成总结时出错: ${e.message}", e)
             uiStateDelegate.showErrorMessage("总结生成失败，请检查你的功能模型:总结模型")
         } finally {
             _isSummarizing.value = false
@@ -359,7 +359,7 @@ class MessageCoordinationDelegate(
 
             if (summarySuccess) {
                 if (autoContinue) {
-                    Log.d(TAG, "总结成功，自动继续对话...")
+                    AppLogger.d(TAG, "总结成功，自动继续对话...")
                     // 使用传入的 promptFunctionType 或当前保存的 promptFunctionType，保持提示词一致性
                     val continuationPromptType = promptFunctionType ?: currentPromptFunctionType
                     sendMessageInternal(

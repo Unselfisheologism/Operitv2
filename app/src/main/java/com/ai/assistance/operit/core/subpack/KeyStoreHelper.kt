@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.subpack
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.io.File
 import java.io.FileInputStream
@@ -38,7 +38,7 @@ class KeyStoreHelper {
 
                 return position > 0
             } catch (e: Exception) {
-                Log.e(TAG, "注册BouncyCastle提供程序失败: ${e.message}", e)
+                AppLogger.e(TAG, "注册BouncyCastle提供程序失败: ${e.message}", e)
                 return false
             }
         }
@@ -62,7 +62,7 @@ class KeyStoreHelper {
                     return KeyStore.getInstance(keyStoreType)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "获取${keyStoreType}密钥库实例失败: ${e.message}", e)
+                AppLogger.e(TAG, "获取${keyStoreType}密钥库实例失败: ${e.message}", e)
                 return null
             }
         }
@@ -93,7 +93,7 @@ class KeyStoreHelper {
                     return keyStore.aliases().hasMoreElements()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "$type 密钥库验证失败: ${e.message}")
+                AppLogger.e(TAG, "$type 密钥库验证失败: ${e.message}")
                 return false
             }
         }
@@ -129,7 +129,7 @@ class KeyStoreHelper {
                     val bytes = input.readBytes()
 
                     if (bytes.size < 1000) {
-                        Log.e(TAG, "密钥库文件大小异常: ${bytes.size}字节")
+                        AppLogger.e(TAG, "密钥库文件大小异常: ${bytes.size}字节")
                         return null
                     }
 
@@ -145,7 +145,7 @@ class KeyStoreHelper {
                     null
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "加载内置密钥库失败: ${e.message}", e)
+                AppLogger.e(TAG, "加载内置密钥库失败: ${e.message}", e)
                 return null
             }
         }

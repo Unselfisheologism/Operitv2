@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.packages.dialogs
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -259,7 +259,7 @@ fun ScriptExecutionDialog(
                                         interpreter
                                             .executeScript(scriptText, aiTool)
                                             .catch { e ->
-                                                Log.e("ScriptExecutionDialog", "Flow collection error", e)
+                                                AppLogger.e("ScriptExecutionDialog", "Flow collection error", e)
                                                 val errorResult = ToolResult(
                                                     toolName = "${packageName}:${tool.name}",
                                                     success = false,
@@ -284,7 +284,7 @@ fun ScriptExecutionDialog(
                                             }
                                     }
                                 } catch (e: Exception) {
-                                    Log.e("ScriptExecutionDialog", "Failed to execute script", e)
+                                    AppLogger.e("ScriptExecutionDialog", "Failed to execute script", e)
                                     withContext(Dispatchers.Main) {
                                         val finalError = ToolResult(
                                             toolName = "${packageName}:${tool.name}",

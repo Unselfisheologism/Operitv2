@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.util
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 
 object TtsCleaner {
     private const val TAG = "TtsCleaner"
@@ -15,17 +15,17 @@ object TtsCleaner {
      */
     fun clean(text: String, regexPattern: String): String {
         if (regexPattern.isBlank()) {
-            Log.d(TAG, "clean(single): Empty regex pattern, returning original text")
+            AppLogger.d(TAG, "clean(single): Empty regex pattern, returning original text")
             return text
         }
 
         return try {
             val regex = Regex(regexPattern)
             val cleanedText = text.replace(regex, "")
-            Log.d(TAG, "clean(single): Original='$text' | Pattern='$regexPattern' | Cleaned='$cleanedText'")
+            AppLogger.d(TAG, "clean(single): Original='$text' | Pattern='$regexPattern' | Cleaned='$cleanedText'")
             cleanedText
         } catch (e: Exception) {
-            Log.e(TAG, "clean(single): Invalid regex pattern '$regexPattern', returning original text", e)
+            AppLogger.e(TAG, "clean(single): Invalid regex pattern '$regexPattern', returning original text", e)
             text
         }
     }
@@ -39,11 +39,11 @@ object TtsCleaner {
      */
     fun clean(text: String, regexPatterns: List<String>): String {
         if (regexPatterns.isEmpty()) {
-            Log.d(TAG, "clean(list): Empty pattern list, returning original text")
+            AppLogger.d(TAG, "clean(list): Empty pattern list, returning original text")
             return text
         }
 
-        Log.d(TAG, "clean(list): Starting with text='$text' | Patterns count=${regexPatterns.size}")
+        AppLogger.d(TAG, "clean(list): Starting with text='$text' | Patterns count=${regexPatterns.size}")
         
         var cleanedText = text
         regexPatterns.forEachIndexed { index, pattern ->
@@ -53,19 +53,19 @@ object TtsCleaner {
                     val beforeClean = cleanedText
                     cleanedText = cleanedText.replace(regex, "")
                     if (beforeClean != cleanedText) {
-                        Log.d(TAG, "clean(list): Pattern[$index]='$pattern' matched | Before='$beforeClean' | After='$cleanedText'")
+                        AppLogger.d(TAG, "clean(list): Pattern[$index]='$pattern' matched | Before='$beforeClean' | After='$cleanedText'")
                     } else {
-                        Log.d(TAG, "clean(list): Pattern[$index]='$pattern' no match")
+                        AppLogger.d(TAG, "clean(list): Pattern[$index]='$pattern' no match")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "clean(list): Invalid regex pattern[$index]='$pattern', skipping", e)
+                    AppLogger.e(TAG, "clean(list): Invalid regex pattern[$index]='$pattern', skipping", e)
                 }
             } else {
-                Log.d(TAG, "clean(list): Pattern[$index] is blank, skipping")
+                AppLogger.d(TAG, "clean(list): Pattern[$index] is blank, skipping")
             }
         }
         
-        Log.d(TAG, "clean(list): Final result='$cleanedText'")
+        AppLogger.d(TAG, "clean(list): Final result='$cleanedText'")
         return cleanedText
     }
 }

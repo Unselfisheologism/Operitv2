@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.api.chat.llmprovider
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.model.ApiProviderType
 import com.ai.assistance.operit.data.model.ModelOption
 import com.ai.assistance.operit.data.model.ModelParameter
@@ -127,11 +127,11 @@ open class OpenAIProvider(
                 val chunkMessage = message.substring(start, end)
 
                 // 打印带有编号的日志
-                Log.d(tag, "$prefix Part ${i + 1}/$chunkCount: $chunkMessage")
+                AppLogger.d(tag, "$prefix Part ${i + 1}/$chunkCount: $chunkMessage")
             }
         } else {
             // 消息长度在限制之内，直接打印
-            Log.d(tag, "$prefix$message")
+            AppLogger.d(tag, "$prefix$message")
         }
     }
 
@@ -143,9 +143,9 @@ open class OpenAIProvider(
         activeResponse?.let {
             try {
                 it.close()
-                Log.d("AIService", "已强制关闭Response流")
+                AppLogger.d("AIService", "已强制关闭Response流")
             } catch (e: Exception) {
-                Log.w("AIService", "关闭Response时出错: ${e.message}")
+                AppLogger.w("AIService", "关闭Response时出错: ${e.message}")
             }
         }
         activeResponse = null
@@ -154,12 +154,12 @@ open class OpenAIProvider(
         activeCall?.let {
             if (!it.isCanceled()) {
                 it.cancel()
-                Log.d("AIService", "已取消当前流式传输，Call已中断")
+                AppLogger.d("AIService", "已取消当前流式传输，Call已中断")
             }
         }
         activeCall = null
 
-        Log.d("AIService", "取消标志已设置，readLine() 将立即被中断")
+        AppLogger.d("AIService", "取消标志已设置，readLine() 将立即被中断")
     }
 
     /**
@@ -195,7 +195,7 @@ open class OpenAIProvider(
 
             Result.success("连接成功！")
         } catch (e: Exception) {
-            Log.e("AIService", "连接测试失败", e)
+            AppLogger.e("AIService", "连接测试失败", e)
             Result.failure(IOException("连接测试失败: ${e.message}", e))
         }
     }
@@ -258,7 +258,7 @@ open class OpenAIProvider(
                                 else -> null
                             }
                         } catch (e: Exception) {
-                            Log.w("AIService", "OBJECT参数解析失败: ${param.apiName}", e)
+                            AppLogger.w("AIService", "OBJECT参数解析失败: ${param.apiName}", e)
                             null
                         }
                         if (parsed != null) {
@@ -269,7 +269,7 @@ open class OpenAIProvider(
                         }
                     }
                 }
-                Log.d("AIService", "添加参数 ${param.apiName} = ${param.currentValue}")
+                AppLogger.d("AIService", "添加参数 ${param.apiName} = ${param.currentValue}")
             }
         }
 
@@ -285,7 +285,7 @@ open class OpenAIProvider(
                 jsonObject.put("tools", tools)
                 jsonObject.put("tool_choice", "auto") // 让模型自动决定是否使用工具
                 toolsJson = tools.toString() // 保存工具定义用于token计算
-                Log.d("AIService", "Tool Call已启用，添加了 ${tools.length()} 个工具定义")
+                AppLogger.d("AIService", "Tool Call已启用，添加了 ${tools.length()} 个工具定义")
             }
         }
 
@@ -318,7 +318,7 @@ open class OpenAIProvider(
         if (!supportsVision) {
             if (ImageLinkParser.hasImageLinks(text)) {
                 val textWithoutLinks = ImageLinkParser.removeImageLinks(text).trim()
-                Log.w(
+                AppLogger.w(
                     "AIService",
                     "模型不支持图片处理，已移除图片链接。原始文本长度: ${text.length}, 处理后: ${textWithoutLinks.length}"
                 )
@@ -404,7 +404,7 @@ open class OpenAIProvider(
                     val lastMessage = mergedHistory.last()
                     mergedHistory[mergedHistory.size - 1] =
                         Pair(lastMessage.first, lastMessage.second + "\n" + content)
-                    Log.d("AIService", "合并连续的 $role 消息")
+                    AppLogger.d("AIService", "合并连续的 $role 消息")
                 } else {
                     mergedHistory.add(Pair(role, content))
                 }
@@ -421,7 +421,7 @@ open class OpenAIProvider(
 
                         // 检查是否为空消息，如果是则填充 "[空消息]"
                         val effectiveContent = if (content.isBlank()) {
-                            Log.d("AIService", "发现空的assistant消息，填充为[空消息]")
+                            AppLogger.d("AIService", "发现空的assistant消息，填充为[空消息]")
                             "[Empty]"
                         } else if (textContent.isNotEmpty()) {
                             textContent
@@ -467,11 +467,11 @@ open class OpenAIProvider(
                                     // 有对应的结果
                                     val (_, resultContent) = resultsList[i]
                                     toolMessage.put("content", resultContent)
-                                    Log.d("AIService", "历史XML→ToolResult: ID=$toolCallId")
+                                    AppLogger.d("AIService", "历史XML→ToolResult: ID=$toolCallId")
                                 } else {
                                     // 没有结果，补充取消状态
                                     toolMessage.put("content", "User cancelled")
-                                    Log.d("AIService", "补充取消状态: ID=$toolCallId")
+                                    AppLogger.d("AIService", "补充取消状态: ID=$toolCallId")
                                 }
                                 messagesArray.put(toolMessage)
                             }
@@ -480,7 +480,7 @@ open class OpenAIProvider(
 
                             // 如果有多余的tool_result，记录警告
                             if (resultCount > callCount) {
-                                Log.w(
+                                AppLogger.w(
                                     "AIService",
                                     "发现多余的tool_result: $resultCount results vs $callCount tool_calls"
                                 )
@@ -496,7 +496,7 @@ open class OpenAIProvider(
                             historyMessage.put("role", role)
                             historyMessage.put("content", buildContentField(textContent))
                             messagesArray.put(historyMessage)
-                            Log.d(
+                            AppLogger.d(
                                 "AIService",
                                 "历史user消息有剩余文本: length=${textContent.length}, preview=${
                                     textContent.take(100)
@@ -509,9 +509,9 @@ open class OpenAIProvider(
                             historyMessage.put("role", role)
                             historyMessage.put("content", buildContentField(content))
                             messagesArray.put(historyMessage)
-                            Log.d("AIService", "历史user消息无tool_call处理，保留原始内容")
+                            AppLogger.d("AIService", "历史user消息无tool_call处理，保留原始内容")
                         } else {
-                            Log.d("AIService", "历史user消息已转换为tool消息，无剩余文本")
+                            AppLogger.d("AIService", "历史user消息已转换为tool消息，无剩余文本")
                         }
                     } else {
                         // system等其他角色正常处理
@@ -527,7 +527,7 @@ open class OpenAIProvider(
 
                     // 检查assistant角色的空消息
                     val effectiveContent = if (role == "assistant" && content.isBlank()) {
-                        Log.d("AIService", "发现空的assistant消息，填充为[空消息]")
+                        AppLogger.d("AIService", "发现空的assistant消息，填充为[空消息]")
                         "[Empty]"
                     } else {
                         content
@@ -651,7 +651,7 @@ open class OpenAIProvider(
                 try {
                     JSONObject(argumentsJson)
                 } catch (e: Exception) {
-                    Log.w("OpenAIProvider", "Failed to parse tool arguments: $argumentsJson", e)
+                    AppLogger.w("OpenAIProvider", "Failed to parse tool arguments: $argumentsJson", e)
                     JSONObject()
                 }
             } else {
@@ -798,7 +798,7 @@ open class OpenAIProvider(
      */
     private fun checkCancellation(exception: Exception? = null) {
         if (isManuallyCancelled) {
-            Log.d("AIService", "请求被用户取消，停止重试。")
+            AppLogger.d("AIService", "请求被用户取消，停止重试。")
             throw UserCancellationException("请求已被用户取消", exception)
         }
     }
@@ -818,11 +818,11 @@ open class OpenAIProvider(
 
         val newRetryCount = retryCount + 1
         if (newRetryCount >= maxRetries) {
-            Log.e("AIService", "【发送消息】$errorType 且达到最大重试次数", exception)
+            AppLogger.e("AIService", "【发送消息】$errorType 且达到最大重试次数", exception)
             throw IOException(errorMessage)
         }
 
-        Log.w("AIService", "【发送消息】$errorType，正在进行第 $newRetryCount 次重试...", exception)
+        AppLogger.w("AIService", "【发送消息】$errorType，正在进行第 $newRetryCount 次重试...", exception)
         onNonFatalError("【$errorType，正在进行第 $newRetryCount 次重试...】")
         delay(1000L * (1 shl (newRetryCount - 1)))
 
@@ -874,7 +874,7 @@ open class OpenAIProvider(
             })
 
             callIndex++
-            Log.d("AIService", "XML→ToolCall: $toolName -> ID: $callId")
+            AppLogger.d("AIService", "XML→ToolCall: $toolName -> ID: $callId")
 
             // 从文本内容中移除tool标签
             textContent = textContent.replace(match.value, "")
@@ -918,7 +918,7 @@ open class OpenAIProvider(
             // 从文本内容中移除tool_result标签（包括前后的空白符）
             textContent = textContent.replace(match.value, "").trim()
 
-            Log.d(
+            AppLogger.d(
                 "AIService",
                 "解析tool_result #$resultIndex, content length=${resultContent.length}"
             )
@@ -975,7 +975,7 @@ open class OpenAIProvider(
             emitter.handleJsonEvents(events)
             emitter.emitTag("\n</tool>")
             state.toolCallState.closed[prevIndex] = true
-            Log.d("AIService", "检测到工具切换，关闭前一个工具 index=$prevIndex")
+            AppLogger.d("AIService", "检测到工具切换，关闭前一个工具 index=$prevIndex")
         }
     }
 
@@ -1084,7 +1084,7 @@ open class OpenAIProvider(
                 emitter.handleJsonEvents(events)
                 emitter.emitTag("\n</tool>")
                 state.toolCallState.closed[index] = true
-                Log.d("AIService", "Tool Call流式完成（最后一个工具 index=$index）")
+                AppLogger.d("AIService", "Tool Call流式完成（最后一个工具 index=$index）")
             }
 
             onTokensUpdated(
@@ -1131,7 +1131,7 @@ open class OpenAIProvider(
             // 当收到第一个有效内容时，标记不再是首次响应
             if (state.isFirstResponse) {
                 state.isFirstResponse = false
-                Log.d("AIService", "【发送消息】收到首个有效内容片段")
+                AppLogger.d("AIService", "【发送消息】收到首个有效内容片段")
             }
 
             emitter.emitContent(regularContent)
@@ -1215,7 +1215,7 @@ open class OpenAIProvider(
                         state.isInReasoningMode = false
                         emitter.emitTag("</think>")
                     }
-                    Log.d("AIService", "【发送消息】收到流结束标记[DONE]")
+                    AppLogger.d("AIService", "【发送消息】收到流结束标记[DONE]")
                     break
                 }
 
@@ -1230,26 +1230,26 @@ open class OpenAIProvider(
                     val jsonResponse = JSONObject(data)
                     processResponseChunk(jsonResponse, state, emitter, onTokensUpdated)
                 } catch (e: Exception) {
-                    Log.w("AIService", "【发送消息】JSON解析错误: ${e.message}")
+                    AppLogger.w("AIService", "【发送消息】JSON解析错误: ${e.message}")
                 }
             }
             
-            Log.d(
+            AppLogger.d(
                 "AIService",
                 "【发送消息】响应流处理完成，总块数: ${state.chunkCount}，输出token: ${tokenCacheManager.outputTokenCount}"
             )
         } catch (e: kotlinx.coroutines.CancellationException) {
             // 协程被取消（外层 scope 取消），直接退出
-            Log.d("AIService", "【发送消息】协程已取消")
+            AppLogger.d("AIService", "【发送消息】协程已取消")
             throw e
         } catch (e: IOException) {
             // 捕获IO异常，可能是由于 response.close() 导致的取消，也可能是网络中断
             if (isManuallyCancelled) {
-                Log.d("AIService", "【发送消息】流式传输已被用户取消")
+                AppLogger.d("AIService", "【发送消息】流式传输已被用户取消")
                 throw UserCancellationException("请求已被用户取消", e)
             } else {
                 // 网络中断，准备重试
-                Log.e("AIService", "【发送消息】流式读取时发生IO异常，准备重试", e)
+                AppLogger.e("AIService", "【发送消息】流式读取时发生IO异常，准备重试", e)
                 throw e
             }
         } finally {
@@ -1280,7 +1280,7 @@ open class OpenAIProvider(
             tokenCacheManager.outputTokenCount
         )
 
-        Log.d(
+        AppLogger.d(
             "AIService",
             "【发送消息】开始处理sendMessage请求，消息长度: ${message.length}，历史记录数量: ${chatHistory.size}"
         )
@@ -1302,7 +1302,7 @@ open class OpenAIProvider(
                 val currentHistory: List<Pair<String, String>>
 
                 if (retryCount > 0 && receivedContent.isNotEmpty()) {
-                    Log.d(
+                    AppLogger.d(
                         "AIService",
                         "【重试】准备续写请求，已接收内容长度: ${receivedContent.length}"
                     )
@@ -1319,7 +1319,7 @@ open class OpenAIProvider(
                 }
 
 
-                Log.d(
+                AppLogger.d(
                     "AIService",
                     "【发送消息】准备构建请求体，模型参数数量: ${modelParameters.size}，已启用参数: ${modelParameters.count { it.isEnabled }}"
                 )
@@ -1338,21 +1338,21 @@ open class OpenAIProvider(
                     tokenCacheManager.outputTokenCount
                 )
                 val request = createRequest(requestBody)
-                Log.d(
+                AppLogger.d(
                     "AIService",
                     "【发送消息】请求体构建完成，目标模型: $modelName，API端点: $apiEndpoint"
                 )
 
-                Log.d("AIService", "【发送消息】准备连接到AI服务...")
+                AppLogger.d("AIService", "【发送消息】准备连接到AI服务...")
 
                 // 创建Call对象并保存到activeCall中，以便可以取消
                 val call = client.newCall(request)
                 activeCall = call
 
-                Log.d("AIService", "【发送消息】正在建立连接到服务器...")
+                AppLogger.d("AIService", "【发送消息】正在建立连接到服务器...")
 
                 // 确保在IO线程执行网络请求
-                Log.d("AIService", "【发送消息】切换到IO线程执行网络请求")
+                AppLogger.d("AIService", "【发送消息】切换到IO线程执行网络请求")
                 val response = withContext(Dispatchers.IO) { call.execute() }
 
                 // 保存response引用，以便取消时能强制关闭
@@ -1361,7 +1361,7 @@ open class OpenAIProvider(
                 try {
                     if (!response.isSuccessful) {
                         val errorBody = response.body?.string() ?: "No error details"
-                        Log.e(
+                        AppLogger.e(
                             "AIService",
                             "【发送消息】API请求失败，状态码: ${response.code}，错误信息: $errorBody"
                         )
@@ -1373,7 +1373,7 @@ open class OpenAIProvider(
                         throw IOException("API请求失败，状态码: ${response.code}，错误信息: $errorBody")
                     }
 
-                    Log.d(
+                    AppLogger.d(
                         "AIService",
                         "【发送消息】连接成功(状态码: ${response.code})，准备处理响应..."
                     )
@@ -1383,7 +1383,7 @@ open class OpenAIProvider(
                     if (stream) {
                         // 处理流式响应
                         withContext(Dispatchers.IO) {
-                            Log.d("AIService", "【发送消息】开始读取流式响应")
+                            AppLogger.d("AIService", "【发送消息】开始读取流式响应")
                             val reader = responseBody.charStream().buffered()
                             processStreamingResponse(
                                 reader,
@@ -1394,9 +1394,9 @@ open class OpenAIProvider(
                     } else {
                         // 处理非流式响应
                         withContext(Dispatchers.IO) {
-                            Log.d("AIService", "【发送消息】开始读取非流式响应")
+                            AppLogger.d("AIService", "【发送消息】开始读取非流式响应")
                             val responseText = responseBody.string()
-                            Log.d("AIService", "收到完整响应，长度: ${responseText.length}")
+                            AppLogger.d("AIService", "收到完整响应，长度: ${responseText.length}")
 
                             val emitter = StreamEmitter(receivedContent, ::emit, onTokensUpdated)
 
@@ -1415,7 +1415,7 @@ open class OpenAIProvider(
                                             val xmlToolCalls = convertToolCallsToXml(toolCalls)
                                             if (xmlToolCalls.isNotEmpty()) {
                                                 emitter.emitContent("\n" + xmlToolCalls)
-                                                Log.d(
+                                                AppLogger.d(
                                                     "AIService",
                                                     "Tool Call转XML (非流式): $xmlToolCalls"
                                                 )
@@ -1449,9 +1449,9 @@ open class OpenAIProvider(
                                     }
                                 }
 
-                                Log.d("AIService", "【发送消息】非流式响应处理完成")
+                                AppLogger.d("AIService", "【发送消息】非流式响应处理完成")
                             } catch (e: Exception) {
-                                Log.e("AIService", "【发送消息】解析非流式响应失败", e)
+                                AppLogger.e("AIService", "【发送消息】解析非流式响应失败", e)
                                 throw IOException("解析响应失败: ${e.message}", e)
                             }
                         }
@@ -1460,20 +1460,20 @@ open class OpenAIProvider(
                     // 清理活跃引用
                     activeCall = null
                     activeResponse = null
-                    Log.d("AIService", "【发送消息】响应处理完成，已清理活跃引用")
+                    AppLogger.d("AIService", "【发送消息】响应处理完成，已清理活跃引用")
                 } finally {
                     response.close()
-                    Log.d("AIService", "【发送消息】关闭响应连接")
+                    AppLogger.d("AIService", "【发送消息】关闭响应连接")
                 }
 
                 // 成功处理后返回
-                Log.d(
+                AppLogger.d(
                     "AIService",
                     "【发送消息】请求成功完成，输入token: ${tokenCacheManager.totalInputTokenCount}(缓存:${tokenCacheManager.cachedInputTokenCount})，输出token: ${tokenCacheManager.outputTokenCount}"
                 )
                 return@stream
             } catch (e: NonRetriableException) {
-                Log.e("AIService", "【发送消息】发生不可重试错误", e)
+                AppLogger.e("AIService", "【发送消息】发生不可重试错误", e)
                 throw e // 直接抛出，不重试
             } catch (e: SocketTimeoutException) {
                 lastException = e
@@ -1502,16 +1502,21 @@ open class OpenAIProvider(
             } catch (e: Exception) {
                 checkCancellation(e)
                 // 其他未知异常，不应重试
-                Log.e("AIService", "【发送消息】发生未知异常，停止重试", e)
+                AppLogger.e("AIService", "【发送消息】发生未知异常，停止重试", e)
                 throw IOException("AI响应获取失败: ${e.message}", e)
             }
         }
 
         // 所有重试都失败
-        Log.e(
+        lastException?.let { ex ->
+            AppLogger.e(
+                "AIService",
+                "【发送消息】重试失败，请检查网络连接，最大重试次数: $maxRetries",
+                ex
+            )
+        } ?: AppLogger.e(
             "AIService",
-            "【发送消息】重试失败，请检查网络连接，最大重试次数: $maxRetries",
-            lastException
+            "【发送消息】重试失败，请检查网络连接，最大重试次数: $maxRetries"
         )
         throw IOException("连接超时或中断，已重试 $maxRetries 次: ${lastException?.message}")
     }

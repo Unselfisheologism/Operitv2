@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.chat.webview.workspace.editor
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 
 /**
  * 代码格式化工具，支持 JavaScript、CSS、HTML 的基本格式化
@@ -21,12 +21,12 @@ object CodeFormatter {
                 "css" -> formatCSS(code)
                 "html", "htm" -> formatHTML(code)
                 else -> {
-                    Log.w(TAG, "不支持的语言类型: $language")
+                    AppLogger.w(TAG, "不支持的语言类型: $language")
                     code
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "格式化代码时出错", e)
+            AppLogger.e(TAG, "格式化代码时出错", e)
             code // 出错时返回原始代码
         }
     }

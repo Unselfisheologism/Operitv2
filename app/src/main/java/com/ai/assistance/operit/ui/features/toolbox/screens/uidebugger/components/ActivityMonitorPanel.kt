@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.toolbox.screens.uidebugger.components
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -94,21 +94,21 @@ fun ActivityMonitorPanel(
             try {
                 focusRequester.requestFocus()
                 hasFocus = true
-                Log.d(TAG, "Activity监听启动时已获取输入法焦点")
+                AppLogger.d(TAG, "Activity监听启动时已获取输入法焦点")
             } catch (e: Exception) {
-                Log.w(TAG, "请求焦点失败: ${e.message}")
+                AppLogger.w(TAG, "请求焦点失败: ${e.message}")
                 hasFocus = false
             }
         } else {
             // 停止监听时释放焦点
             hasFocus = false
-            Log.d(TAG, "Activity监听停止时释放输入法焦点")
+            AppLogger.d(TAG, "Activity监听停止时释放输入法焦点")
         }
     }
 
     // 监控状态变化
     LaunchedEffect(isListening, events.size) {
-        Log.d(TAG, "面板状态更新: isListening=$isListening, events.size=${events.size}")
+        AppLogger.d(TAG, "面板状态更新: isListening=$isListening, events.size=${events.size}")
     }
     Surface(
         modifier = modifier
@@ -385,7 +385,7 @@ fun ActivityMonitorPanel(
                     // 添加调试信息显示
                     if (isListening) {
                         LaunchedEffect(Unit) {
-                            Log.d(TAG, "面板显示空事件列表，但监听状态为true")
+                            AppLogger.d(TAG, "面板显示空事件列表，但监听状态为true")
                         }
                     }
                 } else {
@@ -407,10 +407,10 @@ fun ActivityMonitorPanel(
 
                     // 记录事件渲染
                     LaunchedEffect(events.size) {
-                        Log.d(TAG, "渲染事件列表，共${events.size}个事件")
+                        AppLogger.d(TAG, "渲染事件列表，共${events.size}个事件")
                         if (events.isNotEmpty()) {
                             val latestEvent = events.last()
-                            Log.d(
+                            AppLogger.d(
                                 TAG,
                                 "最新事件: ${latestEvent.actionType} - ${latestEvent.elementInfo?.packageName}"
                             )

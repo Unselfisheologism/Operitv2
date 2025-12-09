@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.automatic
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.SimplifiedUINode
 import com.ai.assistance.operit.core.tools.UIPageResultData
@@ -45,13 +45,13 @@ class UIOperationExecutor(
         var currentUIState = (context["current_ui_state"] as? UIState)
             ?: UIState(nodeId = currentNodeState.nodeId, customData = currentNodeState.variables)
 
-        Log.d(TAG, "Executing path from ${path.startState.nodeId} to ${path.endState.nodeId}. Total steps: ${path.edges.size}")
+        AppLogger.d(TAG, "Executing path from ${path.startState.nodeId} to ${path.endState.nodeId}. Total steps: ${path.edges.size}")
 
         for ((index, edge) in path.edges.withIndex()) {
             val operation = edge.stateTransform as? UIOperation
                 ?: continue // 如果不是UIOperation，则跳过
 
-            Log.i(TAG, "Step ${index + 1}/${path.edges.size}: Executing '${operation.description}' (${edge.from} -> ${edge.to})")
+            AppLogger.i(TAG, "Step ${index + 1}/${path.edges.size}: Executing '${operation.description}' (${edge.from} -> ${edge.to})")
 
             // 在执行操作前，使用当前状态的变量替换模板
             val substitutedOperation = substituteTemplateVariables(operation, currentUIState.variables)
@@ -60,7 +60,7 @@ class UIOperationExecutor(
 
             if (!executionSuccess) {
                 val errorMsg = "Operation failed: '${operation.description}'"
-                Log.e(TAG, errorMsg)
+                AppLogger.e(TAG, errorMsg)
                 return RouteResult.failure(errorMsg, currentUIState)
             }
 
@@ -69,7 +69,7 @@ class UIOperationExecutor(
             if (validationOp != null) {
                 // 在验证之前，先替换模板变量，确保验证的值是动态的
                 val substitutedValidationOp = substituteTemplateVariables(validationOp, currentUIState.variables) as UIOperation.ValidateElement
-                Log.d(TAG, "Executing validation: ${substitutedValidationOp.description}")
+                AppLogger.d(TAG, "Executing validation: ${substitutedValidationOp.description}")
                 delay(OPERATION_DELAY) // 等待UI稳定
                 
                 // 为了执行验证，需要一个包含最新上下文的 "state"
@@ -77,10 +77,10 @@ class UIOperationExecutor(
                 val validationSuccess = executeOperation(substitutedValidationOp, currentUIState)
                 if (!validationSuccess) {
                     val errorMsg = "Validation failed: '${substitutedValidationOp.description}'"
-                    Log.e(TAG, errorMsg)
+                    AppLogger.e(TAG, errorMsg)
                     return RouteResult.failure(errorMsg, currentUIState)
                 }
-                 Log.d(TAG, "Validation successful: ${substitutedValidationOp.description}")
+                 AppLogger.d(TAG, "Validation successful: ${substitutedValidationOp.description}")
             }
 
 
@@ -95,9 +95,9 @@ class UIOperationExecutor(
                     customData = nextNodeState.variables + newUIState.customData
                 )
                 currentNodeState = nextNodeState
-                Log.d(TAG, "State transition verified. New node: ${currentUIState.nodeId}")
+                AppLogger.d(TAG, "State transition verified. New node: ${currentUIState.nodeId}")
             } else {
-                Log.w(TAG, "State transition verification failed for node '${edge.to}'. Continuing execution, assuming success.")
+                AppLogger.w(TAG, "State transition verification failed for node '${edge.to}'. Continuing execution, assuming success.")
                 currentNodeState = nextNodeState
                 currentUIState = currentUIState.copyWith(
                     nodeId = edge.to,
@@ -106,7 +106,7 @@ class UIOperationExecutor(
             }
         }
 
-        Log.i(TAG, "Path execution finished successfully. Final node: ${currentUIState.nodeId}")
+        AppLogger.i(TAG, "Path execution finished successfully. Final node: ${currentUIState.nodeId}")
 
         return RouteResult.success(currentUIState, path, "路径导航成功")
     }
@@ -137,12 +137,12 @@ class UIOperationExecutor(
                                           newUIState.currentActivity == previousState.currentActivity
                         // 在更复杂的场景中，这里应该用 aergolu.json 中的页面定义来匹配 expectedNodeId
                         // 此处简化为只要获取到新页面状态就认为转换成功
-                        Log.d(TAG, "状态验证成功，获取到新页面: ${newUIState.packageName}/${newUIState.currentActivity}")
+                        AppLogger.d(TAG, "状态验证成功，获取到新页面: ${newUIState.packageName}/${newUIState.currentActivity}")
                         return newUIState
                     }
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "状态验证异常 (尝试 ${retryCount + 1})", e)
+                AppLogger.w(TAG, "状态验证异常 (尝试 ${retryCount + 1})", e)
             }
             
             retryCount++
@@ -182,7 +182,7 @@ class UIOperationExecutor(
                 else -> return null
             }
         } catch (e: Exception) {
-            Log.e(TAG, "解析页面信息时发生错误", e)
+            AppLogger.e(TAG, "解析页面信息时发生错误", e)
             return null
         }
     }
@@ -194,7 +194,7 @@ class UIOperationExecutor(
      * @return 操作是否成功。
      */
     private suspend fun executeOperation(operation: UIOperation, state: UIState): Boolean {
-        Log.d(TAG, "Executing operation: ${operation::class.java.simpleName} with description: '${operation.description}'")
+        AppLogger.d(TAG, "Executing operation: ${operation::class.java.simpleName} with description: '${operation.description}'")
         return when (operation) {
             is UIOperation.Click -> {
                 // 如果提供了相对坐标，则使用get_page_info+tap的组合来实现精确点击
@@ -204,18 +204,18 @@ class UIOperationExecutor(
                         ToolParameter("format", "json"),
                         ToolParameter("detail", "full")
                     ))
-                    Log.d(TAG, "Executing 'get_page_info' to get bounds for relative click.")
+                    AppLogger.d(TAG, "Executing 'get_page_info' to get bounds for relative click.")
                     val pageInfoResult = toolHandler.executeTool(pageInfoTool)
 
                     if (!pageInfoResult.success || pageInfoResult.result == null) {
-                        Log.w(TAG, "Relative click failed: could not get page info. ${pageInfoResult.error}")
+                        AppLogger.w(TAG, "Relative click failed: could not get page info. ${pageInfoResult.error}")
                         return false
                     }
 
                     // 2. 从页面信息中查找匹配的元素
                     val resultString = (pageInfoResult.result as? StringResultData)?.value ?: ""
                     if (resultString.isEmpty()) {
-                        Log.w(TAG, "Relative click failed: get_page_info returned an empty result.")
+                        AppLogger.w(TAG, "Relative click failed: get_page_info returned an empty result.")
                         return false
                     }
 
@@ -228,20 +228,20 @@ class UIOperationExecutor(
                         val matchingElement = findElementInNode(rootNode, selector)
                         
                         if (matchingElement == null) {
-                            Log.w(TAG, "Relative click failed: element not found in page info.")
+                            AppLogger.w(TAG, "Relative click failed: element not found in page info.")
                             return false
                         }
 
                         val boundsString = matchingElement.optString("bounds")
                         if (boundsString.isNullOrEmpty()) {
-                            Log.w(TAG, "Relative click failed: 'bounds' not found for element.")
+                            AppLogger.w(TAG, "Relative click failed: 'bounds' not found for element.")
                             return false
                         }
 
                         // 3. 解析边界字符串并计算精确的点击点
                         val parts = boundsString.replace("[", "").replace("]", ",").split(",").filter { it.isNotEmpty() }
                         if (parts.size < 4) {
-                            Log.w(TAG, "Relative click failed: invalid bounds format '$boundsString'.")
+                            AppLogger.w(TAG, "Relative click failed: invalid bounds format '$boundsString'.")
                             return false
                         }
                         val left = parts[0].toInt()
@@ -260,39 +260,39 @@ class UIOperationExecutor(
                             ToolParameter("x", tapX.toString()),
                             ToolParameter("y", tapY.toString())
                         ))
-                        Log.d(TAG, "Executing relative click via 'tap' tool at ($tapX, $tapY)")
+                        AppLogger.d(TAG, "Executing relative click via 'tap' tool at ($tapX, $tapY)")
                         val tapResult = toolHandler.executeTool(tapTool)
                         if (!tapResult.success) {
-                            Log.w(TAG, "Tap operation failed: ${tapResult.error}")
+                            AppLogger.w(TAG, "Tap operation failed: ${tapResult.error}")
                         }
                         return tapResult.success
                     } catch (e: Exception) {
-                        Log.e(TAG, "Relative click failed due to an exception while parsing bounds or executing tap.", e)
+                        AppLogger.e(TAG, "Relative click failed due to an exception while parsing bounds or executing tap.", e)
                         return false
                     }
                 } else {
                     // 对于没有相对坐标的点击，保持原逻辑
                 val params = createSelectorParams(operation.selector, state, operation)
                 val tool = AITool("click_element", params)
-                Log.d(TAG, "Executing tool '${tool.name}' with params: $params")
+                AppLogger.d(TAG, "Executing tool '${tool.name}' with params: $params")
                 val result = toolHandler.executeTool(tool)
                 if (!result.success) {
-                    Log.w(TAG, "Click operation failed: ${result.error}")
+                    AppLogger.w(TAG, "Click operation failed: ${result.error}")
                 }
                 result.success
                 }
             }
             is UIOperation.Input -> {
                 val textToInput = state.variables[operation.textVariableKey] as? String ?: ""
-                Log.d(TAG, "Preparing to input text. Key: '${operation.textVariableKey}', Value: '$textToInput'")
+                AppLogger.d(TAG, "Preparing to input text. Key: '${operation.textVariableKey}', Value: '$textToInput'")
                 
                 val clickParams = createSelectorParams(operation.selector, state)
                 val clickTool = AITool("click_element", clickParams)
-                Log.d(TAG, "Executing tool '${clickTool.name}' to focus input field with params: $clickParams")
+                AppLogger.d(TAG, "Executing tool '${clickTool.name}' to focus input field with params: $clickParams")
                 
                 // 先点击输入框
                 if (!toolHandler.executeTool(clickTool).success) {
-                    Log.w(TAG, "Failed to click input field.")
+                    AppLogger.w(TAG, "Failed to click input field.")
                     return false
                 }
                 
@@ -300,39 +300,39 @@ class UIOperationExecutor(
 
                 // 再输入文本
                 val inputTool = AITool("set_input_text", listOf(ToolParameter("text", textToInput)))
-                 Log.d(TAG, "Executing tool '${inputTool.name}' to set text.")
+                 AppLogger.d(TAG, "Executing tool '${inputTool.name}' to set text.")
                 val inputResult = toolHandler.executeTool(inputTool)
                 if (!inputResult.success) {
-                    Log.w(TAG, "Input text failed: ${inputResult.error}")
+                    AppLogger.w(TAG, "Input text failed: ${inputResult.error}")
                 }
                 inputResult.success
             }
             is UIOperation.LaunchApp -> {
                 val tool = AITool("start_app", listOf(ToolParameter("package_name", operation.packageName)))
-                Log.d(TAG, "Executing tool '${tool.name}' with package: ${operation.packageName}")
+                AppLogger.d(TAG, "Executing tool '${tool.name}' with package: ${operation.packageName}")
                 val result = toolHandler.executeTool(tool)
                 if (result.success) {
                     delay(STARTUP_DELAY) // 等待应用启动和界面加载
                 } else {
-                    Log.w(TAG, "Launch app failed: ${result.error}")
+                    AppLogger.w(TAG, "Launch app failed: ${result.error}")
                 }
                 result.success
             }
             is UIOperation.KillApp -> {
                 val tool = AITool("stop_app", listOf(ToolParameter("package_name", operation.packageName)))
-                 Log.d(TAG, "Executing tool '${tool.name}' with package: ${operation.packageName}")
+                 AppLogger.d(TAG, "Executing tool '${tool.name}' with package: ${operation.packageName}")
                 val result = toolHandler.executeTool(tool)
                 if (!result.success) {
-                    Log.w(TAG, "Kill app failed: ${result.error}")
+                    AppLogger.w(TAG, "Kill app failed: ${result.error}")
                 }
                 result.success
             }
             is UIOperation.PressKey -> {
                 val tool = AITool("pressKey", listOf(ToolParameter("key_code", operation.keyCode)))
-                Log.d(TAG, "Executing tool '${tool.name}' with key_code: ${operation.keyCode}")
+                AppLogger.d(TAG, "Executing tool '${tool.name}' with key_code: ${operation.keyCode}")
                 val result = toolHandler.executeTool(tool)
                 if (!result.success) {
-                    Log.w(TAG, "Press key failed: ${result.error}")
+                    AppLogger.w(TAG, "Press key failed: ${result.error}")
                 }
                 result.success
             }
@@ -341,45 +341,45 @@ class UIOperationExecutor(
                     ToolParameter("direction", operation.direction.name.lowercase()),
                     ToolParameter("distance", operation.distance.toString())
                 ))
-                Log.d(TAG, "Executing tool '${tool.name}' with direction: ${operation.direction}")
+                AppLogger.d(TAG, "Executing tool '${tool.name}' with direction: ${operation.direction}")
                 val result = toolHandler.executeTool(tool)
                 if (!result.success) {
-                    Log.w(TAG, "Swipe operation failed: ${result.error}")
+                    AppLogger.w(TAG, "Swipe operation failed: ${result.error}")
                 }
                 result.success
             }
             is UIOperation.Wait -> {
-                Log.d(TAG, "Waiting for ${operation.durationMs}ms")
+                AppLogger.d(TAG, "Waiting for ${operation.durationMs}ms")
                 delay(operation.durationMs)
                 true
             }
             is UIOperation.WaitForPage -> {
-                Log.d(TAG, "Waiting for page. Timeout: ${operation.timeoutMs}ms")
+                AppLogger.d(TAG, "Waiting for page. Timeout: ${operation.timeoutMs}ms")
                 delay(operation.timeoutMs)
                 true
             }
             is UIOperation.ValidateState -> {
                 val isValid = operation.validator(state)
-                Log.d(TAG, "状态验证结果: $isValid")
+                AppLogger.d(TAG, "状态验证结果: $isValid")
                 isValid
             }
             is UIOperation.ValidateElement -> {
                 val expectedValue = state.variables[operation.expectedValueKey]?.toString()
                 if (expectedValue == null && operation.validationType != ValidationType.EXISTS) {
-                    Log.w(TAG, "Validation failed: Expected value key '${operation.expectedValueKey}' not found in state variables.")
+                    AppLogger.w(TAG, "Validation failed: Expected value key '${operation.expectedValueKey}' not found in state variables.")
                     return false
                 }
 
                 // 获取当前页面的详细信息
                 val pageInfo = getCurrentPageInfo(detail = "detail")
                 if (pageInfo == null) {
-                    Log.w(TAG, "Validation failed: Could not get current page info.")
+                    AppLogger.w(TAG, "Validation failed: Could not get current page info.")
                     return false
                 }
                 
                 val element = UIElementFinder.findElement(pageInfo.uiElements, operation.selector)
                 if (element == null) {
-                    Log.w(TAG, "Validation failed: Element not found with selector: '${operation.selector}'")
+                    AppLogger.w(TAG, "Validation failed: Element not found with selector: '${operation.selector}'")
                     return false
                 }
 
@@ -387,41 +387,41 @@ class UIOperationExecutor(
                     ValidationType.TEXT_EQUALS -> {
                         val actualText = element.text ?: ""
                         val success = actualText == expectedValue
-                        Log.d(TAG, "Validation TEXT_EQUALS: Expected='$expectedValue', Actual='$actualText'. Success: $success")
+                        AppLogger.d(TAG, "Validation TEXT_EQUALS: Expected='$expectedValue', Actual='$actualText'. Success: $success")
                         success
                     }
                     ValidationType.TEXT_CONTAINS -> {
                         val actualText = element.text ?: ""
                         val success = actualText.contains(expectedValue!!)
-                        Log.d(TAG, "Validation TEXT_CONTAINS: Expected to contain='$expectedValue', Actual='$actualText'. Success: $success")
+                        AppLogger.d(TAG, "Validation TEXT_CONTAINS: Expected to contain='$expectedValue', Actual='$actualText'. Success: $success")
                         success
                     }
                     ValidationType.EXISTS -> {
-                        Log.d(TAG, "Validation EXISTS: Element found. Success: true")
+                        AppLogger.d(TAG, "Validation EXISTS: Element found. Success: true")
                         true
                     }
                 }
             }
             is UIOperation.Sequential -> {
                 for ((index, op) in operation.operations.withIndex()) {
-                    Log.d(TAG, "Executing sequential op ${index + 1}/${operation.operations.size}: ${op.description}")
+                    AppLogger.d(TAG, "Executing sequential op ${index + 1}/${operation.operations.size}: ${op.description}")
                     if (!executeOperation(op, state)) {
-                        Log.e(TAG, "Sequential operation failed at step ${index + 1}: ${op.description}")
+                        AppLogger.e(TAG, "Sequential operation failed at step ${index + 1}: ${op.description}")
                         return false
                     }
                     if (index < operation.operations.size - 1) {
                         delay(SEQUENTIAL_OP_DELAY) // 序列操作之间的短暂延迟
                     }
                 }
-                Log.d(TAG, "Sequential operation completed successfully.")
+                AppLogger.d(TAG, "Sequential operation completed successfully.")
                 true
             }
             is UIOperation.NoOp -> {
-                Log.d(TAG, "Executing NoOp.")
+                AppLogger.d(TAG, "Executing NoOp.")
                 true
             }
             else -> {
-                Log.w(TAG, "Unhandled UI operation: ${operation::class.simpleName}")
+                AppLogger.w(TAG, "Unhandled UI operation: ${operation::class.simpleName}")
                 true // 默认返回成功以允许流程继续
             }
         }
@@ -456,7 +456,7 @@ class UIOperationExecutor(
      */
     private fun substituteTemplateVariables(operation: UIOperation, variables: Map<String, Any>): UIOperation {
         if (variables.isEmpty()) return operation
-        Log.d(TAG, "Substituting template variables in operation: ${operation.description}")
+        AppLogger.d(TAG, "Substituting template variables in operation: ${operation.description}")
         return when (operation) {
             is UIOperation.Click -> {
                 operation.copy(selector = substituteTemplateInSelector(operation.selector, variables))
@@ -490,7 +490,7 @@ class UIOperationExecutor(
                     substitutedText = substitutedText.replace("{{$key}}", value.toString())
                 }
                 if (substitutedText != selector.text) {
-                    Log.d(TAG, "Substituted text selector: from '${selector.text}' to '$substitutedText'")
+                    AppLogger.d(TAG, "Substituted text selector: from '${selector.text}' to '$substitutedText'")
                 }
                 UISelector.ByText(substitutedText)
             }
@@ -500,7 +500,7 @@ class UIOperationExecutor(
                     substitutedDesc = substitutedDesc.replace("{{$key}}", value.toString())
                 }
                 if (substitutedDesc != selector.desc) {
-                    Log.d(TAG, "Substituted contentDesc selector: from '${selector.desc}' to '$substitutedDesc'")
+                    AppLogger.d(TAG, "Substituted contentDesc selector: from '${selector.desc}' to '$substitutedDesc'")
                 }
                 UISelector.ByContentDesc(substitutedDesc)
             }
@@ -521,7 +521,7 @@ class UIOperationExecutor(
             is UISelector.ByText -> {
                 val element = state.findElementByText(selector.text)
                 if (element != null) {
-                    Log.d(TAG, "在当前页面找到文本元素: ${selector.text}")
+                    AppLogger.d(TAG, "在当前页面找到文本元素: ${selector.text}")
                     element.resourceId?.let { 
                         return mutableListOf(ToolParameter("resourceId", it))
                     }
@@ -532,11 +532,11 @@ class UIOperationExecutor(
             is UISelector.ByClassName -> mutableListOf(ToolParameter("className", selector.name))
             is UISelector.ByBounds -> mutableListOf(ToolParameter("bounds", selector.bounds))
             is UISelector.ByXPath -> {
-                Log.d(TAG, "使用XPath选择器: ${selector.xpath}")
+                AppLogger.d(TAG, "使用XPath选择器: ${selector.xpath}")
                 mutableListOf(ToolParameter("xpath", selector.xpath))
             }
             is UISelector.Compound -> {
-                Log.d(TAG, "处理复合选择器，操作符: ${selector.operator}")
+                AppLogger.d(TAG, "处理复合选择器，操作符: ${selector.operator}")
                 val combinedParams = mutableListOf<ToolParameter>()
                 selector.selectors.forEach { subSelector ->
                     combinedParams.addAll(createSelectorParams(subSelector, state, clickOperation))
@@ -550,7 +550,7 @@ class UIOperationExecutor(
             if (it.relativeX != null && it.relativeY != null) {
                 params.add(ToolParameter("relativeX", it.relativeX.toString()))
                 params.add(ToolParameter("relativeY", it.relativeY.toString()))
-                Log.d(TAG, "附加相对坐标参数: x=${it.relativeX}, y=${it.relativeY}")
+                AppLogger.d(TAG, "附加相对坐标参数: x=${it.relativeX}, y=${it.relativeY}")
             }
         }
         

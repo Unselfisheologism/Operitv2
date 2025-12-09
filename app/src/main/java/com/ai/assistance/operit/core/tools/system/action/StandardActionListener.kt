@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.system.action
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.accessibility.AccessibilityEvent
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +25,7 @@ class StandardActionListener(private val context: Context) : ActionListener {
         ActionListener.PermissionStatus.granted() // 标准监听器不需要额外权限
 
     override fun initialize() {
-        Log.d(TAG, "标准UI操作监听器初始化完成")
+        AppLogger.d(TAG, "标准UI操作监听器初始化完成")
     }
 
     override suspend fun requestPermission(onResult: (Boolean) -> Unit) {
@@ -45,7 +45,7 @@ class StandardActionListener(private val context: Context) : ActionListener {
                 actionCallback = onAction
                 isListening.set(true)
 
-                Log.d(TAG, "开始标准权限级别的UI操作监听")
+                AppLogger.d(TAG, "开始标准权限级别的UI操作监听")
 
                 // 标准权限只能监听应用内的基本事件
                 // 这里可以监听应用的触摸事件、按键事件等
@@ -53,7 +53,7 @@ class StandardActionListener(private val context: Context) : ActionListener {
 
                 return@withContext ActionListener.ListeningResult.success("标准UI操作监听已启动")
             } catch (e: Exception) {
-                Log.e(TAG, "启动标准UI操作监听失败", e)
+                AppLogger.e(TAG, "启动标准UI操作监听失败", e)
                 isListening.set(false)
                 return@withContext ActionListener.ListeningResult.failure("启动失败: ${e.message}")
             }
@@ -62,7 +62,7 @@ class StandardActionListener(private val context: Context) : ActionListener {
     override suspend fun stopListening(): Boolean = withContext(Dispatchers.IO) {
         try {
             if (!isListening.get()) {
-                Log.d(TAG, "监听器未在运行")
+                AppLogger.d(TAG, "监听器未在运行")
                 return@withContext true
             }
 
@@ -71,10 +71,10 @@ class StandardActionListener(private val context: Context) : ActionListener {
 
             stopBasicEventMonitoring()
 
-            Log.d(TAG, "标准UI操作监听已停止")
+            AppLogger.d(TAG, "标准UI操作监听已停止")
             return@withContext true
         } catch (e: Exception) {
-            Log.e(TAG, "停止标准UI操作监听失败", e)
+            AppLogger.e(TAG, "停止标准UI操作监听失败", e)
             return@withContext false
         }
     }
@@ -86,7 +86,7 @@ class StandardActionListener(private val context: Context) : ActionListener {
     private fun startBasicEventMonitoring() {
         // 在标准权限下，监听能力有限
         // 可以监听应用内的View触摸事件、Activity生命周期变化等
-        Log.d(TAG, "开始基本事件监控 - 监听应用内触摸和按键事件")
+        AppLogger.d(TAG, "开始基本事件监控 - 监听应用内触摸和按键事件")
         
         // 注意：标准权限无法监听系统级事件或其他应用的操作
         // 只能监听当前应用内的用户交互
@@ -96,7 +96,7 @@ class StandardActionListener(private val context: Context) : ActionListener {
      * 停止基本事件监控
      */
     private fun stopBasicEventMonitoring() {
-        Log.d(TAG, "停止基本事件监控")
+        AppLogger.d(TAG, "停止基本事件监控")
     }
 
     /**

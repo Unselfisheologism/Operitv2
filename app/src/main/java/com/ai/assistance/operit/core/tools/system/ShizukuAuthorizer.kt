@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import rikka.shizuku.Shizuku
 
 /** Shizuku授权工具类 提供Shizuku权限检查和管理功能 */
@@ -52,7 +52,7 @@ class ShizukuAuthorizer {
             // 确保在主线程中执行UI相关回调
             mainHandler.post {
                 synchronized(stateChangeListeners) {
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "Notifying ${stateChangeListeners.size} listeners about state change"
                     )
@@ -70,13 +70,13 @@ class ShizukuAuthorizer {
             return try {
                 val packageInfo = context.packageManager.getPackageInfo("moe.shizuku.privileged.api", 0)
                 val versionName = packageInfo.versionName
-                Log.i(TAG, "检测到已安装Shizuku，版本: $versionName")
+                AppLogger.i(TAG, "检测到已安装Shizuku，版本: $versionName")
                 true
             } catch (e: PackageManager.NameNotFoundException) {
-                Log.i(TAG, "未检测到已安装的Shizuku")
+                AppLogger.i(TAG, "未检测到已安装的Shizuku")
                 false
             } catch (e: Exception) {
-                Log.e(TAG, "检查Shizuku是否安装时出错", e)
+                AppLogger.e(TAG, "检查Shizuku是否安装时出错", e)
                 false
             }
         }
@@ -112,13 +112,13 @@ class ShizukuAuthorizer {
                 // 方法1: 使用pingBinder - 这是最可靠的检测方法
                 try {
                     if (Shizuku.pingBinder()) {
-                        Log.d(TAG, "Shizuku pingBinder succeeded")
+                        AppLogger.d(TAG, "Shizuku pingBinder succeeded")
                         isServiceAvailable = true
                         lastServiceErrorMessage = ""
                         return true
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Shizuku pingBinder check failed", e)
+                    AppLogger.e(TAG, "Shizuku pingBinder check failed", e)
                     lastServiceErrorMessage = "Shizuku ping failed: ${e.message}"
                     return false
                 }
@@ -127,7 +127,7 @@ class ShizukuAuthorizer {
                 try {
                     val binder = Shizuku.getBinder()
                     if (binder != null && binder.isBinderAlive) {
-                        Log.d(TAG, "Shizuku binder is alive")
+                        AppLogger.d(TAG, "Shizuku binder is alive")
                         isServiceAvailable = true
                         lastServiceErrorMessage = ""
                         return true
@@ -139,7 +139,7 @@ class ShizukuAuthorizer {
                         return false
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Binder check failed", e)
+                    AppLogger.e(TAG, "Binder check failed", e)
                     lastServiceErrorMessage = "Failed to check binder: ${e.message}"
                     return false
                 }
@@ -155,12 +155,12 @@ class ShizukuAuthorizer {
                     lastServiceErrorMessage = "Invalid Shizuku UID: $uid"
                     return false
                 } catch (e: Exception) {
-                    Log.e(TAG, "UID check failed", e)
+                    AppLogger.e(TAG, "UID check failed", e)
                     lastServiceErrorMessage = "Failed to get UID: ${e.message}"
                     return false
                 }
             } catch (e: Throwable) {
-                Log.e(TAG, "Critical error checking Shizuku service", e)
+                AppLogger.e(TAG, "Critical error checking Shizuku service", e)
                 isServiceAvailable = false
                 lastServiceErrorMessage = "Critical error: ${e.message}"
                 return false
@@ -190,7 +190,7 @@ class ShizukuAuthorizer {
                     return false
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error checking Shizuku permission", e)
+                AppLogger.e(TAG, "Error checking Shizuku permission", e)
                 lastPermissionErrorMessage = "Error checking permission: ${e.message}"
                 return false
             }
@@ -203,20 +203,20 @@ class ShizukuAuthorizer {
         fun requestShizukuPermission(onResult: (Boolean) -> Unit) {
             val serviceRunning = isShizukuServiceRunning()
             if (!serviceRunning) {
-                Log.e(TAG, "Cannot request permission: $lastServiceErrorMessage")
+                AppLogger.e(TAG, "Cannot request permission: $lastServiceErrorMessage")
                 onResult(false)
                 return
             }
 
             val hasPermission = hasShizukuPermission()
             if (hasPermission) {
-                Log.d(TAG, "Permission already granted")
+                AppLogger.d(TAG, "Permission already granted")
                 onResult(true)
                 notifyStateChanged()
                 return
             }
 
-            Log.d(TAG, "Requesting Shizuku permission")
+            AppLogger.d(TAG, "Requesting Shizuku permission")
 
             // 移除之前的监听器避免重复
             try {
@@ -225,19 +225,19 @@ class ShizukuAuthorizer {
                     permissionRequestListenerRegistered = false
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error removing existing permission listener", e)
+                AppLogger.e(TAG, "Error removing existing permission listener", e)
             }
 
             try {
                 val requestCode = 100
 
-                Log.d(TAG, "Setting up permission result listener")
+                AppLogger.d(TAG, "Setting up permission result listener")
 
                 Shizuku.addRequestPermissionResultListener { code, grantResult ->
-                    Log.d(TAG, "Permission result received: code=$code, result=$grantResult")
+                    AppLogger.d(TAG, "Permission result received: code=$code, result=$grantResult")
                     if (code == requestCode) {
                         val granted = grantResult == PackageManager.PERMISSION_GRANTED
-                        Log.d(TAG, "Shizuku permission request result: $granted")
+                        AppLogger.d(TAG, "Shizuku permission request result: $granted")
                         onResult(granted)
                         if (granted) {
                             // 权限授予时触发状态变更通知
@@ -249,24 +249,24 @@ class ShizukuAuthorizer {
                             Shizuku.removeRequestPermissionResultListener { _, _ -> }
                             permissionRequestListenerRegistered = false
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error removing permission listener", e)
+                            AppLogger.e(TAG, "Error removing permission listener", e)
                         }
                     }
                 }
                 permissionRequestListenerRegistered = true
 
                 // 请求权限
-                Log.d(TAG, "Calling Shizuku.requestPermission($requestCode)")
+                AppLogger.d(TAG, "Calling Shizuku.requestPermission($requestCode)")
                 Shizuku.requestPermission(requestCode)
             } catch (e: Exception) {
-                Log.e(TAG, "Error requesting Shizuku permission", e)
+                AppLogger.e(TAG, "Error requesting Shizuku permission", e)
                 onResult(false)
             }
         }
 
         /** 初始化Shizuku绑定 */
         fun initialize() {
-            Log.d(TAG, "Initializing Shizuku")
+            AppLogger.d(TAG, "Initializing Shizuku")
 
             // 重置服务状态
             isServiceAvailable = false
@@ -279,7 +279,7 @@ class ShizukuAuthorizer {
                     Shizuku.removeBinderReceivedListener {}
                     Shizuku.removeBinderDeadListener {}
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error removing binder listeners", e)
+                    AppLogger.e(TAG, "Error removing binder listeners", e)
                 }
                 binderReceivedListenerRegistered = false
             }
@@ -287,7 +287,7 @@ class ShizukuAuthorizer {
             try {
                 // 设置绑定接收监听器
                 Shizuku.addBinderReceivedListener {
-                    Log.d(TAG, "Shizuku binder received")
+                    AppLogger.d(TAG, "Shizuku binder received")
                     isServiceAvailable = true
                     notifyStateChanged()
 
@@ -295,16 +295,16 @@ class ShizukuAuthorizer {
                     mainHandler.post {
                         try {
                             val hasPermission = hasShizukuPermission()
-                            Log.d(TAG, "Checking permission after binder received: $hasPermission")
+                            AppLogger.d(TAG, "Checking permission after binder received: $hasPermission")
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error checking permission after binder received", e)
+                            AppLogger.e(TAG, "Error checking permission after binder received", e)
                         }
                     }
                 }
 
                 // 设置绑定断开监听器
                 Shizuku.addBinderDeadListener {
-                    Log.d(TAG, "Shizuku binder dead")
+                    AppLogger.d(TAG, "Shizuku binder dead")
                     isServiceAvailable = false
                     notifyStateChanged()
                 }
@@ -313,16 +313,16 @@ class ShizukuAuthorizer {
 
                 // 立即检查服务是否已经在运行
                 val isRunning = isShizukuServiceRunning()
-                Log.d(TAG, "Initial Shizuku service status check: $isRunning")
+                AppLogger.d(TAG, "Initial Shizuku service status check: $isRunning")
                 if (isRunning) {
                     // 如果服务正在运行，检查权限
                     mainHandler.post {
                         try {
                             val hasPermission = hasShizukuPermission()
-                            Log.d(TAG, "Initial permission check: $hasPermission")
+                            AppLogger.d(TAG, "Initial permission check: $hasPermission")
                             notifyStateChanged()
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error during initial permission check", e)
+                            AppLogger.e(TAG, "Error during initial permission check", e)
                         }
                     }
                 } else {
@@ -330,7 +330,7 @@ class ShizukuAuthorizer {
                     mainHandler.postDelayed(
                             {
                                 val retryCheck = isShizukuServiceRunning()
-                                Log.d(TAG, "Delayed service status check: $retryCheck")
+                                AppLogger.d(TAG, "Delayed service status check: $retryCheck")
                                 if (retryCheck) {
                                     notifyStateChanged()
                                 }
@@ -339,7 +339,7 @@ class ShizukuAuthorizer {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error initializing Shizuku", e)
+                AppLogger.e(TAG, "Error initializing Shizuku", e)
             }
         }
 

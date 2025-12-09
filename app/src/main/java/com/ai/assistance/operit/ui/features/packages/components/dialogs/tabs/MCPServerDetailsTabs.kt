@@ -29,7 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 /**
- * Tabs component for the MCP server details dialog.
+ * Tabs component for the MCP server details diaAppLogger.
  *
  * @param selectedTabIndex The currently selected tab index
  * @param onTabSelected Callback to be invoked when a tab is selected

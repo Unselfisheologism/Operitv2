@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.util.stream
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -30,28 +30,28 @@ object StreamLogger {
     /** 记录调试信息 */
     fun d(component: String, message: String) {
         if (enabled) {
-            Log.d(TAG, "[$component] $message")
+            AppLogger.d(TAG, "[$component] $message")
         }
     }
 
     /** 记录信息 */
     fun i(component: String, message: String) {
         if (enabled) {
-            Log.i(TAG, "[$component] $message")
+            AppLogger.i(TAG, "[$component] $message")
         }
     }
 
     /** 记录详细信息 */
     fun v(component: String, message: String) {
         if (enabled && verboseEnabled) {
-            Log.v(TAG, "[$component] $message")
+            AppLogger.v(TAG, "[$component] $message")
         }
     }
 
     /** 记录警告 */
     fun w(component: String, message: String) {
         if (enabled) {
-            Log.w(TAG, "[$component] $message")
+            AppLogger.w(TAG, "[$component] $message")
         }
     }
 
@@ -59,9 +59,9 @@ object StreamLogger {
     fun e(component: String, message: String, throwable: Throwable? = null) {
         if (enabled) {
             if (throwable != null) {
-                Log.e(TAG, "[$component] $message", throwable)
+                AppLogger.e(TAG, "[$component] $message", throwable)
             } else {
-                Log.e(TAG, "[$component] $message")
+                AppLogger.e(TAG, "[$component] $message")
             }
         }
     }

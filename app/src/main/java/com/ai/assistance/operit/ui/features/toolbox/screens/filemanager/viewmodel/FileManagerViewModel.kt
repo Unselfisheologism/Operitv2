@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.viewmodel
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -111,7 +111,7 @@ class FileManagerViewModel(private val context: Context) : ViewModel() {
                         withContext(Dispatchers.Main) { error = result.error ?: "Unknown error" }
                     }
                 } catch (e: Exception) {
-                    Log.e("FileManagerViewModel", "Error loading directory", e)
+                    AppLogger.e("FileManagerViewModel", "Error loading directory", e)
                     withContext(Dispatchers.Main) { error = "Error: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }
@@ -251,7 +251,7 @@ class FileManagerViewModel(private val context: Context) : ViewModel() {
                     error = result.error ?: "Unknown error"
                 }
             } catch (e: Exception) {
-                Log.e("FileManagerViewModel", "Error creating folder", e)
+                AppLogger.e("FileManagerViewModel", "Error creating folder", e)
                 error = "Error: ${e.message}"
             }
         }
@@ -343,7 +343,7 @@ class FileManagerViewModel(private val context: Context) : ViewModel() {
                         withContext(Dispatchers.Main) { error = result.error ?: "搜索失败" }
                     }
                 } catch (e: Exception) {
-                    Log.e("FileManagerViewModel", "Error searching files", e)
+                    AppLogger.e("FileManagerViewModel", "Error searching files", e)
                     withContext(Dispatchers.Main) { error = "搜索错误: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }
@@ -436,7 +436,7 @@ class FileManagerViewModel(private val context: Context) : ViewModel() {
                 // 刷新当前目录
                 loadCurrentDirectory()
             } catch (e: Exception) {
-                Log.e("FileManagerViewModel", "Error performing file operation", e)
+                AppLogger.e("FileManagerViewModel", "Error performing file operation", e)
                 error = "Error: ${e.message}"
             } finally {
                 isLoading = false

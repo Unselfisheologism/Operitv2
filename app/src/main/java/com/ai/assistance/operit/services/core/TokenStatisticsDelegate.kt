@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.services.core
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.EnhancedAIService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -61,7 +61,7 @@ class TokenStatisticsDelegate(
 
         // 同时重置服务中的token计数
         getEnhancedAiService()?.resetTokenCounters()
-        Log.d(TAG, "token统计已重置")
+        AppLogger.d(TAG, "token统计已重置")
     }
 
     /** 更新累计的token统计信息 */
@@ -77,13 +77,13 @@ class TokenStatisticsDelegate(
                 _cumulativeInputTokens.value += currentInputTokens
                 _cumulativeOutputTokens.value += currentOutputTokens
 
-                Log.d(
+                AppLogger.d(
                         TAG,
                     "Cumulative token stats updated - " +
                             "Input: ${_cumulativeInputTokens.value}, Output: ${_cumulativeOutputTokens.value}"
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "获取累计token计数时出错: ${e.message}", e)
+                AppLogger.e(TAG, "获取累计token计数时出错: ${e.message}", e)
             }
         }
     }

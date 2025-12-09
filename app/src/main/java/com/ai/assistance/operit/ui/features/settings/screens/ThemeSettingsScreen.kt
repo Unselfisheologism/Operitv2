@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.settings.screens
 
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.Toast
@@ -356,7 +356,7 @@ fun ThemeSettingsScreen() {
                             setMediaItem(mediaItem)
                             prepare()
                         } catch (e: Exception) {
-                            Log.e("ThemeSettings", "Video loading error", e)
+                            AppLogger.e("ThemeSettings", "Video loading error", e)
                         }
                     }
                 }
@@ -370,7 +370,7 @@ fun ThemeSettingsScreen() {
                 exoPlayer.clearMediaItems()
                 exoPlayer.release()
             } catch (e: Exception) {
-                Log.e("ThemeSettings", "ExoPlayer release error", e)
+                AppLogger.e("ThemeSettings", "ExoPlayer release error", e)
             }
         }
     }
@@ -387,7 +387,7 @@ fun ThemeSettingsScreen() {
                 exoPlayer.prepare()
                 exoPlayer.play()
             } catch (e: Exception) {
-                Log.e("ThemeSettings", "更新视频来源错误", e)
+                AppLogger.e("ThemeSettings", "更新视频来源错误", e)
             }
         }
     }
@@ -399,7 +399,7 @@ fun ThemeSettingsScreen() {
             exoPlayer.repeatMode =
                     if (videoBackgroundLoopInput) Player.REPEAT_MODE_ALL else Player.REPEAT_MODE_OFF
         } catch (e: Exception) {
-            Log.e("ThemeSettings", "更新视频设置错误", e)
+            AppLogger.e("ThemeSettings", "更新视频设置错误", e)
         }
     }
 
@@ -413,7 +413,7 @@ fun ThemeSettingsScreen() {
                             val internalUri =
                                     FileUtils.copyFileToInternalStorage(context, croppedUri, "background")
                             if (internalUri != null) {
-                                Log.d("ThemeSettings", "Background image saved to: $internalUri")
+                                AppLogger.d("ThemeSettings", "Background image saved to: $internalUri")
                                 backgroundImageUriInput = internalUri.toString()
                                 backgroundMediaTypeInput = UserPreferencesManager.MEDIA_TYPE_IMAGE
                                 saveThemeSettingsWithCharacterCard {
@@ -561,7 +561,7 @@ fun ThemeSettingsScreen() {
                             val internalUri = FileUtils.copyFileToInternalStorage(context, uri, "background_video")
 
                             if (internalUri != null) {
-                                Log.d("ThemeSettings", "Background video saved to: $internalUri")
+                                AppLogger.d("ThemeSettings", "Background video saved to: $internalUri")
                                 backgroundImageUriInput = internalUri.toString()
                                 backgroundMediaTypeInput = UserPreferencesManager.MEDIA_TYPE_VIDEO
                                 saveThemeSettingsWithCharacterCard {
@@ -605,7 +605,7 @@ fun ThemeSettingsScreen() {
                     scope.launch {
                         val internalUri = FileUtils.copyFileToInternalStorage(context, uri, "migrated_background")
                         if (internalUri != null) {
-                            Log.d("ThemeSettings", "Migrated background image to: $internalUri")
+                            AppLogger.d("ThemeSettings", "Migrated background image to: $internalUri")
                             // Update the URI in preferences
                             preferencesManager.saveThemeSettings(
                                     backgroundImageUri = internalUri.toString()
@@ -616,7 +616,7 @@ fun ThemeSettingsScreen() {
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("ThemeSettings", "Error migrating background image", e)
+                    AppLogger.e("ThemeSettings", "Error migrating background image", e)
                     // If migration fails, disable background image to prevent
                     // crashes
                     scope.launch {
@@ -733,7 +733,7 @@ fun ThemeSettingsScreen() {
                         // 复制字体文件到内部存储
                         val internalUri = FileUtils.copyFileToInternalStorage(context, uri, "custom_font")
                         if (internalUri != null) {
-                            Log.d("ThemeSettings", "Font file saved to: $internalUri")
+                            AppLogger.d("ThemeSettings", "Font file saved to: $internalUri")
                             customFontPathInput = internalUri.toString()
                             fontTypeInput = UserPreferencesManager.FONT_TYPE_FILE
                             saveThemeSettingsWithCharacterCard {
@@ -776,19 +776,19 @@ fun ThemeSettingsScreen() {
                     if (internalUri != null) {
                         when (avatarPickerMode) {
                             "user" -> {
-                                Log.d("ThemeSettings", "User avatar saved to: $internalUri")
+                                AppLogger.d("ThemeSettings", "User avatar saved to: $internalUri")
                                 userAvatarUriInput = internalUri.toString()
                                 saveThemeSettingsWithCharacterCard {
                                     preferencesManager.saveThemeSettings(customUserAvatarUri = internalUri.toString())
                                 }
                             }
                             "ai" -> {
-                                Log.d("ThemeSettings", "AI avatar saved to: $internalUri")
+                                AppLogger.d("ThemeSettings", "AI avatar saved to: $internalUri")
                                 aiAvatarUriInput = internalUri.toString()
                                 preferencesManager.saveThemeSettings(customAiAvatarUri = internalUri.toString())
                             }
                             "global_user" -> {
-                                Log.d("ThemeSettings", "Global user avatar saved to: $internalUri")
+                                AppLogger.d("ThemeSettings", "Global user avatar saved to: $internalUri")
                                 globalUserAvatarUriInput = internalUri.toString()
                                 displayPreferencesManager.saveDisplaySettings(globalUserAvatarUri = internalUri.toString())
                             }

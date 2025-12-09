@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.data.preferences
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -67,7 +67,7 @@ class CustomEmojiPreferences private constructor(private val context: Context) {
             try {
                 json.decodeFromString<List<CustomEmoji>>(jsonString)
             } catch (e: Exception) {
-                Log.e(TAG, "Error decoding custom emojis", e)
+                AppLogger.e(TAG, "Error decoding custom emojis", e)
                 emptyList()
             }
         }
@@ -82,13 +82,13 @@ class CustomEmojiPreferences private constructor(private val context: Context) {
                 val jsonString = preferences[CUSTOM_EMOJIS] ?: "[]"
                 json.decodeFromString<List<CustomEmoji>>(jsonString)
             } catch (e: Exception) {
-                Log.e(TAG, "Error decoding existing emojis", e)
+                AppLogger.e(TAG, "Error decoding existing emojis", e)
                 emptyList()
             }
             
             val updatedList = currentList + emoji
             preferences[CUSTOM_EMOJIS] = json.encodeToString(updatedList)
-            Log.d(TAG, "Added emoji: ${emoji.id} to category: ${emoji.emotionCategory}")
+            AppLogger.d(TAG, "Added emoji: ${emoji.id} to category: ${emoji.emotionCategory}")
         }
     }
 
@@ -101,13 +101,13 @@ class CustomEmojiPreferences private constructor(private val context: Context) {
                 val jsonString = preferences[CUSTOM_EMOJIS] ?: "[]"
                 json.decodeFromString<List<CustomEmoji>>(jsonString)
             } catch (e: Exception) {
-                Log.e(TAG, "Error decoding existing emojis", e)
+                AppLogger.e(TAG, "Error decoding existing emojis", e)
                 emptyList()
             }
             
             val updatedList = currentList.filter { it.id != emojiId }
             preferences[CUSTOM_EMOJIS] = json.encodeToString(updatedList)
-            Log.d(TAG, "Deleted emoji: $emojiId")
+            AppLogger.d(TAG, "Deleted emoji: $emojiId")
         }
     }
 
@@ -129,7 +129,7 @@ class CustomEmojiPreferences private constructor(private val context: Context) {
                 val jsonString = preferences[CUSTOM_EMOJIS] ?: "[]"
                 json.decodeFromString<List<CustomEmoji>>(jsonString)
             } catch (e: Exception) {
-                Log.e(TAG, "Error decoding existing emojis", e)
+                AppLogger.e(TAG, "Error decoding existing emojis", e)
                 emptyList()
             }
             
@@ -141,7 +141,7 @@ class CustomEmojiPreferences private constructor(private val context: Context) {
             if (currentCategories.contains(category)) {
                 preferences[ALL_CATEGORIES] = currentCategories - category
             }
-            Log.d(TAG, "Deleted category: $category")
+            AppLogger.d(TAG, "Deleted category: $category")
         }
     }
 
@@ -168,7 +168,7 @@ class CustomEmojiPreferences private constructor(private val context: Context) {
             val currentCategories = preferences[ALL_CATEGORIES] ?: emptySet()
             if (!currentCategories.contains(categoryName)) {
                 preferences[ALL_CATEGORIES] = currentCategories + categoryName
-                Log.d(TAG, "Added category: $categoryName")
+                AppLogger.d(TAG, "Added category: $categoryName")
             }
         }
     }
@@ -182,7 +182,7 @@ class CustomEmojiPreferences private constructor(private val context: Context) {
             val newCategories = categoryNames.filter { it !in currentCategories }
             if (newCategories.isNotEmpty()) {
                 preferences[ALL_CATEGORIES] = currentCategories + newCategories
-                Log.d(TAG, "Added categories: $newCategories")
+                AppLogger.d(TAG, "Added categories: $newCategories")
             }
         }
     }
@@ -207,7 +207,7 @@ class CustomEmojiPreferences private constructor(private val context: Context) {
         context.customEmojiDataStore.edit { preferences ->
             preferences[CUSTOM_EMOJIS] = "[]"
             preferences.remove(ALL_CATEGORIES)
-            Log.d(TAG, "Cleared all custom emojis and categories")
+            AppLogger.d(TAG, "Cleared all custom emojis and categories")
         }
     }
 

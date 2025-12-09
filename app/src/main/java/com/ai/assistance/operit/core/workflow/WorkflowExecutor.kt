@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.workflow
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.data.model.AITool
 import com.ai.assistance.operit.data.model.ExecuteNode
@@ -68,7 +68,7 @@ class WorkflowExecutor(private val context: Context) {
         triggerNodeId: String? = null,
         onNodeStateChange: (nodeId: String, state: NodeExecutionState) -> Unit
     ): WorkflowExecutionResult = withContext(Dispatchers.IO) {
-        Log.d(TAG, "开始执行工作流: ${workflow.name} (${workflow.id})")
+        AppLogger.d(TAG, "开始执行工作流: ${workflow.name} (${workflow.id})")
         
         val nodeResults = mutableMapOf<String, NodeExecutionState>()
         
@@ -77,7 +77,7 @@ class WorkflowExecutor(private val context: Context) {
             val allTriggerNodes = workflow.nodes.filterIsInstance<TriggerNode>()
             
             if (allTriggerNodes.isEmpty()) {
-                Log.w(TAG, "工作流没有触发节点")
+                AppLogger.w(TAG, "工作流没有触发节点")
                 return@withContext WorkflowExecutionResult(
                     workflowId = workflow.id,
                     success = false,
@@ -91,7 +91,7 @@ class WorkflowExecutor(private val context: Context) {
                 // 如果指定了触发节点ID（通常是定时任务），只执行该触发节点
                 val specificNode = allTriggerNodes.find { it.id == triggerNodeId }
                 if (specificNode == null) {
-                    Log.w(TAG, "指定的触发节点不存在: $triggerNodeId")
+                    AppLogger.w(TAG, "指定的触发节点不存在: $triggerNodeId")
                     return@withContext WorkflowExecutionResult(
                         workflowId = workflow.id,
                         success = false,
@@ -99,13 +99,13 @@ class WorkflowExecutor(private val context: Context) {
                         message = "指定的触发节点不存在: $triggerNodeId"
                     )
                 }
-                Log.d(TAG, "定时触发: 只执行指定触发节点 ${specificNode.name}")
+                AppLogger.d(TAG, "定时触发: 只执行指定触发节点 ${specificNode.name}")
                 listOf(specificNode)
             } else {
                 // 如果没有指定触发节点ID（通常是手动触发），执行所有手动触发类型的节点
                 val manualTriggers = allTriggerNodes.filter { it.triggerType == "manual" }
                 if (manualTriggers.isEmpty()) {
-                    Log.w(TAG, "没有手动触发类型的触发节点")
+                    AppLogger.w(TAG, "没有手动触发类型的触发节点")
                     return@withContext WorkflowExecutionResult(
                         workflowId = workflow.id,
                         success = false,
@@ -113,18 +113,18 @@ class WorkflowExecutor(private val context: Context) {
                         message = "没有手动触发类型的触发节点"
                     )
                 }
-                Log.d(TAG, "手动触发: 执行所有手动触发类型的节点")
+                AppLogger.d(TAG, "手动触发: 执行所有手动触发类型的节点")
                 manualTriggers
             }
             
-            Log.d(TAG, "将执行 ${triggerNodes.size} 个触发节点: ${triggerNodes.joinToString { it.name }}")
+            AppLogger.d(TAG, "将执行 ${triggerNodes.size} 个触发节点: ${triggerNodes.joinToString { it.name }}")
             
             // 3. 构建依赖图
             val dependencyGraph = buildDependencyGraph(workflow)
             
             // 4. 检测环
             if (detectCycle(dependencyGraph.adjacencyList, workflow.nodes)) {
-                Log.e(TAG, "工作流存在循环依赖，无法执行")
+                AppLogger.e(TAG, "工作流存在循环依赖，无法执行")
                 return@withContext WorkflowExecutionResult(
                     workflowId = workflow.id,
                     success = false,
@@ -135,7 +135,7 @@ class WorkflowExecutor(private val context: Context) {
             
             // 5. 标记所有触发节点为成功（触发节点本身不需要执行）
             for (triggerNode in triggerNodes) {
-                Log.d(TAG, "标记触发节点: ${triggerNode.name} (${triggerNode.id})")
+                AppLogger.d(TAG, "标记触发节点: ${triggerNode.name} (${triggerNode.id})")
                 nodeResults[triggerNode.id] = NodeExecutionState.Success("触发节点")
                 onNodeStateChange(triggerNode.id, NodeExecutionState.Success("触发节点"))
             }
@@ -159,7 +159,7 @@ class WorkflowExecutor(private val context: Context) {
                 )
             }
             
-            Log.d(TAG, "工作流执行完成: ${workflow.name}")
+            AppLogger.d(TAG, "工作流执行完成: ${workflow.name}")
             
             return@withContext WorkflowExecutionResult(
                 workflowId = workflow.id,
@@ -169,7 +169,7 @@ class WorkflowExecutor(private val context: Context) {
             )
             
         } catch (e: Exception) {
-            Log.e(TAG, "工作流执行异常", e)
+            AppLogger.e(TAG, "工作流执行异常", e)
             return@withContext WorkflowExecutionResult(
                 workflowId = workflow.id,
                 success = false,
@@ -287,25 +287,25 @@ class WorkflowExecutor(private val context: Context) {
             
             // 检查节点是否已经被执行过
             if (nodeResults.containsKey(currentNodeId)) {
-                Log.d(TAG, "节点已被执行，跳过: $currentNodeId")
+                AppLogger.d(TAG, "节点已被执行，跳过: $currentNodeId")
                 continue
             }
             
             // 查找节点
             val node = workflow.nodes.find { it.id == currentNodeId }
             if (node == null) {
-                Log.w(TAG, "节点不存在: $currentNodeId")
+                AppLogger.w(TAG, "节点不存在: $currentNodeId")
                 continue
             }
             
-            Log.d(TAG, "执行节点: ${node.name} (${node.id})")
+            AppLogger.d(TAG, "执行节点: ${node.name} (${node.id})")
             
             // 执行节点
             val executionSuccess = executeNode(node, nodeResults, onNodeStateChange)
             
             // 如果执行失败，停止整个流程
             if (!executionSuccess) {
-                Log.e(TAG, "节点执行失败: ${node.name}")
+                AppLogger.e(TAG, "节点执行失败: ${node.name}")
                 return false
             }
             
@@ -338,7 +338,7 @@ class WorkflowExecutor(private val context: Context) {
                     val refState = nodeResults[paramValue.nodeId]
                     when (refState) {
                         is NodeExecutionState.Success -> {
-                            Log.d(TAG, "解析参数 $key: 引用节点 ${paramValue.nodeId} 的结果")
+                            AppLogger.d(TAG, "解析参数 $key: 引用节点 ${paramValue.nodeId} 的结果")
                             refState.result
                         }
                         is NodeExecutionState.Failed -> {
@@ -365,7 +365,7 @@ class WorkflowExecutor(private val context: Context) {
     ): Boolean {
         // 只执行 ExecuteNode
         if (node !is ExecuteNode) {
-            Log.d(TAG, "跳过非执行节点: ${node.name}")
+            AppLogger.d(TAG, "跳过非执行节点: ${node.name}")
             nodeResults[node.id] = NodeExecutionState.Success("跳过")
             onNodeStateChange(node.id, NodeExecutionState.Success("跳过"))
             return true
@@ -379,7 +379,7 @@ class WorkflowExecutor(private val context: Context) {
             // 检查是否有 actionType
             if (node.actionType.isBlank()) {
                 val errorMsg = "节点 ${node.name} 没有配置 actionType"
-                Log.w(TAG, errorMsg)
+                AppLogger.w(TAG, errorMsg)
                 nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
                 onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
                 return false
@@ -394,20 +394,20 @@ class WorkflowExecutor(private val context: Context) {
                 parameters = parameters
             )
             
-            Log.d(TAG, "调用工具: ${tool.name}, 参数: ${parameters.size} 个")
+            AppLogger.d(TAG, "调用工具: ${tool.name}, 参数: ${parameters.size} 个")
             
             // 执行工具
             val result = toolHandler.executeTool(tool)
             
             if (result.success) {
                 val resultMessage = result.result.toString()
-                Log.d(TAG, "节点执行成功: ${node.name}, 结果: $resultMessage")
+                AppLogger.d(TAG, "节点执行成功: ${node.name}, 结果: $resultMessage")
                 nodeResults[node.id] = NodeExecutionState.Success(resultMessage)
                 onNodeStateChange(node.id, NodeExecutionState.Success(resultMessage))
                 return true
             } else {
                 val errorMsg = result.error ?: "未知错误"
-                Log.e(TAG, "节点执行失败: ${node.name}, 错误: $errorMsg")
+                AppLogger.e(TAG, "节点执行失败: ${node.name}, 错误: $errorMsg")
                 nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
                 onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
                 return false
@@ -415,7 +415,7 @@ class WorkflowExecutor(private val context: Context) {
             
         } catch (e: Exception) {
             val errorMsg = "节点执行异常: ${e.message}"
-            Log.e(TAG, "节点执行异常: ${node.name}", e)
+            AppLogger.e(TAG, "节点执行异常: ${node.name}", e)
             nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
             onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
             return false

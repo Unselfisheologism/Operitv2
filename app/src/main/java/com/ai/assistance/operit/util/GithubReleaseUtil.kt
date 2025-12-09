@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.util
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.api.GitHubApiService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,7 +62,7 @@ class GithubReleaseUtil(private val context: Context) {
             result.fold(
                 onSuccess = { releases ->
                     if (releases.isEmpty()) {
-                        Log.e(TAG, "No releases found for $repoOwner/$repoName")
+                        AppLogger.e(TAG, "No releases found for $repoOwner/$repoName")
                         return@withContext null
                     }
 
@@ -82,12 +82,12 @@ class GithubReleaseUtil(private val context: Context) {
                     )
                 },
                 onFailure = { exception ->
-                    Log.e(TAG, "Failed to get release info for $repoOwner/$repoName", exception)
+                    AppLogger.e(TAG, "Failed to get release info for $repoOwner/$repoName", exception)
                     null
                 }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error fetching latest release info for $repoOwner/$repoName", e)
+            AppLogger.e(TAG, "Error fetching latest release info for $repoOwner/$repoName", e)
             null
         }
     }

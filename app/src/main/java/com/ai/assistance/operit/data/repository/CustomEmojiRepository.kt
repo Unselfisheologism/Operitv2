@@ -2,7 +2,7 @@ package com.ai.assistance.operit.data.repository
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.webkit.MimeTypeMap
 import com.ai.assistance.operit.data.model.CustomEmoji
 import com.ai.assistance.operit.data.preferences.CustomEmojiPreferences
@@ -52,7 +52,7 @@ class CustomEmojiRepository private constructor(private val context: Context) {
 
         copyBuiltinEmojisFromAssets()
         preferences.setBuiltinEmojisInitialized(true)
-        Log.d(TAG, "Built-in emojis initialized successfully.")
+        AppLogger.d(TAG, "Built-in emojis initialized successfully.")
     }
 
     /**
@@ -73,9 +73,9 @@ class CustomEmojiRepository private constructor(private val context: Context) {
             copyBuiltinEmojisFromAssets()
             preferences.setBuiltinEmojisInitialized(true)
             
-            Log.d(TAG, "Reset to default emojis successfully.")
+            AppLogger.d(TAG, "Reset to default emojis successfully.")
         } catch (e: Exception) {
-            Log.e(TAG, "Error resetting to default emojis", e)
+            AppLogger.e(TAG, "Error resetting to default emojis", e)
             throw e
         }
     }
@@ -86,7 +86,7 @@ class CustomEmojiRepository private constructor(private val context: Context) {
             val categories = context.assets.list(emojiAssetsDir)
 
             if (categories.isNullOrEmpty()) {
-                Log.w(TAG, "No built-in emoji categories found in assets.")
+                AppLogger.w(TAG, "No built-in emoji categories found in assets.")
                 return
             }
 
@@ -124,7 +124,7 @@ class CustomEmojiRepository private constructor(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error copying built-in emojis from assets", e)
+            AppLogger.e(TAG, "Error copying built-in emojis from assets", e)
             throw e
         }
     }
@@ -179,10 +179,10 @@ class CustomEmojiRepository private constructor(private val context: Context) {
             // 6. 保存元数据
             preferences.addCustomEmoji(emoji)
 
-            Log.d(TAG, "Successfully added emoji: $fileName to category: $category")
+            AppLogger.d(TAG, "Successfully added emoji: $fileName to category: $category")
             Result.success(emoji)
         } catch (e: Exception) {
-            Log.e(TAG, "Error adding custom emoji", e)
+            AppLogger.e(TAG, "Error adding custom emoji", e)
             Result.failure(e)
         }
     }
@@ -206,16 +206,16 @@ class CustomEmojiRepository private constructor(private val context: Context) {
             val file = getEmojiFile(emoji)
             if (file.exists()) {
                 file.delete()
-                Log.d(TAG, "Deleted file: ${file.absolutePath}")
+                AppLogger.d(TAG, "Deleted file: ${file.absolutePath}")
             }
 
             // 3. 删除元数据
             preferences.deleteCustomEmoji(emojiId)
 
-            Log.d(TAG, "Successfully deleted emoji: $emojiId")
+            AppLogger.d(TAG, "Successfully deleted emoji: $emojiId")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting custom emoji", e)
+            AppLogger.e(TAG, "Error deleting custom emoji", e)
             Result.failure(e)
         }
     }
@@ -248,10 +248,10 @@ class CustomEmojiRepository private constructor(private val context: Context) {
             // 4. 删除元数据
             preferences.deleteCategory(category)
 
-            Log.d(TAG, "Successfully deleted category: $category")
+            AppLogger.d(TAG, "Successfully deleted category: $category")
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting category", e)
+            AppLogger.e(TAG, "Error deleting category", e)
             Result.failure(e)
         }
     }
@@ -317,7 +317,7 @@ class CustomEmojiRepository private constructor(private val context: Context) {
                 path?.substringAfterLast('.', "")?.takeIf { it.isNotEmpty() }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting file extension", e)
+            AppLogger.e(TAG, "Error getting file extension", e)
             null
         }
     }

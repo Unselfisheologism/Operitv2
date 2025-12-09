@@ -8,7 +8,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -132,7 +132,7 @@ class UIOperationOverlay private constructor(private val context: Context) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context.startActivity(intent)
             } catch (e: Exception) {
-                Log.e(TAG, "Error requesting overlay permission", e)
+                AppLogger.e(TAG, "Error requesting overlay permission", e)
             }
         }
     }
@@ -148,7 +148,7 @@ class UIOperationOverlay private constructor(private val context: Context) {
                 try {
                     action()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error executing action on main thread", e)
+                    AppLogger.e(TAG, "Error executing action on main thread", e)
                 }
             }
         }
@@ -161,7 +161,7 @@ class UIOperationOverlay private constructor(private val context: Context) {
         if (overlayView != null) return
         
         if (!hasOverlayPermission()) {
-            Log.e(TAG, "Cannot show overlay without permission")
+            AppLogger.e(TAG, "Cannot show overlay without permission")
             requestOverlayPermission()
             return
         }
@@ -223,9 +223,9 @@ class UIOperationOverlay private constructor(private val context: Context) {
             }
             
             windowManager?.addView(overlayView, params)
-            Log.d(TAG, "Overlay view added successfully")
+            AppLogger.d(TAG, "Overlay view added successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "Error adding overlay view", e)
+            AppLogger.e(TAG, "Error adding overlay view", e)
             // 清理资源
             lifecycleOwner = null
             overlayView = null
@@ -237,7 +237,7 @@ class UIOperationOverlay private constructor(private val context: Context) {
      * 显示点击操作反馈
      */
     fun showTap(x: Int, y: Int, autoHideDelayMs: Long = 1500) {
-        Log.d(TAG, "Showing tap at ($x, $y)")
+        AppLogger.d(TAG, "Showing tap at ($x, $y)")
         
         val newTapEvent = TapEvent(x, y - statusBarHeight)
         
@@ -256,7 +256,7 @@ class UIOperationOverlay private constructor(private val context: Context) {
      * 显示滑动操作反馈
      */
     fun showSwipe(startX: Int, startY: Int, endX: Int, endY: Int, autoHideDelayMs: Long = 1500) {
-        Log.d(TAG, "Showing swipe from ($startX, $startY) to ($endX, $endY)")
+        AppLogger.d(TAG, "Showing swipe from ($startX, $startY) to ($endX, $endY)")
         
         val newSwipeEvent = SwipeEvent(startX, startY - statusBarHeight, endX, endY - statusBarHeight)
 
@@ -274,7 +274,7 @@ class UIOperationOverlay private constructor(private val context: Context) {
      * 显示文本输入操作反馈
      */
     fun showTextInput(x: Int, y: Int, text: String, autoHideDelayMs: Long = 2000) {
-        Log.d(TAG, "Showing text input at ($x, $y): $text")
+        AppLogger.d(TAG, "Showing text input at ($x, $y): $text")
         
         val newTextInputEvent = TextInputEvent(x, y - statusBarHeight, text)
         
@@ -294,7 +294,7 @@ class UIOperationOverlay private constructor(private val context: Context) {
     private fun scheduleAutoCleanup() {
         handler.postDelayed({
             if (tapEvents.isEmpty() && swipeEvents.isEmpty() && textInputEvents.isEmpty()) {
-                Log.d(TAG, "All events cleared, auto-cleaning overlay window")
+                AppLogger.d(TAG, "All events cleared, auto-cleaning overlay window")
                 hide()
             }
         }, AUTO_CLEANUP_DELAY_MS)
@@ -322,16 +322,16 @@ class UIOperationOverlay private constructor(private val context: Context) {
                     try {
                         windowManager?.removeView(overlayView)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error removing overlay view", e)
+                        AppLogger.e(TAG, "Error removing overlay view", e)
                     }
                     
                     overlayView = null
                     lifecycleOwner = null
                     windowManager = null
-                    Log.d(TAG, "Overlay view dismissed")
+                    AppLogger.d(TAG, "Overlay view dismissed")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error dismissing overlay view", e)
+                AppLogger.e(TAG, "Error dismissing overlay view", e)
             }
         }
     }

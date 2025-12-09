@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.util
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.util.ChatUtils
 
 /**
@@ -124,7 +124,7 @@ class TokenCacheManager {
         // 注意：previousChatHistory现在存储的是包含工具定义的版本
         val commonPrefixLength = findCommonPrefixLength(historyWithTools, previousChatHistory)
         
-        Log.d("TokenCacheManager", "聊天历史比较: 当前=${historyWithTools.size}, 之前=${previousChatHistory.size}, 公共前缀=${commonPrefixLength}")
+        AppLogger.d("TokenCacheManager", "聊天历史比较: 当前=${historyWithTools.size}, 之前=${previousChatHistory.size}, 公共前缀=${commonPrefixLength}")
         
         if (commonPrefixLength > 0) {
             // 有公共前缀，可以使用缓存
@@ -149,7 +149,7 @@ class TokenCacheManager {
             // 更新缓存的历史记录 token 数量
             previousHistoryTokenCount = cachedTokens + newTokens
             
-            Log.d("TokenCacheManager", "使用token缓存: 缓存=${_cachedInputTokenCount}, 新增=${_currentInputTokenCount}")
+            AppLogger.d("TokenCacheManager", "使用token缓存: 缓存=${_cachedInputTokenCount}, 新增=${_currentInputTokenCount}")
         } else {
             // 没有公共前缀，重新计算所有token
             val historyTokens = calculateTokensForHistory(historyWithTools)
@@ -161,7 +161,7 @@ class TokenCacheManager {
             // 更新缓存的历史记录 token 数量
             previousHistoryTokenCount = historyTokens + messageTokens
             
-            Log.d("TokenCacheManager", "重新计算所有tokens: ${_currentInputTokenCount}")
+            AppLogger.d("TokenCacheManager", "重新计算所有tokens: ${_currentInputTokenCount}")
         }
         
         // 更新缓存的历史记录列表（包含工具定义）

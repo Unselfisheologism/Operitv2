@@ -4,7 +4,7 @@ import android.content.Context
 import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AppListData
 import com.ai.assistance.operit.core.tools.AppOperationData
 import com.ai.assistance.operit.core.tools.LocationData
@@ -76,7 +76,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                     error = "没有修改系统设置的权限。已为您打开设置页面，请授予 WRITE_SETTINGS 权限后重试。"
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "打开设置页面失败", e)
+                AppLogger.e(TAG, "打开设置页面失败", e)
                 return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -95,7 +95,7 @@ open class StandardSystemOperationTools(private val context: Context) {
             val resultData = SystemSettingData(namespace = namespace, setting = setting, value = value)
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: SecurityException) {
-            Log.e(TAG, "修改系统设置时出错", e)
+            AppLogger.e(TAG, "修改系统设置时出错", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -103,7 +103,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 error = "修改系统设置时出现安全异常: ${e.message}. 这可能需要更高的权限."
             )
         } catch (e: Exception) {
-            Log.e(TAG, "修改系统设置时出错", e)
+            AppLogger.e(TAG, "修改系统设置时出错", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -157,7 +157,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 )
             }
         } catch (e: SecurityException) {
-            Log.e(TAG, "获取系统设置时出错", e)
+            AppLogger.e(TAG, "获取系统设置时出错", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -165,7 +165,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 error = "获取系统设置时出现安全异常: ${e.message}. 这可能需要更高的权限."
             )
         } catch (e: Exception) {
-            Log.e(TAG, "获取系统设置时出错", e)
+            AppLogger.e(TAG, "获取系统设置时出错", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -214,7 +214,7 @@ open class StandardSystemOperationTools(private val context: Context) {
             )
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: Exception) {
-            Log.e(TAG, "请求安装应用时出错", e)
+            AppLogger.e(TAG, "请求安装应用时出错", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -262,7 +262,7 @@ open class StandardSystemOperationTools(private val context: Context) {
             )
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: Exception) {
-            Log.e(TAG, "请求卸载应用时出错", e)
+            AppLogger.e(TAG, "请求卸载应用时出错", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -299,7 +299,7 @@ open class StandardSystemOperationTools(private val context: Context) {
             
             ToolResult(toolName = tool.name, success = true, result = resultData)
         } catch (e: Exception) {
-            Log.e(TAG, "获取已安装应用列表时出错", e)
+            AppLogger.e(TAG, "获取已安装应用列表时出错", e)
             ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -353,7 +353,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "启动应用时出错", e)
+            AppLogger.e(TAG, "启动应用时出错", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -387,7 +387,7 @@ open class StandardSystemOperationTools(private val context: Context) {
             )
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: SecurityException) {
-            Log.e(TAG, "停止应用时出现安全异常", e)
+            AppLogger.e(TAG, "停止应用时出现安全异常", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -395,7 +395,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 error = "停止应用失败: ${e.message}. 需要 KILL_BACKGROUND_PROCESSES 权限."
             )
         } catch (e: Exception) {
-            Log.e(TAG, "停止应用时出错", e)
+            AppLogger.e(TAG, "停止应用时出错", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -486,7 +486,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                                     }
 
                             if (provider == null) {
-                                continuation.resume(null) { Log.e(TAG, "位置请求取消", it) }
+                                continuation.resume(null) { AppLogger.e(TAG, "位置请求取消", it) }
                                 return@suspendCancellableCoroutine
                             }
 
@@ -511,7 +511,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                                             null
                                         }
                                     } catch (e: SecurityException) {
-                                        Log.e(TAG, "获取最后已知位置失败", e)
+                                        AppLogger.e(TAG, "获取最后已知位置失败", e)
                                         null
                                     }
 
@@ -520,7 +520,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                                             System.currentTimeMillis() - lastKnownLocation.time <
                                                     10 * 60 * 1000
                             ) {
-                                continuation.resume(lastKnownLocation) { Log.e(TAG, "位置请求取消", it) }
+                                continuation.resume(lastKnownLocation) { AppLogger.e(TAG, "位置请求取消", it) }
                                 return@suspendCancellableCoroutine
                             }
 
@@ -530,7 +530,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                                         override fun onLocationChanged(location: Location) {
                                             locationManager.removeUpdates(this)
                                             continuation.resume(location) {
-                                                Log.e(TAG, "位置请求取消", it)
+                                                AppLogger.e(TAG, "位置请求取消", it)
                                             }
                                         }
 
@@ -539,11 +539,11 @@ open class StandardSystemOperationTools(private val context: Context) {
                                             if (!continuation.isCompleted) {
                                                 if (lastKnownLocation != null) {
                                                     continuation.resume(lastKnownLocation) {
-                                                        Log.e(TAG, "位置请求取消", it)
+                                                        AppLogger.e(TAG, "位置请求取消", it)
                                                     }
                                                 } else {
                                                     continuation.resume(null) {
-                                                        Log.e(TAG, "位置请求取消", it)
+                                                        AppLogger.e(TAG, "位置请求取消", it)
                                                     }
                                                 }
                                             }
@@ -583,7 +583,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                                             locationManager.removeUpdates(locationListener)
                                             // 如果超时，尝试使用最后已知位置
                                             continuation.resume(lastKnownLocation) {
-                                                Log.e(TAG, "位置请求取消", it)
+                                                AppLogger.e(TAG, "位置请求取消", it)
                                             }
                                         }
                                     }
@@ -597,12 +597,12 @@ open class StandardSystemOperationTools(private val context: Context) {
                                                 kotlinx.coroutines.Dispatchers.Main
                                         ) { locationManager.removeUpdates(locationListener) }
                                     } catch (e: Exception) {
-                                        Log.e(TAG, "移除位置更新失败", e)
+                                        AppLogger.e(TAG, "移除位置更新失败", e)
                                     }
                                 }
                             } catch (e: SecurityException) {
-                                continuation.resume(lastKnownLocation) { Log.e(TAG, "位置请求取消", it) }
-                                Log.e(TAG, "请求位置更新失败", e)
+                                continuation.resume(lastKnownLocation) { AppLogger.e(TAG, "位置请求取消", it) }
+                                AppLogger.e(TAG, "请求位置更新失败", e)
                             }
                         }
                     }
@@ -651,7 +651,7 @@ open class StandardSystemOperationTools(private val context: Context) {
 
             return ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: Exception) {
-            Log.e(TAG, "获取位置信息时出错", e)
+            AppLogger.e(TAG, "获取位置信息时出错", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -686,7 +686,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取地址信息时出错", e)
+            AppLogger.e(TAG, "获取地址信息时出错", e)
         }
 
         // 如果无法获取地址信息，返回空对象

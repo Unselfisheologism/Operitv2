@@ -7,7 +7,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.LocaleList
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
@@ -101,9 +101,9 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            Log.d(TAG, "通知权限已授予")
+            AppLogger.d(TAG, "通知权限已授予")
         } else {
-            Log.d(TAG, "通知权限被拒绝")
+            AppLogger.d(TAG, "通知权限被拒绝")
             Toast.makeText(this, getString(R.string.notification_permission_denied), Toast.LENGTH_LONG).show()
         }
     }
@@ -127,13 +127,13 @@ class MainActivity : ComponentActivity() {
         // 使用createConfigurationContext创建新的本地化上下文
         val context = newBase.createConfigurationContext(config)
         super.attachBaseContext(context)
-        Log.d(TAG, "MainActivity应用语言设置: $code")
+        AppLogger.d(TAG, "MainActivity应用语言设置: $code")
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         lastOrientation = resources.configuration.orientation
-        Log.d(TAG, "onCreate: Android SDK version: ${Build.VERSION.SDK_INT}")
+        AppLogger.d(TAG, "onCreate: Android SDK version: ${Build.VERSION.SDK_INT}")
 
         // Set window background to solid color to prevent system theme leaking through
         window.setBackgroundDrawableResource(android.R.color.black)
@@ -154,7 +154,7 @@ class MainActivity : ComponentActivity() {
 
         // 设置跳过加载的回调
         pluginLoadingState.setOnSkipCallback {
-            Log.d(TAG, "用户跳过了插件加载过程")
+            AppLogger.d(TAG, "用户跳过了插件加载过程")
             Toast.makeText(this, getString(R.string.plugin_loading_skipped), Toast.LENGTH_SHORT).show()
         }
 
@@ -180,16 +180,16 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent) // 重要：更新当前Intent
-        Log.d(TAG, "onNewIntent: Received intent with action: ${intent?.action}")
+        AppLogger.d(TAG, "onNewIntent: Received intent with action: ${intent?.action}")
         intent?.data?.let { uri ->
             if (uri.scheme == "operit" && uri.host == "github-oauth-callback") {
                 val code = uri.getQueryParameter("code")
                 if (code != null) {
-                    Log.d(TAG, "GitHub OAuth code received: $code")
+                    AppLogger.d(TAG, "GitHub OAuth code received: $code")
                     GitHubAuthBus.postAuthCode(code)
                 } else {
                     val error = uri.getQueryParameter("error")
-                    Log.e(TAG, "GitHub OAuth error: $error")
+                    AppLogger.e(TAG, "GitHub OAuth error: $error")
                 }
             }
         }
@@ -207,11 +207,11 @@ class MainActivity : ComponentActivity() {
             if (uri.scheme == "operit" && uri.host == "github-oauth-callback") {
                 val code = uri.getQueryParameter("code")
                 if (code != null) {
-                    Log.d(TAG, "GitHub OAuth code received from onCreate: $code")
+                    AppLogger.d(TAG, "GitHub OAuth code received from onCreate: $code")
                     GitHubAuthBus.postAuthCode(code)
                 } else {
                     val error = uri.getQueryParameter("error")
-                    Log.e(TAG, "GitHub OAuth error from onCreate: $error")
+                    AppLogger.e(TAG, "GitHub OAuth error from onCreate: $error")
                 }
             }
         }
@@ -222,14 +222,14 @@ class MainActivity : ComponentActivity() {
                 // Handle "Open with" action
                 intent.data?.let { uri ->
                     pendingSharedFileUris = listOf(uri)
-                    Log.d(TAG, "Received file to open: $uri")
+                    AppLogger.d(TAG, "Received file to open: $uri")
                 }
             }
             Intent.ACTION_SEND -> {
                 // Handle "Share" action
                 intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)?.let { uri ->
                     pendingSharedFileUris = listOf(uri)
-                    Log.d(TAG, "Received shared file: $uri")
+                    AppLogger.d(TAG, "Received shared file: $uri")
                 }
             }
         }
@@ -250,7 +250,7 @@ class MainActivity : ComponentActivity() {
             if (!showPermissionGuide && agreementPreferences.isAgreementAccepted()) {
                 try {
                     val needsMigration = migrationManager.needsMigration()
-                    Log.d(TAG, "数据迁移检查: 需要迁移=$needsMigration")
+                    AppLogger.d(TAG, "数据迁移检查: 需要迁移=$needsMigration")
 
                     showMigrationScreen = needsMigration
 
@@ -259,7 +259,7 @@ class MainActivity : ComponentActivity() {
                         startPluginLoading()
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "数据迁移检查失败", e)
+                    AppLogger.e(TAG, "数据迁移检查失败", e)
                     // 检查失败，跳过迁移直接加载插件
                     startPluginLoading()
                 }
@@ -279,7 +279,7 @@ class MainActivity : ComponentActivity() {
             try {
                 // 检查是否需要迁移数据
                 val needsMigration = migrationManager.needsMigration()
-                Log.d(TAG, "数据迁移检查: 需要迁移=$needsMigration")
+                AppLogger.d(TAG, "数据迁移检查: 需要迁移=$needsMigration")
 
                 if (needsMigration) {
                     showMigrationScreen = true
@@ -289,7 +289,7 @@ class MainActivity : ComponentActivity() {
                     startPluginLoading()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "数据迁移检查失败", e)
+                AppLogger.e(TAG, "数据迁移检查失败", e)
                 // 检查失败，跳过迁移直接加载插件
                 startPluginLoading()
             }
@@ -312,23 +312,23 @@ class MainActivity : ComponentActivity() {
     private fun processPendingSharedFiles() {
         val uris = pendingSharedFileUris
         if (uris == null) {
-            Log.d(TAG, "No pending shared files to process")
+            AppLogger.d(TAG, "No pending shared files to process")
             return
         }
         
-        Log.d(TAG, "Processing ${uris.size} pending shared file(s)")
+        AppLogger.d(TAG, "Processing ${uris.size} pending shared file(s)")
         uris.forEachIndexed { index, uri ->
-            Log.d(TAG, "  [$index] URI: $uri")
+            AppLogger.d(TAG, "  [$index] URI: $uri")
         }
         
         lifecycleScope.launch {
             try {
                 // Pass the URIs to the chat screen via SharedFileHandler
                 SharedFileHandler.setSharedFiles(uris)
-                Log.d(TAG, "Successfully passed shared files to SharedFileHandler")
+                AppLogger.d(TAG, "Successfully passed shared files to SharedFileHandler")
                 pendingSharedFileUris = null
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to process shared files", e)
+                AppLogger.e(TAG, "Failed to process shared files", e)
                 Toast.makeText(
                     this@MainActivity,
                     "处理分享文件失败: ${e.message}",
@@ -363,7 +363,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "onDestroy called")
+        AppLogger.d(TAG, "onDestroy called")
 
         // 确保隐藏加载界面
         pluginLoadingState.hide()
@@ -373,7 +373,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        Log.d(TAG, "onConfigurationChanged: new orientation=${newConfig.orientation}, last orientation=${lastOrientation}")
+        AppLogger.d(TAG, "onConfigurationChanged: new orientation=${newConfig.orientation}, last orientation=${lastOrientation}")
 
         // 屏幕方向变化时，确保加载界面不可见
         pluginLoadingState.hide()
@@ -410,7 +410,7 @@ class MainActivity : ComponentActivity() {
         // 初始化用户偏好管理器并直接检查初始化状态
         preferencesManager = UserPreferencesManager.getInstance(this)
         showPreferencesGuide = !preferencesManager.isPreferencesInitialized()
-        Log.d(
+        AppLogger.d(
                 TAG,
                 "初始化检查: 用户偏好已初始化=${!showPreferencesGuide}，将${if(showPreferencesGuide) "" else "不"}显示引导界面"
         )
@@ -429,11 +429,11 @@ class MainActivity : ComponentActivity() {
             val permission = Manifest.permission.POST_NOTIFICATIONS
             when {
                 ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED -> {
-                    Log.d(TAG, "通知权限已授予")
+                    AppLogger.d(TAG, "通知权限已授予")
                 }
                 shouldShowRequestPermissionRationale(permission) -> {
                     // 用户之前拒绝过，显示说明并再次请求
-                    Log.d(TAG, "需要显示通知权限说明")
+                    AppLogger.d(TAG, "需要显示通知权限说明")
                     Toast.makeText(
                         this,
                         getString(R.string.notification_permission_rationale),
@@ -443,13 +443,13 @@ class MainActivity : ComponentActivity() {
                 }
                 else -> {
                     // 直接请求权限
-                    Log.d(TAG, "请求通知权限")
+                    AppLogger.d(TAG, "请求通知权限")
                     notificationPermissionLauncher.launch(permission)
                 }
             }
         } else {
             // Android 13 以下不需要运行时通知权限
-            Log.d(TAG, "Android 版本 < 13，无需请求通知权限")
+            AppLogger.d(TAG, "Android 版本 < 13，无需请求通知权限")
         }
     }
 
@@ -457,9 +457,9 @@ class MainActivity : ComponentActivity() {
     private fun checkPermissionLevelSet() {
         // 检查是否已设置权限级别
         val permissionLevel = androidPermissionPreferences.getPreferredPermissionLevel()
-        Log.d(TAG, "当前权限级别: $permissionLevel")
+        AppLogger.d(TAG, "当前权限级别: $permissionLevel")
         showPermissionGuide = permissionLevel == null
-        Log.d(
+        AppLogger.d(
                 TAG,
                 "权限级别检查: 已设置=${!showPermissionGuide}, 将${if(showPermissionGuide) "" else "不"}显示权限引导界面"
         )
@@ -473,7 +473,7 @@ class MainActivity : ComponentActivity() {
                 // 只有当状态变化时才更新UI
                 val newValue = !profile.isInitialized
                 if (showPreferencesGuide != newValue) {
-                    Log.d(TAG, "偏好变更: 从 $showPreferencesGuide 变为 $newValue")
+                    AppLogger.d(TAG, "偏好变更: 从 $showPreferencesGuide 变为 $newValue")
                     showPreferencesGuide = newValue
                     setAppContent()
                 }
@@ -488,10 +488,10 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             try {
                 window.setSustainedPerformanceMode(true)
-                Log.d(TAG, "已成功请求持续高性能模式。")
+                AppLogger.d(TAG, "已成功请求持续高性能模式。")
             } catch (e: Exception) {
                 // 在某些设备上，此模式可能不可用或不支持。
-                Log.w(TAG, "请求持续高性能模式失败。", e)
+                AppLogger.w(TAG, "请求持续高性能模式失败。", e)
             }
         }
 
@@ -502,14 +502,14 @@ class MainActivity : ComponentActivity() {
             val highestMode = getHighestRefreshRate()
             if (highestMode > 0) {
                 window.attributes.preferredDisplayModeId = highestMode
-                Log.d(TAG, "设置窗口首选显示模式ID: $highestMode")
+                AppLogger.d(TAG, "设置窗口首选显示模式ID: $highestMode")
             }
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             // 为Android 6.0-10设备优化高刷新率
             val refreshRate = getDeviceRefreshRate()
             if (refreshRate > 60f) {
                 window.attributes.preferredRefreshRate = refreshRate
-                Log.d(TAG, "设置窗口首选刷新率: $refreshRate Hz")
+                AppLogger.d(TAG, "设置窗口首选刷新率: $refreshRate Hz")
             }
         }
 
@@ -649,7 +649,7 @@ class MainActivity : ComponentActivity() {
                 updateManager.checkForUpdates(appVersion)
                 // 不需要显式处理更新状态，因为我们已经设置了观察者
             } catch (e: Exception) {
-                Log.e(TAG, "更新检查失败: ${e.message}")
+                AppLogger.e(TAG, "更新检查失败: ${e.message}")
             }
         }
     }
@@ -662,7 +662,7 @@ class MainActivity : ComponentActivity() {
                     "未知"
                 }
 
-        Log.d(TAG, "发现新版本: ${updateInfo.newVersion}，当前版本: $currentVersion")
+        AppLogger.d(TAG, "发现新版本: ${updateInfo.newVersion}，当前版本: $currentVersion")
 
         // 显示更新提示
         val updateMessage = "发现新版本 ${updateInfo.newVersion}，请前往「关于」页面查看详情"
@@ -681,7 +681,7 @@ class MainActivity : ComponentActivity() {
                     highestModeId = mode.modeId
                 }
             }
-            Log.d(TAG, "Selected display mode with refresh rate: $maxRefreshRate Hz")
+            AppLogger.d(TAG, "Selected display mode with refresh rate: $maxRefreshRate Hz")
             return highestModeId
         }
         return 0
@@ -707,11 +707,11 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting refresh rate", e)
+                AppLogger.e(TAG, "Error getting refresh rate", e)
             }
         }
 
-        Log.d(TAG, "Selected refresh rate: $refreshRate Hz")
+        AppLogger.d(TAG, "Selected refresh rate: $refreshRate Hz")
         return refreshRate
     }
 
@@ -727,7 +727,7 @@ class MainActivity : ComponentActivity() {
                         noMediaFile.createNewFile()
                     }
                     
-                    Log.d(TAG, "开始清理临时文件目录: ${tempDir.absolutePath}")
+                    AppLogger.d(TAG, "开始清理临时文件目录: ${tempDir.absolutePath}")
                     val files = tempDir.listFiles()
                     var deletedCount = 0
 
@@ -737,10 +737,10 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     
-                    Log.d(TAG, "已删除${deletedCount}个临时文件")
+                    AppLogger.d(TAG, "已删除${deletedCount}个临时文件")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "清理临时文件失败", e)
+                AppLogger.e(TAG, "清理临时文件失败", e)
             }
         }
     }

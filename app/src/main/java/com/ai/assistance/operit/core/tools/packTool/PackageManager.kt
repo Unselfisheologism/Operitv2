@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.packTool
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.core.tools.PackageToolExecutor
@@ -67,7 +67,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             if (!dir.exists()) {
                 dir.mkdirs()
             }
-            Log.d(TAG, "External packages directory: ${dir.absolutePath}")
+            AppLogger.d(TAG, "External packages directory: ${dir.absolutePath}")
             return dir
         }
 
@@ -97,7 +97,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             if (toolPackage.isBuiltIn && toolPackage.enabledByDefault && !disabledPackages.contains(toolPackage.name)) {
                 if (importedPackages.add(toolPackage.name)) {
                     packagesChanged = true
-                    Log.d(TAG, "Auto-importing default package: ${toolPackage.name}")
+                    AppLogger.d(TAG, "Auto-importing default package: ${toolPackage.name}")
                 }
             }
         }
@@ -106,7 +106,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             val prefs = context.getSharedPreferences(PACKAGE_PREFS, Context.MODE_PRIVATE)
             val updatedJson = Json.encodeToString(importedPackages.toList())
             prefs.edit().putString(IMPORTED_PACKAGES_KEY, updatedJson).apply()
-            Log.d(TAG, "Updated imported packages with default packages.")
+            AppLogger.d(TAG, "Updated imported packages with default packages.")
         }
     }
 
@@ -126,7 +126,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
                 if (packageMetadata != null) {
                     // Packages from assets are built-in
                     availablePackages[packageMetadata.name] = packageMetadata.copy(isBuiltIn = true)
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "Loaded JavaScript package from assets: ${packageMetadata.name} with description: ${packageMetadata.description}, tools: ${packageMetadata.tools.size}"
                     )
@@ -145,7 +145,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
                         // Packages from external storage are not built-in
                         availablePackages[packageMetadata.name] =
                                 packageMetadata.copy(isBuiltIn = false)
-                        Log.d(TAG, "Loaded JS package from external storage: ${packageMetadata.name}")
+                        AppLogger.d(TAG, "Loaded JS package from external storage: ${packageMetadata.name}")
                     }
                 }
             }
@@ -158,7 +158,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             val jsContent = file.readText()
             return parseJsPackage(jsContent)
         } catch (e: Exception) {
-            Log.e(TAG, "Error loading package from JS file: ${file.path}", e)
+            AppLogger.e(TAG, "Error loading package from JS file: ${file.path}", e)
             return null
         }
     }
@@ -170,7 +170,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             val jsContent = assetManager.open(assetPath).bufferedReader().use { it.readText() }
             return parseJsPackage(jsContent)
         } catch (e: Exception) {
-            Log.e(TAG, "Error loading package from JS asset: $assetPath", e)
+            AppLogger.e(TAG, "Error loading package from JS asset: $assetPath", e)
             return null
         }
     }
@@ -217,7 +217,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
 
             return packageMetadata.copy(tools = tools)
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing JS package: ${e.message}", e)
+            AppLogger.e(TAG, "Error parsing JS package: ${e.message}", e)
             return null
         }
     }
@@ -240,7 +240,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             }
         }
 
-        Log.w(TAG, "Could not find function '$toolName' in JavaScript file")
+        AppLogger.w(TAG, "Could not find function '$toolName' in JavaScript file")
         return false
     }
 
@@ -316,10 +316,10 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             // Add to available packages
             availablePackages[packageMetadata.name] = packageMetadata
 
-            Log.d(TAG, "Successfully imported external package to: ${destinationFile.absolutePath}")
+            AppLogger.d(TAG, "Successfully imported external package to: ${destinationFile.absolutePath}")
             return "Successfully imported package: ${packageMetadata.name}\nStored at: ${destinationFile.absolutePath}"
         } catch (e: Exception) {
-            Log.e(TAG, "Error importing package from external storage", e)
+            AppLogger.e(TAG, "Error importing package from external storage", e)
             return "Error importing package: ${e.message}"
         }
     }
@@ -354,10 +354,10 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
         val disabledPackages = getDisabledPackages().toMutableList()
         if (disabledPackages.remove(packageName)) {
             saveDisabledPackages(disabledPackages)
-            Log.d(TAG, "Removed package from disabled list: $packageName")
+            AppLogger.d(TAG, "Removed package from disabled list: $packageName")
         }
 
-        Log.d(TAG, "Successfully imported package: $packageName")
+        AppLogger.d(TAG, "Successfully imported package: $packageName")
         return "Successfully imported package: $packageName"
     }
 
@@ -379,7 +379,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             // Register the package tools with AIToolHandler
             registerPackageTools(toolPackage)
 
-            Log.d(TAG, "Successfully loaded and activated package: $packageName")
+            AppLogger.d(TAG, "Successfully loaded and activated package: $packageName")
 
             // Generate and return the system prompt enhancement
             return generatePackageSystemPrompt(toolPackage)
@@ -509,7 +509,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             
             packages
         } catch (e: Exception) {
-            Log.e(TAG, "Error decoding imported packages", e)
+            AppLogger.e(TAG, "Error decoding imported packages", e)
             emptyList()
         }
     }
@@ -526,14 +526,14 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
         }
         
         if (packagesToRemove.isNotEmpty()) {
-            Log.d(TAG, "Found ${packagesToRemove.size} non-existent packages in imported list: $packagesToRemove")
+            AppLogger.d(TAG, "Found ${packagesToRemove.size} non-existent packages in imported list: $packagesToRemove")
             
             val prefs = context.getSharedPreferences(PACKAGE_PREFS, Context.MODE_PRIVATE)
             val cleanedPackages = currentPackages.filter { !packagesToRemove.contains(it) }
             val updatedJson = Json.encodeToString(cleanedPackages)
             prefs.edit().putString(IMPORTED_PACKAGES_KEY, updatedJson).apply()
             
-            Log.d(TAG, "Cleaned up imported packages list. Removed: $packagesToRemove")
+            AppLogger.d(TAG, "Cleaned up imported packages list. Removed: $packagesToRemove")
         }
     }
 
@@ -548,7 +548,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             val jsonConfig = Json { ignoreUnknownKeys = true }
             jsonConfig.decodeFromString<List<String>>(packagesJson ?: "[]")
         } catch (e: Exception) {
-            Log.e(TAG, "Error decoding disabled packages", e)
+            AppLogger.e(TAG, "Error decoding disabled packages", e)
             emptyList()
         }
     }
@@ -593,17 +593,17 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
             if (!disabledPackages.contains(packageName)) {
                 disabledPackages.add(packageName)
                 saveDisabledPackages(disabledPackages)
-                Log.d(TAG, "Added default package to disabled list: $packageName")
+                AppLogger.d(TAG, "Added default package to disabled list: $packageName")
             }
         }
 
         if (packageWasRemoved) {
             val updatedJson = Json.encodeToString(currentPackages)
             prefs.edit().putString(IMPORTED_PACKAGES_KEY, updatedJson).apply()
-            Log.d(TAG, "Removed package from imported list: $packageName")
+            AppLogger.d(TAG, "Removed package from imported list: $packageName")
             return "Successfully removed package: $packageName"
         } else {
-            Log.d(TAG, "Package not found in imported list: $packageName")
+            AppLogger.d(TAG, "Package not found in imported list: $packageName")
             return "Package not found in imported list: $packageName"
         }
     }
@@ -660,7 +660,7 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
                     executor = mcpToolExecutor
             )
 
-            Log.d(TAG, "已注册MCP工具: $toolName")
+            AppLogger.d(TAG, "已注册MCP工具: $toolName")
         }
 
         return generateMCPSystemPrompt(toolPackage, serverName)
@@ -700,34 +700,34 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
      * @return True if the package was deleted successfully, false otherwise.
      */
     fun deletePackage(packageName: String): Boolean {
-        Log.d(TAG, "Attempting to delete package: $packageName")
+        AppLogger.d(TAG, "Attempting to delete package: $packageName")
         // Find the package file.
         val packageFile = findPackageFile(packageName)
 
         if (packageFile == null || !packageFile.exists()) {
-            Log.w(TAG, "Package file not found for deletion: $packageName. It might be already deleted or never existed.")
+            AppLogger.w(TAG, "Package file not found for deletion: $packageName. It might be already deleted or never existed.")
             // If the file doesn't exist, we can still attempt to clean up the import record.
             removePackage(packageName)
             // Consider it "successfully" deleted if it's already gone.
             return true
         }
 
-        Log.d(TAG, "Found package file to delete: ${packageFile.absolutePath}")
+        AppLogger.d(TAG, "Found package file to delete: ${packageFile.absolutePath}")
 
         // Try to delete the file.
         val fileDeleted = packageFile.delete()
 
         if (fileDeleted) {
-            Log.d(TAG, "Successfully deleted package file: ${packageFile.absolutePath}")
+            AppLogger.d(TAG, "Successfully deleted package file: ${packageFile.absolutePath}")
             // If file deletion is successful, remove it from the imported list and in-memory cache.
             removePackage(packageName)
             val removedFromCache = availablePackages.remove(packageName)
-            Log.d(TAG, "Removed '$packageName' from availablePackages cache. Was it present? ${removedFromCache != null}")
-            Log.d(TAG, "Package '$packageName' fully deleted.")
+            AppLogger.d(TAG, "Removed '$packageName' from availablePackages cache. Was it present? ${removedFromCache != null}")
+            AppLogger.d(TAG, "Package '$packageName' fully deleted.")
             return true
         } else {
             // If file deletion fails, log the error and do not change the state.
-            Log.e(TAG, "Failed to delete package file: ${packageFile.absolutePath}")
+            AppLogger.e(TAG, "Failed to delete package file: ${packageFile.absolutePath}")
             return false
         }
     }

@@ -2,7 +2,7 @@ package com.ai.assistance.operit.core.tools.system
 
 import android.content.Context
 import android.os.Build
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.annotation.RequiresApi
 import com.ai.assistance.operit.terminal.CommandExecutionEvent
 import com.ai.assistance.operit.terminal.SessionDirectoryEvent
@@ -77,9 +77,9 @@ class Terminal private constructor(private val context: Context) {
      * 创建新的终端会话 - 同步等待初始化完成
      */
     suspend fun createSession(title: String? = null): String {
-        Log.d(TAG, "Creating new terminal session and waiting for initialization")
+        AppLogger.d(TAG, "Creating new terminal session and waiting for initialization")
         val newSession = terminalManager.createNewSession(title)
-        Log.d(TAG, "Session ${newSession.id} initialized successfully")
+        AppLogger.d(TAG, "Session ${newSession.id} initialized successfully")
         return newSession.id
     }
     
@@ -91,7 +91,7 @@ class Terminal private constructor(private val context: Context) {
         return try {
             createSession(title)
         } catch (e: Exception) {
-            Log.e(TAG, "Session creation failed", e)
+            AppLogger.e(TAG, "Session creation failed", e)
             null
         }
     }

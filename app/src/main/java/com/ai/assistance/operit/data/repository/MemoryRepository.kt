@@ -68,7 +68,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
         // 检查是否有旧的100维向量，如果有则删除旧索引
         val hasOldEmbeddings = memoryBox.all.any { it.embedding != null && it.embedding!!.vector.size == 100 }
         if (hasOldEmbeddings && indexFile.exists()) {
-            android.util.Log.w("MemoryRepo", "Detected old 100-dim embeddings, deleting old index file")
+            com.ai.assistance.operit.util.AppLogger.w("MemoryRepo", "Detected old 100-dim embeddings, deleting old index file")
             indexFile.delete()
         }
         
@@ -164,10 +164,10 @@ class MemoryRepository(private val context: Context, profileId: String) {
 
         // 保存索引到文件
         chunkIndexManager.save()
-        android.util.Log.d("MemoryRepo", "Chunk index saved to: ${indexFile.absolutePath}. File exists: ${indexFile.exists()}")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Chunk index saved to: ${indexFile.absolutePath}. File exists: ${indexFile.exists()}")
 
         // 更新父Memory以保存ToMany关系和索引路径
-        android.util.Log.d("MemoryRepo", "Saving memory ${documentMemory.id} with chunkIndexFilePath: ${documentMemory.chunkIndexFilePath}")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Saving memory ${documentMemory.id} with chunkIndexFilePath: ${documentMemory.chunkIndexFilePath}")
         memoryBox.put(documentMemory)
         documentMemory
     }
@@ -189,7 +189,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
         val embedding = memory.embedding
         if (embedding != null && embedding.vector.size == 100) {
             // 检测到旧的100维向量，重新生成
-            android.util.Log.d("MemoryRepo", "Upgrading embedding for '${memory.title}' from 100 to 384 dimensions")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Upgrading embedding for '${memory.title}' from 100 to 384 dimensions")
             val textForEmbedding = generateTextForEmbedding(memory)
             val newEmbedding = OnnxEmbeddingService.generateEmbedding(textForEmbedding)
             if (newEmbedding != null) {
@@ -273,20 +273,20 @@ class MemoryRepository(private val context: Context, profileId: String) {
                     val indexFile = File(memory.chunkIndexFilePath!!)
                     if (indexFile.exists()) {
                         if (indexFile.delete()) {
-                            android.util.Log.d("MemoryRepo", "Deleted chunk index file: ${indexFile.path}")
+                            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Deleted chunk index file: ${indexFile.path}")
                         } else {
-                            android.util.Log.w("MemoryRepo", "Failed to delete chunk index file: ${indexFile.path}")
+                            com.ai.assistance.operit.util.AppLogger.w("MemoryRepo", "Failed to delete chunk index file: ${indexFile.path}")
                         }
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("MemoryRepo", "Error deleting chunk index file for memory ID $memoryId", e)
+                    com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Error deleting chunk index file for memory ID $memoryId", e)
                 }
             }
             // 删除关联的区块
             val chunkIds = memory.documentChunks.map { it.id }
             if (chunkIds.isNotEmpty()) {
                 chunkBox.removeByIds(chunkIds)
-                android.util.Log.d("MemoryRepo", "Deleted ${chunkIds.size} associated chunks for document.")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Deleted ${chunkIds.size} associated chunks for document.")
             }
         }
 
@@ -388,7 +388,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
         if (existingLink != null) {
             // 链接已存在，可以选择更新或直接返回
             // 这里我们选择直接返回，不创建重复链接
-            android.util.Log.d("MemoryRepo", "Link already exists from memory ${source.id} to ${target.id} with type $type")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Link already exists from memory ${source.id} to ${target.id} with type $type")
             return@withContext
         }
         
@@ -477,7 +477,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
         }
 
         if (memoriesToSearch.isEmpty()) {
-            android.util.Log.d("MemoryRepo", "No memories found in folder '$folderPath' to search.")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "No memories found in folder '$folderPath' to search.")
             return@withContext emptyList()
         }
 
@@ -490,7 +490,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
         }
 
         if (keywordResults.isNotEmpty()) {
-            android.util.Log.d("MemoryRepo", "Keyword search: ${keywordResults.size} matches")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Keyword search: ${keywordResults.size} matches")
         }
         keywordResults.forEachIndexed { index, memory ->
             val rank = index + 1
@@ -506,7 +506,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
                 memoriesToSearch.filter { memory -> query.contains(memory.title, ignoreCase = true) }
         
         if (reverseContainmentResults.isNotEmpty()) {
-            android.util.Log.d("MemoryRepo", "Reverse containment: ${reverseContainmentResults.size} matches")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Reverse containment: ${reverseContainmentResults.size} matches")
         }
         reverseContainmentResults.forEachIndexed { index, memory ->
             val rank = index + 1
@@ -529,7 +529,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
         val minSimilarityThreshold = semanticThreshold // 语义相似度阈值（可配置）
 
         // 对每个关键词分别进行语义搜索和评分
-        android.util.Log.d("MemoryRepo", "--- Starting Semantic Search for ${keywords.size} keywords ---")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "--- Starting Semantic Search for ${keywords.size} keywords ---")
         keywords.forEachIndexed { keywordIndex, keyword ->
             val queryEmbedding = OnnxEmbeddingService.generateEmbedding(keyword)
             if (queryEmbedding != null) {
@@ -552,7 +552,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
 
                 // 只在有结果时输出关键词信息
                 if (semanticResultsWithScores.isNotEmpty()) {
-                    android.util.Log.d("MemoryRepo", "Keyword '${keyword}': ${semanticResultsWithScores.size} matches (top: ${String.format("%.2f", allSimilarities.firstOrNull()?.second ?: 0f)})")
+                    com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Keyword '${keyword}': ${semanticResultsWithScores.size} matches (top: ${String.format("%.2f", allSimilarities.firstOrNull()?.second ?: 0f)})")
                 }
 
                 semanticResultsWithScores.forEachIndexed { index, (memory, similarity) ->
@@ -570,10 +570,10 @@ class MemoryRepository(private val context: Context, profileId: String) {
                     scores[memory.id] = scores.getOrDefault(memory.id, 0.0) + weightedScore
                 }
             } else {
-                android.util.Log.w("MemoryRepo", "Failed to generate embedding for: '$keyword'")
+                com.ai.assistance.operit.util.AppLogger.w("MemoryRepo", "Failed to generate embedding for: '$keyword'")
             }
         }
-        android.util.Log.d("MemoryRepo", "--- Semantic Search Completed ---")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "--- Semantic Search Completed ---")
 
         // 4. Graph-based expansion: Boost scores of connected memories based on edge weights
         // Take top-scoring memories as "seed nodes" and propagate scores through edges
@@ -614,7 +614,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
             }
         }
         if (edgesTraversed > 0) {
-            android.util.Log.d("MemoryRepo", "Graph expansion: ${edgesTraversed} edges traversed")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Graph expansion: ${edgesTraversed} edges traversed")
         }
 
         // 5. Fuse results using RRF and return sorted list
@@ -626,19 +626,19 @@ class MemoryRepository(private val context: Context, profileId: String) {
         val minScoreThreshold = 0.025 // 最低分数阈值，可根据实际效果调整
         val filteredScores = scores.entries.filter { it.value >= minScoreThreshold }
         
-        android.util.Log.d("MemoryRepo", "Final results: ${filteredScores.size}/${scores.size} above threshold")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Final results: ${filteredScores.size}/${scores.size} above threshold")
         
         // 只显示前3个结果的分数
         val sortedScoresForLogging = scores.entries.sortedByDescending { it.value }
         sortedScoresForLogging.take(3).forEach { (id, score) ->
             val memory = memoriesToSearch.find { it.id == id }
             if (memory != null) {
-                android.util.Log.d("MemoryRepo", "  Top: [${memory.title}] = ${String.format("%.4f", score)}")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "  Top: [${memory.title}] = ${String.format("%.4f", score)}")
             }
         }
 
         if (filteredScores.isEmpty()) {
-            android.util.Log.d("MemoryRepo", "No memories above relevance threshold")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "No memories above relevance threshold")
             return@withContext emptyList()
         }
         
@@ -702,13 +702,13 @@ class MemoryRepository(private val context: Context, profileId: String) {
      * @return 匹配的DocumentChunk列表。
      */
     suspend fun searchChunksInDocument(memoryId: Long, query: String): List<DocumentChunk> = withContext(Dispatchers.IO) {
-        android.util.Log.d("MemoryRepo", "--- Starting search in document (Memory ID: $memoryId) for query: '$query' ---")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "--- Starting search in document (Memory ID: $memoryId) for query: '$query' ---")
         val memory = findMemoryById(memoryId) ?: return@withContext emptyList<DocumentChunk>().also {
-            android.util.Log.w("MemoryRepo", "Document with ID $memoryId not found.")
+            com.ai.assistance.operit.util.AppLogger.w("MemoryRepo", "Document with ID $memoryId not found.")
         }
 
         if (query.isBlank()) {
-            android.util.Log.d("MemoryRepo", "Query is blank, returning all chunks sorted by index.")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Query is blank, returning all chunks sorted by index.")
             return@withContext getChunksForMemory(memoryId) // 返回有序的全部区块
         }
 
@@ -728,7 +728,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
         if (documentMemory?.chunkIndexFilePath != null && File(documentMemory.chunkIndexFilePath!!).exists()) {
             val queryEmbedding = OnnxEmbeddingService.generateEmbedding(query)?.vector
             if (queryEmbedding != null) {
-                android.util.Log.d("MemoryRepo", "Generated query embedding successfully. Starting semantic search.")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Generated query embedding successfully. Starting semantic search.")
                 try {
                     val chunkIndexManager = VectorIndexManager<IndexItem<ChunkReference>, String>(
                         dimensions = 384,
@@ -740,19 +740,19 @@ class MemoryRepository(private val context: Context, profileId: String) {
                     // 从数据库批量获取完整的chunk对象
                     semanticResults.addAll(chunkBox.get(chunkIds))
 
-                    android.util.Log.d("MemoryRepo", "Semantic search found ${semanticResults.size} results (similarity > 0.82).")
+                    com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Semantic search found ${semanticResults.size} results (similarity > 0.82).")
                 } catch (e: Exception) {
-                    android.util.Log.e("MemoryRepo", "Error during semantic search in document", e)
+                    com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Error during semantic search in document", e)
                 }
             }
         } else {
-            android.util.Log.w("MemoryRepo", "Chunk index file not found or path is null for document ID $memoryId. Skipping semantic search.")
+            com.ai.assistance.operit.util.AppLogger.w("MemoryRepo", "Chunk index file not found or path is null for document ID $memoryId. Skipping semantic search.")
         }
 
         // 3. 合并并去重结果
         val combinedResults = (keywordResults + semanticResults).distinctBy { it.id }
-        android.util.Log.d("MemoryRepo", "Combined and deduplicated results count: ${combinedResults.size}. Results are now ordered by relevance.")
-        android.util.Log.d("MemoryRepo", "--- Search in document finished ---")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Combined and deduplicated results count: ${combinedResults.size}. Results are now ordered by relevance.")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "--- Search in document finished ---")
 
         combinedResults
     }
@@ -780,7 +780,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
                 chunkIndexManager.initIndex() // 加载
                 chunkIndexManager.addItem(IndexItem(chunk.id.toString(), newEmbeddingVector, ChunkReference(chunk.id)))
                 chunkIndexManager.save() // 保存更改
-                android.util.Log.d("MemoryRepo", "Updated chunk ${chunk.id} in index file: ${indexFile.path}")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Updated chunk ${chunk.id} in index file: ${indexFile.path}")
             }
         }
     }
@@ -791,7 +791,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
             if (memory.embedding!!.vector.size == 384) {
                 vectorIndexManager.addItem(IndexItem(memory.uuid, memory.embedding!!.vector, memory))
             } else {
-                android.util.Log.w("MemoryRepo", "Skipping adding memory '${memory.title}' to index: wrong dimension ${memory.embedding!!.vector.size}")
+                com.ai.assistance.operit.util.AppLogger.w("MemoryRepo", "Skipping adding memory '${memory.title}' to index: wrong dimension ${memory.embedding!!.vector.size}")
             }
         }
     }
@@ -834,7 +834,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
             }
         }
 
-        android.util.Log.d(
+        com.ai.assistance.operit.util.AppLogger.d(
                 "MemoryRepo",
                 "Initial memories: ${memories.size}, Expanded memories: ${expandedMemories.size}"
         )
@@ -853,12 +853,12 @@ class MemoryRepository(private val context: Context, profileId: String) {
      */
     suspend fun getAllFolderPaths(): List<String> = withContext(Dispatchers.IO) {
         val allMemories = memoryBox.all
-        android.util.Log.d("MemoryRepository", "getAllFolderPaths: Total memories: ${allMemories.size}")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepository", "getAllFolderPaths: Total memories: ${allMemories.size}")
         val folderPaths = allMemories
             .map { it.folderPath ?: "未分类" }
             .distinct()
             .sorted()
-        android.util.Log.d("MemoryRepository", "getAllFolderPaths: Unique folders: $folderPaths")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepository", "getAllFolderPaths: Unique folders: $folderPaths")
         folderPaths
     }
 
@@ -920,7 +920,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
             memoryBox.put(memories)
             true
         } catch (e: Exception) {
-            android.util.Log.e("MemoryRepo", "Failed to rename folder", e)
+            com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Failed to rename folder", e)
             false
         }
     }
@@ -938,7 +938,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
             memoryBox.put(memories)
             true
         } catch (e: Exception) {
-            android.util.Log.e("MemoryRepo", "Failed to move memories", e)
+            com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Failed to move memories", e)
             false
         }
     }
@@ -968,7 +968,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
             memoryBox.put(placeholder)
             true
         } catch (e: Exception) {
-            android.util.Log.e("MemoryRepo", "Failed to create folder", e)
+            com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Failed to create folder", e)
             false
         }
             }
@@ -1079,7 +1079,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
 
         // After finding all memories, check if we have enough to merge.
         if (sourceMemories.size < 2) {
-            android.util.Log.w("MemoryRepo", "Merge requires at least two unique source memories to be found. Found: ${sourceMemories.size} from titles: ${sourceTitles.joinToString()}.")
+            com.ai.assistance.operit.util.AppLogger.w("MemoryRepo", "Merge requires at least two unique source memories to be found. Found: ${sourceMemories.size} from titles: ${sourceTitles.joinToString()}.")
             return@withContext null
         }
 
@@ -1144,7 +1144,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("MemoryRepo", "Error during memory merge transaction.", e)
+            com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Error during memory merge transaction.", e)
             return@withContext null
         }
 
@@ -1166,9 +1166,9 @@ class MemoryRepository(private val context: Context, profileId: String) {
      * @return 如果操作成功，返回true。
      */
     suspend fun deleteMemoriesByUuids(uuids: Set<String>): Boolean = withContext(Dispatchers.IO) {
-        android.util.Log.d("MemoryRepo", "Attempting to delete memories with UUIDs: $uuids")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Attempting to delete memories with UUIDs: $uuids")
         if (uuids.isEmpty()) {
-            android.util.Log.d("MemoryRepo", "UUID set is empty, nothing to delete.")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "UUID set is empty, nothing to delete.")
             return@withContext true
         }
 
@@ -1184,7 +1184,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
         }
         val memoriesToDelete = builder.build().find()
 
-        android.util.Log.d("MemoryRepo", "Found ${memoriesToDelete.size} memories to delete.")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Found ${memoriesToDelete.size} memories to delete.")
         if (memoriesToDelete.isEmpty()) {
             return@withContext true
         }
@@ -1206,26 +1206,26 @@ class MemoryRepository(private val context: Context, profileId: String) {
                         memory.documentChunks.forEach { chunk -> chunkIdsToDelete.add(chunk.id) }
                     }
                 }
-                android.util.Log.d("MemoryRepo", "Found ${linkIdsToDelete.size} unique links and ${chunkIdsToDelete.size} chunks to delete.")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Found ${linkIdsToDelete.size} unique links and ${chunkIdsToDelete.size} chunks to delete.")
 
                 // 2. 批量删除链接和区块
                 if (linkIdsToDelete.isNotEmpty()) {
                     linkBox.removeByIds(linkIdsToDelete)
-                    android.util.Log.d("MemoryRepo", "Bulk-deleted ${linkIdsToDelete.size} links.")
+                    com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Bulk-deleted ${linkIdsToDelete.size} links.")
                 }
                 if (chunkIdsToDelete.isNotEmpty()) {
                     chunkBox.removeByIds(chunkIdsToDelete)
-                    android.util.Log.d("MemoryRepo", "Bulk-deleted ${chunkIdsToDelete.size} chunks.")
+                    com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Bulk-deleted ${chunkIdsToDelete.size} chunks.")
                 }
 
                 // 3. 批量删除记忆本身
                 val memoryIdsToDelete = memoriesToDelete.map { it.id }
                 memoryBox.removeByIds(memoryIdsToDelete)
-                android.util.Log.d("MemoryRepo", "Bulk-deleted ${memoriesToDelete.size} memories.")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Bulk-deleted ${memoriesToDelete.size} memories.")
             }
-            android.util.Log.d("MemoryRepo", "Transaction completed successfully.")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Transaction completed successfully.")
         } catch (e: Exception) {
-            android.util.Log.e("MemoryRepo", "Error during bulk delete transaction.", e)
+            com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Error during bulk delete transaction.", e)
             return@withContext false
         }
 
@@ -1237,14 +1237,14 @@ class MemoryRepository(private val context: Context, profileId: String) {
                 try {
                     val indexFile = File(memory.chunkIndexFilePath!!)
                     if (indexFile.exists() && indexFile.delete()) {
-                         android.util.Log.d("MemoryRepo", "Deleted chunk index file: ${indexFile.path}")
+                         com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Deleted chunk index file: ${indexFile.path}")
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("MemoryRepo", "Error deleting chunk index file for memory UUID ${memory.uuid}", e)
+                    com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Error deleting chunk index file for memory UUID ${memory.uuid}", e)
                 }
             }
         }
-        android.util.Log.d("MemoryRepo", "Removed memories from vector index and cleaned up chunk index files.")
+        com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Removed memories from vector index and cleaned up chunk index files.")
 
         return@withContext true
     }
@@ -1321,12 +1321,12 @@ class MemoryRepository(private val context: Context, profileId: String) {
                     )
                 } else if (sourceId != null && targetId != null) {
                     // Log discarded edges for debugging
-                    // android.util.Log.d("MemoryRepo", "Discarding edge: $sourceId -> $targetId
+                    // com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Discarding edge: $sourceId -> $targetId
                     // (Not in filtered list)")
                 }
             }
         }
-        android.util.Log.d(
+        com.ai.assistance.operit.util.AppLogger.d(
                 "MemoryRepo",
                 "Built graph with ${nodes.size} nodes and ${edges.distinct().size} edges."
         )
@@ -1343,7 +1343,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
                 memory.folderPath = "未分类"
                 memoryBox.put(memory)
             }
-            android.util.Log.d("MemoryRepo", "Deleted folder '$folderPath', moved ${memories.size} memories to '未分类'")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Deleted folder '$folderPath', moved ${memories.size} memories to '未分类'")
         }
     }
 
@@ -1513,7 +1513,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
                 }
             }
             
-            android.util.Log.d("MemoryRepo", "Import completed: $newCount new, $updatedCount updated, $skippedCount skipped, $newLinksCount links")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryRepo", "Import completed: $newCount new, $updatedCount updated, $skippedCount skipped, $newLinksCount links")
             
             MemoryImportResult(
                 newMemories = newCount,
@@ -1523,7 +1523,7 @@ class MemoryRepository(private val context: Context, profileId: String) {
             )
             
         } catch (e: Exception) {
-            android.util.Log.e("MemoryRepo", "Failed to import memories", e)
+            com.ai.assistance.operit.util.AppLogger.e("MemoryRepo", "Failed to import memories", e)
             throw e
         }
     }

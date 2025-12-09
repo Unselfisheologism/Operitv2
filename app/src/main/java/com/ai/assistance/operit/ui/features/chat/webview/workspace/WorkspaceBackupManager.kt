@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.chat.webview.workspace
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -55,7 +55,7 @@ class WorkspaceBackupManager(private val context: Context) {
     fun syncState(workspacePath: String, messageTimestamp: Long) {
         val workspaceDir = File(workspacePath)
         if (!workspaceDir.exists() || !workspaceDir.isDirectory) {
-            Log.w(TAG, "Workspace path does not exist or is not a directory: $workspacePath")
+            AppLogger.w(TAG, "Workspace path does not exist or is not a directory: $workspacePath")
             return
         }
 
@@ -67,32 +67,32 @@ class WorkspaceBackupManager(private val context: Context) {
         }?.mapNotNull {
             it.nameWithoutExtension.toLongOrNull()
         }?.sorted() ?: emptyList()
-        Log.d(TAG, "syncState called for timestamp: $messageTimestamp. Existing backups: $existingBackups")
+        AppLogger.d(TAG, "syncState called for timestamp: $messageTimestamp. Existing backups: $existingBackups")
 
         val newerBackups = existingBackups.filter { it > messageTimestamp }
 
         if (newerBackups.isNotEmpty()) {
             // Found future states, need to rewind
             val restoreTimestamp = newerBackups.first()
-            Log.i(TAG, "Newer backups found. Rewinding workspace to state at $restoreTimestamp")
-            Log.d(TAG, "[Rewind] Calculated restoreTimestamp: $restoreTimestamp")
+            AppLogger.i(TAG, "Newer backups found. Rewinding workspace to state at $restoreTimestamp")
+            AppLogger.d(TAG, "[Rewind] Calculated restoreTimestamp: $restoreTimestamp")
             restoreToState(workspaceDir, backupDir, restoreTimestamp)
             // After restoring, delete all backups newer than the restored one
             val backupsToDelete = newerBackups.filter { it >= restoreTimestamp }
-            Log.d(TAG, "[Rewind] Backups to be deleted: $backupsToDelete")
-            Log.d(TAG, "Deleting backups from $restoreTimestamp onwards: $backupsToDelete")
+            AppLogger.d(TAG, "[Rewind] Backups to be deleted: $backupsToDelete")
+            AppLogger.d(TAG, "Deleting backups from $restoreTimestamp onwards: $backupsToDelete")
             backupsToDelete.forEach { ts ->
                 File(backupDir, "$ts.json").delete()
             }
-            Log.i(TAG, "Deleted ${backupsToDelete.size} newer backup manifests.")
+            AppLogger.i(TAG, "Deleted ${backupsToDelete.size} newer backup manifests.")
 
         } else {
             // Forward scenario: this is a new message in sequence.
             if (existingBackups.contains(messageTimestamp)) {
-                Log.d(TAG, "Backup for timestamp $messageTimestamp already exists. Skipping creation.")
+                AppLogger.d(TAG, "Backup for timestamp $messageTimestamp already exists. Skipping creation.")
                 return
             }
-            Log.i(TAG, "No newer backups found for timestamp $messageTimestamp. Creating a new backup.")
+            AppLogger.i(TAG, "No newer backups found for timestamp $messageTimestamp. Creating a new backup.")
             createNewBackup(workspaceDir, backupDir, messageTimestamp)
         }
     }
@@ -117,7 +117,7 @@ class WorkspaceBackupManager(private val context: Context) {
                         file.copyTo(objectFile, overwrite = true)
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to process file for backup: ${file.path}", e)
+                    AppLogger.e(TAG, "Failed to process file for backup: ${file.path}", e)
                 }
             }
 
@@ -125,15 +125,15 @@ class WorkspaceBackupManager(private val context: Context) {
         val manifestFile = File(backupDir, "$newTimestamp.json")
         try {
             manifestFile.writeText(json.encodeToString(manifest))
-            Log.d(TAG, "Successfully created backup manifest for timestamp $newTimestamp")
+            AppLogger.d(TAG, "Successfully created backup manifest for timestamp $newTimestamp")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to write backup manifest for timestamp $newTimestamp", e)
+            AppLogger.e(TAG, "Failed to write backup manifest for timestamp $newTimestamp", e)
         }
     }
 
     private fun restoreToState(workspaceDir: File, backupDir: File, targetTimestamp: Long?) {
         val objectsDir = File(backupDir, OBJECTS_DIR_NAME)
-        Log.d(TAG, "Attempting to restore workspace to timestamp: $targetTimestamp")
+        AppLogger.d(TAG, "Attempting to restore workspace to timestamp: $targetTimestamp")
 
         val targetManifest = if (targetTimestamp != null) {
             loadBackupManifest(backupDir, targetTimestamp)
@@ -149,24 +149,24 @@ class WorkspaceBackupManager(private val context: Context) {
 
         // 1. Delete files from workspace that are not in the target manifest
         // Safety: Only delete text-based files that were previously tracked, preserve untracked binary files
-        Log.d(TAG, "Step 1: Deleting tracked files not present in the target manifest...")
+        AppLogger.d(TAG, "Step 1: Deleting tracked files not present in the target manifest...")
         workspaceFilesSequence(workspaceDir, gitignoreRules)
             .forEach { currentFile ->
                 val relativePath = currentFile.relativeTo(workspaceDir).path
                 if (relativePath !in manifestRelativePaths) {
-                    Log.i(TAG, "Deleting tracked text file not in manifest: $relativePath")
+                    AppLogger.i(TAG, "Deleting tracked text file not in manifest: $relativePath")
                     currentFile.delete()
                 }
             }
 
         // 2. Restore/update files from manifest
-        Log.d(TAG, "Step 2: Restoring and updating files from the target manifest...")
+        AppLogger.d(TAG, "Step 2: Restoring and updating files from the target manifest...")
         manifestFiles.forEach { (relativePath, hash) ->
             val targetFile = File(workspaceDir, relativePath)
             val objectFile = File(objectsDir, hash)
 
             if (!objectFile.exists()) {
-                Log.e(TAG, "Object file not found for hash $hash, cannot restore $relativePath")
+                AppLogger.e(TAG, "Object file not found for hash $hash, cannot restore $relativePath")
                 return@forEach
             }
 
@@ -182,24 +182,24 @@ class WorkspaceBackupManager(private val context: Context) {
 
             if (needsCopy) {
                 targetFile.parentFile?.mkdirs()
-                Log.i(TAG, "Restoring file: $relativePath")
+                AppLogger.i(TAG, "Restoring file: $relativePath")
                 objectFile.copyTo(targetFile, overwrite = true)
             }
         }
 
         // 3. Clean up empty directories
-        Log.d(TAG, "Step 3: Cleaning up empty directories...")
+        AppLogger.d(TAG, "Step 3: Cleaning up empty directories...")
         workspaceDir.walk(FileWalkDirection.BOTTOM_UP)
             .onEnter { dir -> dir.name != BACKUP_DIR_NAME && dir.name != ".operit" }
             .filter { it.isDirectory }
             .forEach { dir ->
                 if (dir.listFiles()?.isEmpty() == true && dir != workspaceDir && dir.name != ".operit") {
-                    Log.i(TAG, "Deleting empty directory: ${dir.relativeTo(workspaceDir).path}")
+                    AppLogger.i(TAG, "Deleting empty directory: ${dir.relativeTo(workspaceDir).path}")
                     dir.delete()
                 }
             }
 
-        Log.i(TAG, "Workspace restored to state of timestamp $targetTimestamp")
+        AppLogger.i(TAG, "Workspace restored to state of timestamp $targetTimestamp")
     }
 
     private fun loadBackupManifest(backupDir: File, targetTimestamp: Long): BackupManifest? {
@@ -208,11 +208,11 @@ class WorkspaceBackupManager(private val context: Context) {
             try {
                 json.decodeFromString<BackupManifest>(manifestFile.readText())
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to read target manifest for timestamp $targetTimestamp", e)
+                AppLogger.e(TAG, "Failed to read target manifest for timestamp $targetTimestamp", e)
                 null
             }
         } else {
-            Log.w(TAG, "Target manifest file not found for timestamp $targetTimestamp")
+            AppLogger.w(TAG, "Target manifest file not found for timestamp $targetTimestamp")
             null
         }
     }
@@ -239,7 +239,7 @@ class WorkspaceBackupManager(private val context: Context) {
         return try {
             file.useLines { it.count() }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to count lines for file: ${file.path}", e)
+            AppLogger.e(TAG, "Failed to count lines for file: ${file.path}", e)
             0
         }
     }
@@ -280,7 +280,7 @@ class WorkspaceBackupManager(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to estimate changed lines between ${beforeFile.path} and ${afterFile.path}", e)
+            AppLogger.e(TAG, "Failed to estimate changed lines between ${beforeFile.path} and ${afterFile.path}", e)
             0
         }
     }
@@ -288,7 +288,7 @@ class WorkspaceBackupManager(private val context: Context) {
     fun previewChanges(workspacePath: String, targetTimestamp: Long): List<WorkspaceFileChange> {
         val workspaceDir = File(workspacePath)
         if (!workspaceDir.exists() || !workspaceDir.isDirectory) {
-            Log.w(TAG, "Workspace path does not exist or is not a directory: $workspacePath")
+            AppLogger.w(TAG, "Workspace path does not exist or is not a directory: $workspacePath")
             return emptyList()
         }
 
@@ -322,7 +322,7 @@ class WorkspaceBackupManager(private val context: Context) {
                             changes.add(WorkspaceFileChange(relativePath, ChangeType.MODIFIED, changedLines))
                         }
                     } else {
-                        Log.e(TAG, "Object file not found for hash ${manifestFiles[relativePath]}, cannot estimate changes for $relativePath")
+                        AppLogger.e(TAG, "Object file not found for hash ${manifestFiles[relativePath]}, cannot estimate changes for $relativePath")
                     }
                 }
             }
@@ -334,7 +334,7 @@ class WorkspaceBackupManager(private val context: Context) {
                 if (objectFile.exists()) {
                     changes.add(WorkspaceFileChange(relativePath, ChangeType.ADDED, countLinesSafely(objectFile)))
                 } else {
-                    Log.e(TAG, "Object file not found for hash $hash, cannot estimate changes for $relativePath")
+                    AppLogger.e(TAG, "Object file not found for hash $hash, cannot estimate changes for $relativePath")
                 }
             }
         }

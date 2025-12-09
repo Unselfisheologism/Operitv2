@@ -7,7 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -36,12 +36,12 @@ class PermissionGuideViewModel : ViewModel() {
     
     // 初始化
     init {
-        Log.d(TAG, "ViewModel initialized")
+        AppLogger.d(TAG, "ViewModel initialized")
     }
     
     // 检查所有权限
     fun checkPermissions(context: Context) {
-        Log.d(TAG, "Checking permissions")
+        AppLogger.d(TAG, "Checking permissions")
         
         // 存储权限
         val hasStoragePermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -92,7 +92,7 @@ class PermissionGuideViewModel : ViewModel() {
             )
         }
         
-        Log.d(TAG, "Permissions checked: Storage=$hasStoragePermission, " +
+        AppLogger.d(TAG, "Permissions checked: Storage=$hasStoragePermission, " +
                 "Overlay=$hasOverlayPermission, " +
                 "Battery=$hasBatteryOptimizationExemption, " +
                 "Location=$hasLocationPermission")
@@ -101,20 +101,20 @@ class PermissionGuideViewModel : ViewModel() {
     // 更新当前步骤
     fun setCurrentStep(step: Step) {
         _uiState.update { it.copy(currentStep = step) }
-        Log.d(TAG, "Current step set to: $step")
+        AppLogger.d(TAG, "Current step set to: $step")
     }
     
     // 选择权限级别
     fun selectPermissionLevel(level: AndroidPermissionLevel) {
         _uiState.update { it.copy(selectedPermissionLevel = level) }
-        Log.d(TAG, "Selected permission level: $level")
+        AppLogger.d(TAG, "Selected permission level: $level")
     }
     
     // 保存权限级别
     fun savePermissionLevel() {
         val level = _uiState.value.selectedPermissionLevel
         if (level != null) {
-            Log.d(TAG, "Saving permission level: $level")
+            AppLogger.d(TAG, "Saving permission level: $level")
             
             viewModelScope.launch {
                 // 保存到偏好设置
@@ -124,13 +124,13 @@ class PermissionGuideViewModel : ViewModel() {
                     // 更新完成状态
                     _uiState.update { it.copy(isCompleted = true) }
                     
-                    Log.d(TAG, "Permission level saved, guide completed")
+                    AppLogger.d(TAG, "Permission level saved, guide completed")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error saving permission level", e)
+                    AppLogger.e(TAG, "Error saving permission level", e)
                 }
             }
         } else {
-            Log.w(TAG, "Cannot save null permission level")
+            AppLogger.w(TAG, "Cannot save null permission level")
         }
     }
     
@@ -146,7 +146,7 @@ class PermissionGuideViewModel : ViewModel() {
                         newState.hasLocationPermission
             )
         }
-        Log.d(TAG, "Location permission updated: $granted")
+        AppLogger.d(TAG, "Location permission updated: $granted")
     }
     
     // UI状态数据类

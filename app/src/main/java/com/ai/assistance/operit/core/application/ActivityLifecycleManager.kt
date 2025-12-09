@@ -3,7 +3,7 @@ package com.ai.assistance.operit.core.application
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.WindowManager
 import com.ai.assistance.operit.data.preferences.ApiPreferences
 import kotlinx.coroutines.CoroutineScope
@@ -60,7 +60,7 @@ object ActivityLifecycleManager : Application.ActivityLifecycleCallbacks {
 
                 val activity = getCurrentActivity()
                 if (activity == null) {
-                    Log.w(TAG, "Cannot apply screen on flag: current activity is null.")
+                    AppLogger.w(TAG, "Cannot apply screen on flag: current activity is null.")
                     return@launch
                 }
 
@@ -69,14 +69,14 @@ object ActivityLifecycleManager : Application.ActivityLifecycleCallbacks {
                     val window = activity.window
                     if (enable) {
                         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                        Log.d(TAG, "FLAG_KEEP_SCREEN_ON added.")
+                        AppLogger.d(TAG, "FLAG_KEEP_SCREEN_ON added.")
                     } else {
                         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                        Log.d(TAG, "FLAG_KEEP_SCREEN_ON cleared.")
+                        AppLogger.d(TAG, "FLAG_KEEP_SCREEN_ON cleared.")
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to apply screen on flag", e)
+                AppLogger.e(TAG, "Failed to apply screen on flag", e)
             }
         }
     }

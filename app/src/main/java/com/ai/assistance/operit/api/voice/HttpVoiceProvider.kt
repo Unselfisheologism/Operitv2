@@ -2,7 +2,7 @@ package com.ai.assistance.operit.api.voice
 
 import android.content.Context
 import android.media.MediaPlayer
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -124,7 +124,7 @@ class HttpVoiceProvider(
 
             _isInitialized.value = true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize HTTP TTS provider due to invalid configuration", e)
+            AppLogger.e(TAG, "Failed to initialize HTTP TTS provider due to invalid configuration", e)
             _isInitialized.value = false
             // 重新抛出异常，以便UI层可以捕获并显示
             if (e is TtsException) throw e
@@ -183,7 +183,7 @@ class HttpVoiceProvider(
             playAudioFile(audioFile)
             return@withContext true
         } catch (e: Exception) {
-            Log.e(TAG, "HTTP TTS播放失败", e)
+            AppLogger.e(TAG, "HTTP TTS播放失败", e)
             throw e
         }
     }
@@ -203,7 +203,7 @@ class HttpVoiceProvider(
             }
             return@withContext false
         } catch (e: Exception) {
-            Log.e(TAG, "停止HTTP TTS播放失败", e)
+            AppLogger.e(TAG, "停止HTTP TTS播放失败", e)
             return@withContext false
         }
     }
@@ -222,7 +222,7 @@ class HttpVoiceProvider(
             }
             return@withContext false
         } catch (e: Exception) {
-            Log.e(TAG, "暂停HTTP TTS播放失败", e)
+            AppLogger.e(TAG, "暂停HTTP TTS播放失败", e)
             return@withContext false
         }
     }
@@ -241,7 +241,7 @@ class HttpVoiceProvider(
             }
             return@withContext false
         } catch (e: Exception) {
-            Log.e(TAG, "恢复HTTP TTS播放失败", e)
+            AppLogger.e(TAG, "恢复HTTP TTS播放失败", e)
             return@withContext false
         }
     }
@@ -256,7 +256,7 @@ class HttpVoiceProvider(
                     }
                     it.release()
                 } catch (e: Exception) {
-                    Log.e(TAG, "释放MediaPlayer失败", e)
+                    AppLogger.e(TAG, "释放MediaPlayer失败", e)
                 } finally {
                     mediaPlayer = null
                     _isInitialized.value = false
@@ -267,13 +267,13 @@ class HttpVoiceProvider(
             // 清除缓存文件
             clearCache()
         } catch (e: Exception) {
-            Log.e(TAG, "关闭HTTP TTS引擎失败", e)
+            AppLogger.e(TAG, "关闭HTTP TTS引擎失败", e)
         }
     }
 
     /** 获取可用的语音列表 */
     override suspend fun getAvailableVoices(): List<VoiceService.Voice> {
-        Log.w(TAG, "Listing available voices via HTTP is not supported by this generic provider. Returning an empty list. Set voice directly using setVoice().")
+        AppLogger.w(TAG, "Listing available voices via HTTP is not supported by this generic provider. Returning an empty list. Set voice directly using setVoice().")
         return emptyList()
     }
 
@@ -300,7 +300,7 @@ class HttpVoiceProvider(
         extraParams: Map<String, String>
     ): File? = withContext(Dispatchers.IO) {
         if (httpConfig.urlTemplate.isBlank()) {
-            Log.e(TAG, "HTTP TTS URL template is not configured.")
+            AppLogger.e(TAG, "HTTP TTS URL template is not configured.")
             return@withContext null
         }
 
@@ -318,7 +318,7 @@ class HttpVoiceProvider(
                 val baseUrl = httpConfig.urlTemplate
                 val httpUrl = baseUrl.toHttpUrlOrNull()
                 if (httpUrl == null) {
-                    Log.e(TAG, "Base URL is invalid: $baseUrl")
+                    AppLogger.e(TAG, "Base URL is invalid: $baseUrl")
                     return@withContext null
                 }
                 
@@ -362,7 +362,7 @@ class HttpVoiceProvider(
 
             val httpUrl = finalUrl.toHttpUrlOrNull()
             if (httpUrl == null) {
-                Log.e(TAG, "Constructed URL is invalid: $finalUrl")
+                AppLogger.e(TAG, "Constructed URL is invalid: $finalUrl")
                 return@withContext null
             }
             
@@ -383,8 +383,8 @@ class HttpVoiceProvider(
             
             val request = requestBuilder.build()
             
-            Log.i(TAG, "Executing TTS Request: ${request.method} ${request.url}")
-            Log.i(TAG, "Request Headers:\n${request.headers}")
+            AppLogger.i(TAG, "Executing TTS Request: ${request.method} ${request.url}")
+            AppLogger.i(TAG, "Request Headers:\n${request.headers}")
 
             val response = suspendCoroutine<Response> { continuation ->
                 httpClient.newCall(request).enqueue(object : Callback {
@@ -416,7 +416,7 @@ class HttpVoiceProvider(
                 return@withContext null
             } else {
                 val errorBody = response.body?.string()
-                Log.e(TAG, "HTTP TTS request failed. Code: ${response.code}, Body: $errorBody")
+                AppLogger.e(TAG, "HTTP TTS request failed. Code: ${response.code}, Body: $errorBody")
                 response.close()
                 throw TtsException(
                     message = "HTTP TTS request failed with code ${response.code}",
@@ -425,7 +425,7 @@ class HttpVoiceProvider(
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取HTTP TTS音频失败", e)
+            AppLogger.e(TAG, "获取HTTP TTS音频失败", e)
             if (e is TtsException) throw e
             throw TtsException("获取HTTP TTS音频失败", cause = e)
         }
@@ -439,7 +439,7 @@ class HttpVoiceProvider(
      */
     private suspend fun playAudioFile(audioFile: File) {
         if (!audioFile.exists() || audioFile.length() == 0L) {
-            Log.e(TAG, "Audio file is invalid: ${audioFile.absolutePath}")
+            AppLogger.e(TAG, "Audio file is invalid: ${audioFile.absolutePath}")
             return
         }
 
@@ -468,7 +468,7 @@ class HttpVoiceProvider(
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "播放HTTP TTS音频失败", e)
+            AppLogger.e(TAG, "播放HTTP TTS音频失败", e)
         } finally {
             mediaPlayer?.apply {
                 if (isPlaying) {
@@ -511,7 +511,7 @@ class HttpVoiceProvider(
             }
             audioCache.clear()
         } catch (e: Exception) {
-            Log.e(TAG, "清除HTTP TTS缓存失败", e)
+            AppLogger.e(TAG, "清除HTTP TTS缓存失败", e)
         }
     }
 } 

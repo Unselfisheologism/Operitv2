@@ -10,7 +10,7 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.Build
 import android.os.CancellationSignal
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import android.telephony.TelephonyManager
@@ -40,7 +40,7 @@ object LocationUtils {
         if (isChinaTimezone()) return true
 
         if (!hasLocationPermission(context)) {
-            Log.w(TAG, "No location permission; returning result from heuristics only.")
+            AppLogger.w(TAG, "No location permission; returning result from heuristics only.")
             return false
         }
         val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
@@ -49,14 +49,14 @@ object LocationUtils {
             val lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
                 ?: locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             if (lastKnownLocation != null) {
-                Log.d(TAG, "Got last known location from native API.")
+                AppLogger.d(TAG, "Got last known location from native API.")
                 return getCountryFromLocation(context, lastKnownLocation)
             }
-            Log.d(TAG, "No last known location, requesting current location update.")
+            AppLogger.d(TAG, "No last known location, requesting current location update.")
             val currentLocation = getCurrentLocationNative(context, locationManager)
             return getCountryFromLocation(context, currentLocation)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get location using native API", e)
+            AppLogger.e(TAG, "Failed to get location using native API", e)
             return false
         }
     }
@@ -122,7 +122,7 @@ object LocationUtils {
                                     }
 
                                     override fun onError(errorMessage: String?) {
-                                        Log.w(TAG, "Geocoder error: $errorMessage")
+                                        AppLogger.w(TAG, "Geocoder error: $errorMessage")
                                         cont.resume(emptyList())
                                     }
                                 }
@@ -142,16 +142,16 @@ object LocationUtils {
 
                 if (!addresses.isNullOrEmpty()) {
                     val countryCode = addresses[0].countryCode
-                    Log.d(TAG, "Detected country code: $countryCode")
+                    AppLogger.d(TAG, "Detected country code: $countryCode")
                     return@withContext "CN".equals(countryCode, ignoreCase = true)
                 }
 
                 // Fallback to coordinate bounds if reverse geocoding failed
                 val inBounds = isWithinMainlandChinaBounds(location.latitude, location.longitude)
-                if (!inBounds) Log.w(TAG, "Coordinates outside CN bounds; lat=${location.latitude}, lon=${location.longitude}")
+                if (!inBounds) AppLogger.w(TAG, "Coordinates outside CN bounds; lat=${location.latitude}, lon=${location.longitude}")
                 inBounds
             } catch (e: Exception) {
-                Log.e(TAG, "Geocoder failed", e)
+                AppLogger.e(TAG, "Geocoder failed", e)
                 false
             }
         }
@@ -175,7 +175,7 @@ object LocationUtils {
             val iso = (networkIso?.ifBlank { null } ?: simIso?.ifBlank { null })
             iso?.uppercase(Locale.ROOT)
         } catch (e: Exception) {
-            Log.w(TAG, "Telephony country ISO unavailable", e)
+            AppLogger.w(TAG, "Telephony country ISO unavailable", e)
             null
         }
     }
@@ -201,7 +201,7 @@ object LocationUtils {
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
         if (!hasPermission) {
-            Log.w(TAG, "Location permission not granted.")
+            AppLogger.w(TAG, "Location permission not granted.")
         }
         return hasPermission
     }

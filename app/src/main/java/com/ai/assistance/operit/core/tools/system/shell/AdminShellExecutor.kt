@@ -4,7 +4,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -61,7 +61,7 @@ class AdminShellExecutor(private val context: Context) : ShellExecutor {
         }
 
         if (adminComponentName == null) {
-            Log.e(TAG, "Admin component name not set")
+            AppLogger.e(TAG, "Admin component name not set")
             onResult(false)
             return
         }
@@ -77,7 +77,7 @@ class AdminShellExecutor(private val context: Context) : ShellExecutor {
             // 由于无法知道用户是否激活了管理员，返回false，让调用者自行处理后续检查
             onResult(false)
         } catch (e: Exception) {
-            Log.e(TAG, "Error opening device admin settings", e)
+            AppLogger.e(TAG, "Error opening device admin settings", e)
             onResult(false)
         }
     }
@@ -87,7 +87,7 @@ class AdminShellExecutor(private val context: Context) : ShellExecutor {
         return try {
             adminComponentName?.let { devicePolicyManager.isAdminActive(it) } ?: false
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking device admin status", e)
+            AppLogger.e(TAG, "Error checking device admin status", e)
             false
         }
     }
@@ -99,7 +99,7 @@ class AdminShellExecutor(private val context: Context) : ShellExecutor {
                     return@withContext ShellExecutor.CommandResult(false, "", permStatus.reason, -1)
                 }
 
-                Log.d(TAG, "Executing command via device admin: $command")
+                AppLogger.d(TAG, "Executing command via device admin: $command")
 
                 // 设备管理员API不能直接执行shell命令，但可以执行一些系统操作
                 // 这里实现将根据实际可用的管理员API而定
@@ -135,7 +135,7 @@ class AdminShellExecutor(private val context: Context) : ShellExecutor {
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error executing admin command", e)
+                    AppLogger.e(TAG, "Error executing admin command", e)
                     return@withContext ShellExecutor.CommandResult(
                             false,
                             "",

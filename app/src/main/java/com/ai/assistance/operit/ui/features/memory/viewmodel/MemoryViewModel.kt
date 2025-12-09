@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.memory.viewmodel
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -137,7 +137,7 @@ class MemoryViewModel(private val repository: MemoryRepository, private val cont
         viewModelScope.launch {
             try {
                 val folders = repository.getAllFolderPaths()
-                android.util.Log.d("MemoryViewModel", "Loaded ${folders.size} folders: $folders")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryViewModel", "Loaded ${folders.size} folders: $folders")
                 _uiState.update { it.copy(folderPaths = folders) }
                 
                 // 如果还没有选中文件夹，自动选择第一个（通常是"未分类"）
@@ -244,10 +244,10 @@ class MemoryViewModel(private val repository: MemoryRepository, private val cont
                     val globalQuery = _uiState.value.searchQuery
 
                     val chunks = if (globalQuery.isNotBlank()) {
-                        android.util.Log.d("MemoryVM", "Node click on doc, searching with global query: '$globalQuery'")
+                        com.ai.assistance.operit.util.AppLogger.d("MemoryVM", "Node click on doc, searching with global query: '$globalQuery'")
                         repository.searchChunksInDocument(memory.id, globalQuery)
                     } else {
-                        android.util.Log.d("MemoryVM", "Node click on doc, no global query. Getting all chunks.")
+                        com.ai.assistance.operit.util.AppLogger.d("MemoryVM", "Node click on doc, no global query. Getting all chunks.")
                         repository.getChunksForMemory(memory.id)
                     }
 
@@ -467,7 +467,7 @@ class MemoryViewModel(private val repository: MemoryRepository, private val cont
     fun showBatchDeleteConfirm() {
         val selectedIds = _uiState.value.boxSelectedNodeIds
         if (selectedIds.isEmpty()) {
-            android.util.Log.d("MemoryViewModel", "No nodes selected, aborting delete.")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryViewModel", "No nodes selected, aborting delete.")
             return
         }
         _uiState.update { it.copy(showBatchDeleteConfirm = true) }
@@ -482,18 +482,18 @@ class MemoryViewModel(private val repository: MemoryRepository, private val cont
     fun deleteSelectedNodes() {
         viewModelScope.launch {
             val selectedIds = _uiState.value.boxSelectedNodeIds
-            android.util.Log.d("MemoryViewModel", "deleteSelectedNodes called with ${selectedIds.size} nodes.")
+            com.ai.assistance.operit.util.AppLogger.d("MemoryViewModel", "deleteSelectedNodes called with ${selectedIds.size} nodes.")
             if (selectedIds.isEmpty()) {
-                android.util.Log.d("MemoryViewModel", "No nodes selected, aborting delete.")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryViewModel", "No nodes selected, aborting delete.")
                 return@launch
             }
 
             _uiState.update { it.copy(isLoading = true, showBatchDeleteConfirm = false) }
             try {
-                android.util.Log.d("MemoryViewModel", "Calling repository.deleteMemoriesByUuids with IDs: $selectedIds")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryViewModel", "Calling repository.deleteMemoriesByUuids with IDs: $selectedIds")
                 repository.deleteMemoriesByUuids(selectedIds)
                 val updatedGraph = refreshGraph()
-                android.util.Log.d("MemoryViewModel", "Graph refreshed after deletion.")
+                com.ai.assistance.operit.util.AppLogger.d("MemoryViewModel", "Graph refreshed after deletion.")
                 // 刷新文件夹列表（批量删除可能导致文件夹变空）
                 loadFolderPaths()
                 _uiState.update {
@@ -505,7 +505,7 @@ class MemoryViewModel(private val repository: MemoryRepository, private val cont
                     )
                 }
             } catch (e: Exception) {
-                android.util.Log.e("MemoryViewModel", "Failed to delete selected memories", e)
+                com.ai.assistance.operit.util.AppLogger.e("MemoryViewModel", "Failed to delete selected memories", e)
                 _uiState.update {
                     it.copy(isLoading = false, error = "Failed to delete selected memories: ${e.message}")
                 }
@@ -693,11 +693,11 @@ class MemoryViewModel(private val repository: MemoryRepository, private val cont
      */
     fun deleteFolder(folderPath: String) {
         viewModelScope.launch {
-            Log.d(TAG, "deleteFolder() 开始删除文件夹: $folderPath")
+            AppLogger.d(TAG, "deleteFolder() 开始删除文件夹: $folderPath")
             _uiState.update { it.copy(isLoading = true) }
             try {
                 repository.deleteFolder(folderPath)
-                Log.d(TAG, "deleteFolder() 文件夹删除成功: $folderPath")
+                AppLogger.d(TAG, "deleteFolder() 文件夹删除成功: $folderPath")
                 // 重新加载文件夹列表
                 loadFolderPaths()
                 // 如果当前选中的就是被删除的文件夹，切换到"所有记忆"
@@ -707,7 +707,7 @@ class MemoryViewModel(private val repository: MemoryRepository, private val cont
                     _uiState.update { it.copy(isLoading = false) }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "deleteFolder() 删除文件夹失败: $folderPath", e)
+                AppLogger.e(TAG, "deleteFolder() 删除文件夹失败: $folderPath", e)
                 _uiState.update {
                     it.copy(isLoading = false, error = "删除文件夹失败: ${e.message}")
                 }

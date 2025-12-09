@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.features.toolbox.screens.uidebugger
 
 import android.content.Context
 import android.graphics.Rect
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ai.assistance.operit.core.tools.AIToolHandler
@@ -103,9 +103,9 @@ class UIDebuggerViewModel : ViewModel() {
                         errorMessage = null
                     )
                 }
-                Log.d(TAG, "加载了 ${packages.size} 个配置包")
+                AppLogger.d(TAG, "加载了 ${packages.size} 个配置包")
             } catch (e: Exception) {
-                Log.e(TAG, "加载配置包失败", e)
+                AppLogger.e(TAG, "加载配置包失败", e)
                 _uiState.update { 
                     it.copy(
                         isLoadingPackages = false,
@@ -144,7 +144,7 @@ class UIDebuggerViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "选择配置包失败", e)
+                AppLogger.e(TAG, "选择配置包失败", e)
                 showActionFeedback("选择配置包失败")
             }
         }
@@ -188,7 +188,7 @@ class UIDebuggerViewModel : ViewModel() {
                 // 重新加载配置包列表
                 loadAvailablePackages()
             } catch (e: Exception) {
-                Log.e(TAG, "导入配置包失败", e)
+                AppLogger.e(TAG, "导入配置包失败", e)
                 showActionFeedback("导入失败")
             }
         }
@@ -208,7 +208,7 @@ class UIDebuggerViewModel : ViewModel() {
                 }
                 showActionFeedback("导出成功: $uriString")
             } catch (e: Exception) {
-                Log.e(TAG, "导出配置包失败", e)
+                AppLogger.e(TAG, "导出配置包失败", e)
                 showActionFeedback("导出失败: ${e.message}")
             }
         }
@@ -253,7 +253,7 @@ class UIDebuggerViewModel : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "执行元素操作失败", e)
+                AppLogger.e(TAG, "执行元素操作失败", e)
                 showActionFeedback("操作失败")
             }
         }
@@ -307,7 +307,7 @@ class UIDebuggerViewModel : ViewModel() {
                     ) 
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "刷新UI元素失败", e)
+                AppLogger.e(TAG, "刷新UI元素失败", e)
                 _uiState.update { it.copy(errorMessage = "刷新失败") }
             } finally {
                 windowInteractionController?.invoke(true)
@@ -428,7 +428,7 @@ class UIDebuggerViewModel : ViewModel() {
                 loadAvailablePackages()
                 selectPackage(newPackageInfo)
             } catch (e: Exception) {
-                Log.e(TAG, "创建配置包失败", e)
+                AppLogger.e(TAG, "创建配置包失败", e)
                 showActionFeedback("创建失败: ${e.message}")
             }
         }
@@ -706,7 +706,7 @@ class UIDebuggerViewModel : ViewModel() {
                 selectPackage(packageInfo)
                 _uiState.update { it.copy(isConfigModified = false) }
             } catch (e: Exception) {
-                Log.e(TAG, "保存配置失败", e)
+                AppLogger.e(TAG, "保存配置失败", e)
                 showActionFeedback("保存失败: ${e.message}")
             }
         }
@@ -788,7 +788,7 @@ class UIDebuggerViewModel : ViewModel() {
                     null
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "解析边界失败", e)
+                AppLogger.e(TAG, "解析边界失败", e)
                 null
             }
         }
@@ -814,11 +814,11 @@ class UIDebuggerViewModel : ViewModel() {
     fun startActivityListening() {
         viewModelScope.launch {
             try {
-                Log.d(TAG, "开始启动Activity监听...")
+                AppLogger.d(TAG, "开始启动Activity监听...")
                 
                 // 如果已经在监听，直接返回
                 if (currentActionListener?.isListening() == true) {
-                    Log.d(TAG, "监听器已在运行，同步UI状态")
+                    AppLogger.d(TAG, "监听器已在运行，同步UI状态")
                     _uiState.update { it.copy(isActivityListening = true) } // 同步UI状态
                     showActionFeedback("监听已在运行中")
                     return@launch
@@ -826,31 +826,31 @@ class UIDebuggerViewModel : ViewModel() {
 
                 // 先停止现有的监听器，避免重复监听
                 currentActionListener?.let { existingListener ->
-                    Log.d(TAG, "停止现有监听器")
+                    AppLogger.d(TAG, "停止现有监听器")
                     existingListener.stopListening()
                     currentActionListener = null
                 }
 
-                Log.d(TAG, "获取最高权限的监听器...")
+                AppLogger.d(TAG, "获取最高权限的监听器...")
                 val (listener, status) = ActionListenerFactory.getHighestAvailableListener(context)
-                Log.d(TAG, "获取到监听器类型: ${listener::class.simpleName}, 权限状态: ${status.granted}")
+                AppLogger.d(TAG, "获取到监听器类型: ${listener::class.simpleName}, 权限状态: ${status.granted}")
                 
                 if (!status.granted) {
-                    Log.w(TAG, "权限不足: ${status.reason}")
+                    AppLogger.w(TAG, "权限不足: ${status.reason}")
                     showActionFeedback("权限不足: ${status.reason}")
                     return@launch
                 }
 
                 currentActionListener = listener
-                Log.d(TAG, "开始启动监听器...")
+                AppLogger.d(TAG, "开始启动监听器...")
                 val result = listener.startListening { event ->
-                    Log.v(TAG, "监听器回调触发: ${event.actionType} - ${event.elementInfo?.packageName}")
+                    AppLogger.v(TAG, "监听器回调触发: ${event.actionType} - ${event.elementInfo?.packageName}")
                     // 处理监听到的事件
                     handleActionEvent(event)
                 }
 
                 if (result.success) {
-                    Log.d(TAG, "监听器启动成功")
+                    AppLogger.d(TAG, "监听器启动成功")
                     _uiState.update { 
                         it.copy(
                             isActivityListening = true,
@@ -860,11 +860,11 @@ class UIDebuggerViewModel : ViewModel() {
                     }
                     showActionFeedback("Activity监听已启动")
                 } else {
-                    Log.e(TAG, "监听器启动失败: ${result.message}")
+                    AppLogger.e(TAG, "监听器启动失败: ${result.message}")
                     showActionFeedback("启动监听失败: ${result.message}")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "启动Activity监听失败", e)
+                AppLogger.e(TAG, "启动Activity监听失败", e)
                 showActionFeedback("启动监听失败: ${e.message}")
             }
         }
@@ -889,7 +889,7 @@ class UIDebuggerViewModel : ViewModel() {
                 }
                 currentActionListener = null
             } catch (e: Exception) {
-                Log.e(TAG, "停止Activity监听失败", e)
+                AppLogger.e(TAG, "停止Activity监听失败", e)
                 showActionFeedback("停止监听失败: ${e.message}")
             }
         }
@@ -901,12 +901,12 @@ class UIDebuggerViewModel : ViewModel() {
     fun toggleAutoGraphBuilding() {
         _uiState.update { currentState ->
             val newAutoMode = !currentState.autoGraphBuilding
-            Log.d(TAG, "切换自动构建模式: $newAutoMode")
+            AppLogger.d(TAG, "切换自动构建模式: $newAutoMode")
             
             if (newAutoMode && currentState.selectedPackage != null) {
                 // 检测当前包名
                 val detectedPackage = currentState.selectedPackage?.packageName
-                Log.d(TAG, "自动构建模式启用，目标包名: $detectedPackage")
+                AppLogger.d(TAG, "自动构建模式启用，目标包名: $detectedPackage")
                 
                 currentState.copy(
                     autoGraphBuilding = newAutoMode,
@@ -932,20 +932,20 @@ class UIDebuggerViewModel : ViewModel() {
      * 切换Activity监听显示状态
      */
     fun toggleActivityMonitor() {
-        Log.d(TAG, "切换Activity监听面板显示状态")
+        AppLogger.d(TAG, "切换Activity监听面板显示状态")
         _uiState.update { currentState ->
             val newShowState = !currentState.showActivityMonitor
-            Log.d(TAG, "面板显示状态从 ${currentState.showActivityMonitor} 变更为 $newShowState")
+            AppLogger.d(TAG, "面板显示状态从 ${currentState.showActivityMonitor} 变更为 $newShowState")
             
             // 如果要显示面板，同步检查实际的监听状态
             if (newShowState) {
                 val actualListeningState = currentActionListener?.isListening() == true
                 val eventsCount = currentState.activityEvents.size
-                Log.d(TAG, "显示面板时同步状态: currentActionListener=${currentActionListener != null}, isListening=$actualListeningState, eventsCount=$eventsCount")
+                AppLogger.d(TAG, "显示面板时同步状态: currentActionListener=${currentActionListener != null}, isListening=$actualListeningState, eventsCount=$eventsCount")
                 
                 // 检查AIDL连接状态
                 if (currentActionListener != null && !actualListeningState) {
-                    Log.w(TAG, "检测到监听器存在但未监听，可能AIDL连接断开")
+                    AppLogger.w(TAG, "检测到监听器存在但未监听，可能AIDL连接断开")
                 }
                 
                 currentState.copy(
@@ -953,7 +953,7 @@ class UIDebuggerViewModel : ViewModel() {
                     isActivityListening = actualListeningState
                 )
             } else {
-                Log.d(TAG, "隐藏面板，保持监听状态不变")
+                AppLogger.d(TAG, "隐藏面板，保持监听状态不变")
                 currentState.copy(showActivityMonitor = newShowState)
             }
         }
@@ -1000,31 +1000,31 @@ class UIDebuggerViewModel : ViewModel() {
                 )
                 
                 // 如果启用了自动构建且当前事件是目标应用的事件
-                Log.d(TAG, "自动构建检查: autoGraphBuilding=${state.autoGraphBuilding}, detectedPackage=${state.detectedCurrentPackageName}, eventPackage=${event.elementInfo?.packageName}")
+                AppLogger.d(TAG, "自动构建检查: autoGraphBuilding=${state.autoGraphBuilding}, detectedPackage=${state.detectedCurrentPackageName}, eventPackage=${event.elementInfo?.packageName}")
                 if (state.autoGraphBuilding && 
                     state.detectedCurrentPackageName != null &&
                     event.elementInfo?.packageName == state.detectedCurrentPackageName) {
                     
-                    Log.d(TAG, "触发自动构建逻辑: ${event.actionType}")
+                    AppLogger.d(TAG, "触发自动构建逻辑: ${event.actionType}")
                     // 监听页面切换和关键的点击事件
                     when (event.actionType) {
                         ActionListener.ActionType.SCREEN_CHANGE -> {
-                            Log.d(TAG, "处理SCREEN_CHANGE事件进行自动构建")
+                            AppLogger.d(TAG, "处理SCREEN_CHANGE事件进行自动构建")
                             updatedState = processAutoGraphBuilding(updatedState, event)
                         }
                         ActionListener.ActionType.CLICK -> {
-                            Log.d(TAG, "记录CLICK事件为后续页面切换准备")
+                            AppLogger.d(TAG, "记录CLICK事件为后续页面切换准备")
                             // 记录点击事件，为后续的页面切换做准备
                             updatedState = updatedState.copy(
                                 lastClickEvent = event
                             )
                         }
                         else -> { 
-                            Log.d(TAG, "忽略其他类型事件: ${event.actionType}")
+                            AppLogger.d(TAG, "忽略其他类型事件: ${event.actionType}")
                         }
                     }
                 } else {
-                    Log.d(TAG, "不满足自动构建条件，跳过")
+                    AppLogger.d(TAG, "不满足自动构建条件，跳过")
                 }
                 
                 updatedState
@@ -1043,7 +1043,7 @@ class UIDebuggerViewModel : ViewModel() {
         val currentConfig = state.packageConfig ?: return state
         val currentActivity = elementInfo.className ?: return state
         
-        Log.d(TAG, "处理自动构建: 从 ${state.lastActivityName} 到 $currentActivity")
+        AppLogger.d(TAG, "处理自动构建: 从 ${state.lastActivityName} 到 $currentActivity")
         
         // 生成节点名称（简化版本）
         val nodeName = currentActivity.substringAfterLast(".")
@@ -1060,7 +1060,7 @@ class UIDebuggerViewModel : ViewModel() {
             )
             currentConfig.defineNode(newNode)
             addedNodes++
-            Log.d(TAG, "自动创建节点: $nodeName")
+            AppLogger.d(TAG, "自动创建节点: $nodeName")
         }
         
         // 如果有上一个Activity，创建边
@@ -1077,7 +1077,7 @@ class UIDebuggerViewModel : ViewModel() {
                 )
                 currentConfig.defineNode(lastNode)
                 addedNodes++
-                Log.d(TAG, "自动创建上一个节点: $lastNodeName")
+                AppLogger.d(TAG, "自动创建上一个节点: $lastNodeName")
             }
             
             // 检查边是否已存在
@@ -1101,7 +1101,7 @@ class UIDebuggerViewModel : ViewModel() {
                     weight = 1.0
                 )
                 addedEdges++
-                Log.d(TAG, "自动创建边: $lastNodeName -> $nodeName，基于${if (state.lastClickEvent != null) "点击" else "页面切换"}事件")
+                AppLogger.d(TAG, "自动创建边: $lastNodeName -> $nodeName，基于${if (state.lastClickEvent != null) "点击" else "页面切换"}事件")
             }
         }
         
@@ -1170,9 +1170,9 @@ class UIDebuggerViewModel : ViewModel() {
                 withContext(Dispatchers.IO) {
                     packageManager.saveConfig(config, packageInfo)
                 }
-                Log.d(TAG, "自动保存配置成功")
+                AppLogger.d(TAG, "自动保存配置成功")
             } catch (e: Exception) {
-                Log.e(TAG, "自动保存配置失败", e)
+                AppLogger.e(TAG, "自动保存配置失败", e)
             }
         }
     }

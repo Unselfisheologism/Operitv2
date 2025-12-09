@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.packages.components.dialogs
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -97,7 +97,7 @@ fun MCPServerDetailsDialog(
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("MCPServerDetails", "Error reading README for ${server.id}", e)
+                    AppLogger.e("MCPServerDetails", "Error reading README for ${server.id}", e)
                 }
             }
         }

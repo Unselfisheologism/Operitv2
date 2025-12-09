@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.core.tools.automatic
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
@@ -70,12 +70,12 @@ class UIRouteConfig {
         private val json = Json { ignoreUnknownKeys = true; isLenient = true; prettyPrint = true }
 
         fun loadFromJson(jsonString: String): UIRouteConfig {
-            Log.d(TAG, "Attempting to load UIRouteConfig from JSON string.")
+            AppLogger.d(TAG, "Attempting to load UIRouteConfig from JSON string.")
             val config = UIRouteConfig()
             try {
                 val jsonConfig = json.decodeFromString<JsonUIRouteConfig>(jsonString)
-                Log.d(TAG, "Successfully decoded JSON for app: ${jsonConfig.appName}")
-                Log.d(TAG, "Found ${jsonConfig.nodes.size} nodes, ${jsonConfig.edges.size} edges, ${jsonConfig.functions.size} functions in JSON.")
+                AppLogger.d(TAG, "Successfully decoded JSON for app: ${jsonConfig.appName}")
+                AppLogger.d(TAG, "Found ${jsonConfig.nodes.size} nodes, ${jsonConfig.edges.size} edges, ${jsonConfig.functions.size} functions in JSON.")
 
 
                 jsonConfig.nodes.forEach { jsonNode ->
@@ -97,7 +97,7 @@ class UIRouteConfig {
                     }
 
                     if (operations.isEmpty()) {
-                        Log.w(TAG, "Edge from '${jsonEdge.from}' to '${jsonEdge.to}' has no valid operations after filtering. Skipping.")
+                        AppLogger.w(TAG, "Edge from '${jsonEdge.from}' to '${jsonEdge.to}' has no valid operations after filtering. Skipping.")
                         return@forEach
                     }
 
@@ -114,7 +114,7 @@ class UIRouteConfig {
                 }
 
                 jsonConfig.functions.forEach { jsonFunction ->
-                    Log.d(TAG, "Processing function from JSON: ${jsonFunction.name}")
+                    AppLogger.d(TAG, "Processing function from JSON: ${jsonFunction.name}")
                     val operation = jsonFunction.operation?.let { convertJsonOperation(it) }
                     config.defineFunction(UIFunction(
                         name = jsonFunction.name,
@@ -124,10 +124,10 @@ class UIRouteConfig {
                     ))
                 }
 
-                Log.d(TAG, "Finished loading from JSON. Final config has ${config.functionDefinitions.size} functions: ${config.functionDefinitions.keys.joinToString()}")
+                AppLogger.d(TAG, "Finished loading from JSON. Final config has ${config.functionDefinitions.size} functions: ${config.functionDefinitions.keys.joinToString()}")
                 return config
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load UIRouteConfig from JSON. Error: ${e.message}", e)
+                AppLogger.e(TAG, "Failed to load UIRouteConfig from JSON. Error: ${e.message}", e)
                 return config // return empty config on failure
             }
         }
@@ -185,7 +185,7 @@ class UIRouteConfig {
                     }
                 }
             } catch (e: IllegalArgumentException) {
-                Log.w(TAG, "Skipping invalid operation due to error: ${e.message}")
+                AppLogger.w(TAG, "Skipping invalid operation due to error: ${e.message}")
                 null
             }
         }
@@ -195,7 +195,7 @@ class UIRouteConfig {
                 "Compound" -> {
                     val selectors = jsonSelector.selectors?.mapNotNull { convertJsonSelector(it) } ?: emptyList()
                     if (selectors.isEmpty() && jsonSelector.selectors?.isNotEmpty() == true) {
-                        Log.w(TAG, "Compound selector for app has valid sub-selectors, but all were filtered out.")
+                        AppLogger.w(TAG, "Compound selector for app has valid sub-selectors, but all were filtered out.")
                         null
                     } else {
                         val operator = jsonSelector.operator ?: "AND"
@@ -205,7 +205,7 @@ class UIRouteConfig {
                 else -> {
                     val value = jsonSelector.value
                     if (value == null) {
-                        Log.w(TAG, "Selector of type ${jsonSelector.type} is missing a 'value' field. Skipping.")
+                        AppLogger.w(TAG, "Selector of type ${jsonSelector.type} is missing a 'value' field. Skipping.")
                         null
                     } else {
                         when (jsonSelector.type) {
@@ -216,7 +216,7 @@ class UIRouteConfig {
                             "ByBounds" -> UISelector.ByBounds(value)
                             "ByXPath" -> UISelector.ByXPath(value)
                             else -> {
-                                Log.w(TAG, "Unknown selector type: ${jsonSelector.type}. Skipping.")
+                                AppLogger.w(TAG, "Unknown selector type: ${jsonSelector.type}. Skipping.")
                                 null
                             }
                         }

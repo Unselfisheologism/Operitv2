@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.accessbility
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.SimplifiedUINode
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.core.tools.UIActionResultData
@@ -58,12 +58,12 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
             
             retryCount++
             if (retryCount < MAX_RETRY_COUNT) {
-                Log.d(TAG, "获取UI层次结构失败，正在重试 #$retryCount")
+                AppLogger.d(TAG, "获取UI层次结构失败，正在重试 #$retryCount")
                 delay(RETRY_DELAY_MS)
             }
         }
         
-        Log.w(TAG, "获取UI层次结构失败，已重试${MAX_RETRY_COUNT}次")
+        AppLogger.w(TAG, "获取UI层次结构失败，已重试${MAX_RETRY_COUNT}次")
         return uiXml
     }
 
@@ -111,7 +111,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting page info", e)
+            AppLogger.e(TAG, "Error getting page info", e)
             ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -128,7 +128,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
             // 1. 获取UI层次结构的XML快照（带重试）
             val hierarchyXml = getUIHierarchyWithRetry()
             if (hierarchyXml.isEmpty()) {
-                Log.w(TAG, "无法获取UI层次结构XML，使用默认值。")
+                AppLogger.w(TAG, "无法获取UI层次结构XML，使用默认值。")
                 focusInfo.packageName = "android"
                 // 即使XML获取失败，仍然尝试获取Activity名称
                 focusInfo.activityName = UIHierarchyManager.getCurrentActivityName(context) ?: "ForegroundActivity"
@@ -147,7 +147,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
             if (focusInfo.packageName == null) focusInfo.packageName = "android"
             if (focusInfo.activityName == null) focusInfo.activityName = "ForegroundActivity"
         } catch (e: Exception) {
-            Log.e(TAG, "从XML解析焦点信息时出错", e)
+            AppLogger.e(TAG, "从XML解析焦点信息时出错", e)
             // 设置默认值
             focusInfo.packageName = "android"
             focusInfo.activityName = "ForegroundActivity"
@@ -297,7 +297,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 handleClickByBounds(tool, targetNodeBounds)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error clicking element", e)
+            AppLogger.e(TAG, "Error clicking element", e)
             operationOverlay.hide()
             ToolResult(
                         toolName = tool.name,
@@ -338,7 +338,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 ToolResult(toolName = tool.name, success = false, result = StringResultData(""), error = "Failed to click at bounds $bounds via accessibility service.")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error clicking by bounds", e)
+            AppLogger.e(TAG, "Error clicking by bounds", e)
             operationOverlay.hide()
             return ToolResult(toolName = tool.name, success = false, result = StringResultData(""), error = "Error clicking at bounds: ${e.message}")
         }
@@ -418,7 +418,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error setting input text", e)
+            AppLogger.e(TAG, "Error setting input text", e)
             operationOverlay.hide()
             ToolResult(
                     toolName = tool.name,
@@ -477,7 +477,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error tapping at coordinates", e)
+            AppLogger.e(TAG, "Error tapping at coordinates", e)
             operationOverlay.hide()
             ToolResult(
                     toolName = tool.name,
@@ -538,7 +538,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error performing swipe", e)
+            AppLogger.e(TAG, "Error performing swipe", e)
             operationOverlay.hide()
             ToolResult(
                     toolName = tool.name,
@@ -554,7 +554,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
         return try {
             UIHierarchyManager.performClick(context, x, y)
         } catch (e: Exception) {
-            Log.e(TAG, "Error performing accessibility click", e)
+            AppLogger.e(TAG, "Error performing accessibility click", e)
             return false
         }
     }
@@ -570,7 +570,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
         return try {
             UIHierarchyManager.performSwipe(context, startX, startY, endX, endY, duration.toLong())
         } catch (e: Exception) {
-            Log.e(TAG, "Error performing accessibility swipe", e)
+            AppLogger.e(TAG, "Error performing accessibility swipe", e)
             return false
         }
     }
@@ -635,7 +635,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error pressing key", e)
+            AppLogger.e(TAG, "Error pressing key", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -659,7 +659,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 rect.bottom = parts[3].toInt()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing bounds: $boundsString", e)
+            AppLogger.e(TAG, "Error parsing bounds: $boundsString", e)
         }
         return rect
     }

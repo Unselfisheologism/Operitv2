@@ -3,7 +3,7 @@ package com.ai.assistance.operit.services.assistant
 import android.content.Intent
 import android.os.Bundle
 import android.service.voice.VoiceInteractionService
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 
 /**
  * Operit 语音交互服务
@@ -19,7 +19,7 @@ class OperitVoiceInteractionService : VoiceInteractionService() {
     
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "VoiceInteractionService created")
+        AppLogger.d(TAG, "VoiceInteractionService created")
     }
     
     /**
@@ -28,7 +28,7 @@ class OperitVoiceInteractionService : VoiceInteractionService() {
      */
     override fun onReady() {
         super.onReady()
-        Log.d(TAG, "VoiceInteractionService ready")
+        AppLogger.d(TAG, "VoiceInteractionService ready")
     }
     
     /**
@@ -36,17 +36,17 @@ class OperitVoiceInteractionService : VoiceInteractionService() {
      * 这里应该返回 true 表示我们可以处理这个请求
      */
     override fun onGetSupportedVoiceActions(voiceActions: MutableSet<String>): MutableSet<String> {
-        Log.d(TAG, "onGetSupportedVoiceActions: $voiceActions")
+        AppLogger.d(TAG, "onGetSupportedVoiceActions: $voiceActions")
         return super.onGetSupportedVoiceActions(voiceActions)
     }
     
     override fun onShutdown() {
-        Log.d(TAG, "VoiceInteractionService shutting down")
+        AppLogger.d(TAG, "VoiceInteractionService shutting down")
         super.onShutdown()
     }
     
     override fun onDestroy() {
-        Log.d(TAG, "VoiceInteractionService destroyed")
+        AppLogger.d(TAG, "VoiceInteractionService destroyed")
         super.onDestroy()
     }
 }

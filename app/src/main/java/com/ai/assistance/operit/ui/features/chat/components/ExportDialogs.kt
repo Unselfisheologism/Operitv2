@@ -3,7 +3,7 @@ package com.ai.assistance.operit.ui.features.chat.components
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -693,7 +693,7 @@ suspend fun exportAndroidApp(
             if (!webAssetsDir.exists()) {
                 webAssetsDir.mkdirs()
             }
-            Log.d(
+            AppLogger.d(
                     "ExportDialogs",
                     "复制网页文件到APK ${webContentDir.absolutePath} -> ${webAssetsDir.absolutePath}"
             )
@@ -705,7 +705,7 @@ suspend fun exportAndroidApp(
             onProgress(0.7f, "准备签名...")
             // 使用KeyStoreHelper获取密钥库
             val keyStoreFile = KeyStoreHelper.getOrCreateKeystore(context)
-            Log.d(
+            AppLogger.d(
                     "ExportDialogs",
                     "签名使用密钥库: ${keyStoreFile.absolutePath}, 大小: ${keyStoreFile.length()}"
             )
@@ -727,7 +727,7 @@ suspend fun exportAndroidApp(
             val outputName = "WebApp_${Date().time}.apk"
             val outputFile = File(outputDir, outputName)
 
-            Log.d("ExportDialogs", "即将签名APK，使用密钥: ${keyStoreFile.absolutePath}, 别名: androidkey")
+            AppLogger.d("ExportDialogs", "即将签名APK，使用密钥: ${keyStoreFile.absolutePath}, 别名: androidkey")
             apkEditor
                     .withSignature(
                             keyStoreFile,
@@ -748,13 +748,13 @@ suspend fun exportAndroidApp(
                 onProgress(1.0f, "导出完成!")
                 onComplete(true, signedApk.absolutePath, null)
             } catch (e: Exception) {
-                Log.e("ExportDialogs", "签名APK失败", e)
+                AppLogger.e("ExportDialogs", "签名APK失败", e)
                 onComplete(false, null, "签名APK失败: ${e.message}")
                 apkEditor.cleanup() // 确保失败时也清理资源
             }
         }
     } catch (e: Exception) {
-        Log.e("ExportDialogs", "导出失败", e)
+        AppLogger.e("ExportDialogs", "导出失败", e)
         onComplete(false, null, "导出失败: ${e.message}")
     }
 }
@@ -832,13 +832,13 @@ suspend fun exportWindowsApp(
                             context.contentResolver.openInputStream(iconUri)?.use { input ->
                                 exeEditor.changeIcon(input).setOutput(mainExe).process()
                             }
-                            Log.d("ExportDialogs", "已更换Windows应用图标")
+                            AppLogger.d("ExportDialogs", "已更换Windows应用图标")
                         } catch (e: Exception) {
-                            Log.e("ExportDialogs", "更换Windows应用图标失败", e)
+                            AppLogger.e("ExportDialogs", "更换Windows应用图标失败", e)
                             // 继续执行，不因图标失败而中断整个导出流程
                         }
                     } else {
-                        Log.e("ExportDialogs", "未找到assistance_subpack.exe文件")
+                        AppLogger.e("ExportDialogs", "未找到assistance_subpack.exe文件")
                     }
                 }
 
@@ -849,7 +849,7 @@ suspend fun exportWindowsApp(
                     webContentTarget.mkdirs()
                 }
 
-                Log.d(
+                AppLogger.d(
                         "ExportDialogs",
                         "复制网页文件到Windows应用: ${webContentDir.absolutePath} -> ${webContentTarget.absolutePath}"
                 )
@@ -880,7 +880,7 @@ suspend fun exportWindowsApp(
                 onProgress(1.0f, "导出完成!")
                 onComplete(true, outputZip.absolutePath, null)
             } catch (e: Exception) {
-                Log.e("ExportDialogs", "Windows应用导出过程失败", e)
+                AppLogger.e("ExportDialogs", "Windows应用导出过程失败", e)
                 onComplete(false, null, "导出过程失败: ${e.message}")
             } finally {
                 // 7. 清理临时文件
@@ -888,12 +888,12 @@ suspend fun exportWindowsApp(
                     onProgress(0.9f, "清理临时文件...")
                     tempDir.deleteRecursively()
                 } catch (e: Exception) {
-                    Log.e("ExportDialogs", "清理临时文件失败", e)
+                    AppLogger.e("ExportDialogs", "清理临时文件失败", e)
                 }
             }
         }
     } catch (e: Exception) {
-        Log.e("ExportDialogs", "Windows应用导出失败", e)
+        AppLogger.e("ExportDialogs", "Windows应用导出失败", e)
         onComplete(false, null, "导出失败: ${e.message}")
     }
 }
@@ -930,9 +930,9 @@ private fun addDirToZip(
                 }
 
                 zipOut.closeEntry()
-                Log.d("ExportDialogs", "已添加文件到ZIP: $relativePath")
+                AppLogger.d("ExportDialogs", "已添加文件到ZIP: $relativePath")
             } catch (e: Exception) {
-                Log.e("ExportDialogs", "添加文件到ZIP失败: $relativePath", e)
+                AppLogger.e("ExportDialogs", "添加文件到ZIP失败: $relativePath", e)
             }
         }
     }
@@ -975,9 +975,9 @@ private fun copyDirectory(sourceDir: File, destDir: File) {
                     FileOutputStream(destFile).use { output -> input.copyTo(output) }
                 }
 
-                Log.d("ExportDialogs", "成功复制文件: ${file.absolutePath} -> ${destFile.absolutePath}")
+                AppLogger.d("ExportDialogs", "成功复制文件: ${file.absolutePath} -> ${destFile.absolutePath}")
             } catch (e: Exception) {
-                Log.e(
+                AppLogger.e(
                         "ExportDialogs",
                         "复制文件失败: ${file.absolutePath} -> ${destFile.absolutePath}",
                         e

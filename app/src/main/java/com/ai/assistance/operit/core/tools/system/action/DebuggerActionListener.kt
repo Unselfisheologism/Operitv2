@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.system.action
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import com.ai.assistance.operit.core.tools.system.ShizukuAuthorizer
 import kotlinx.coroutines.Dispatchers
@@ -89,14 +89,14 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
                 actionCallback = onAction
                 isListening.set(true)
 
-                Log.d(TAG, "开始调试器权限级别的UI操作监听")
+                AppLogger.d(TAG, "开始调试器权限级别的UI操作监听")
 
                 // 启动系统级事件监控
                 startSystemEventMonitoring()
 
                 return@withContext ActionListener.ListeningResult.success("调试器UI操作监听已启动")
             } catch (e: Exception) {
-                Log.e(TAG, "启动调试器UI操作监听失败", e)
+                AppLogger.e(TAG, "启动调试器UI操作监听失败", e)
                 isListening.set(false)
                 return@withContext ActionListener.ListeningResult.failure("启动失败: ${e.message}")
             }
@@ -117,10 +117,10 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
 
             stopSystemEventMonitoring()
 
-            Log.d(TAG, "调试器UI操作监听已停止")
+            AppLogger.d(TAG, "调试器UI操作监听已停止")
             return@withContext true
         } catch (e: Exception) {
-            Log.e(TAG, "停止调试器UI操作监听失败", e)
+            AppLogger.e(TAG, "停止调试器UI操作监听失败", e)
             return@withContext false
         }
     }
@@ -138,7 +138,7 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
      * 使用Shizuku权限通过startProcess启动持续监控进程
      */
     private fun startSystemEventMonitoring() {
-        Log.d(TAG, "开始系统级事件监控 - 使用startProcess启动持续监控进程")
+        AppLogger.d(TAG, "开始系统级事件监控 - 使用startProcess启动持续监控进程")
         
         monitoringJob = CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -149,7 +149,7 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
                 startActivityStackMonitoring()
                 
             } catch (e: Exception) {
-                Log.e(TAG, "启动系统事件监控进程失败", e)
+                AppLogger.e(TAG, "启动系统事件监控进程失败", e)
             }
         }
     }
@@ -158,7 +158,7 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
      * 停止系统级事件监控
      */
     private fun stopSystemEventMonitoring() {
-        Log.d(TAG, "停止系统级事件监控")
+        AppLogger.d(TAG, "停止系统级事件监控")
         
         // 停止监控进程
         windowMonitorProcess?.destroy()
@@ -190,9 +190,9 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
                 }
             }?.launchIn(CoroutineScope(Dispatchers.IO))
             
-            Log.d(TAG, "窗口焦点监控进程已启动")
+            AppLogger.d(TAG, "窗口焦点监控进程已启动")
         } catch (e: Exception) {
-            Log.e(TAG, "启动窗口焦点监控进程失败", e)
+            AppLogger.e(TAG, "启动窗口焦点监控进程失败", e)
         }
     }
 
@@ -213,9 +213,9 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
                 }
             }?.launchIn(CoroutineScope(Dispatchers.IO))
             
-            Log.d(TAG, "Activity栈监控进程已启动")
+            AppLogger.d(TAG, "Activity栈监控进程已启动")
         } catch (e: Exception) {
-            Log.e(TAG, "启动Activity栈监控进程失败", e)
+            AppLogger.e(TAG, "启动Activity栈监控进程失败", e)
         }
     }
 
@@ -227,7 +227,7 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
      */
     private fun parseWindowFocusEvents(windowInfo: String) {
         if (windowInfo.contains("mCurrentFocus") || windowInfo.contains("mFocusedApp")) {
-            Log.v(TAG, "检测到窗口焦点变化: ${windowInfo.take(100)}")
+            AppLogger.v(TAG, "检测到窗口焦点变化: ${windowInfo.take(100)}")
             
             // 尝试从窗口信息中提取应用包名
             val packageName = extractPackageNameFromWindowInfo(windowInfo)
@@ -254,7 +254,7 @@ class DebuggerActionListener(private val context: Context) : ActionListener {
      * @param activityStack Activity栈信息
      */
     private fun parseActivityStackEvents(activityStack: String) {
-        Log.v(TAG, "检测到Activity栈变化: ${activityStack.take(100)}")
+        AppLogger.v(TAG, "检测到Activity栈变化: ${activityStack.take(100)}")
         
         // 从Activity栈信息中提取当前前台Activity
         val currentActivity = extractCurrentActivityFromStack(activityStack)

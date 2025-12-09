@@ -3,7 +3,7 @@ package com.ai.assistance.operit.ui.features.token.webview
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Build
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage
@@ -117,7 +117,7 @@ object WebViewConfig {
                                                 view?.context?.startActivity(intent)
                                                 return true
                                             } catch (e: Exception) {
-                                                Log.e("WebViewConfig", "无法在新窗口打开外部应用: ${e.message}")
+                                                AppLogger.e("WebViewConfig", "无法在新窗口打开外部应用: ${e.message}")
                                             }
                                             return true
                                         }
@@ -139,7 +139,7 @@ object WebViewConfig {
                         }
 
                         override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                            Log.d(
+                            AppLogger.d(
                                     "WebViewConsole",
                                     "${consoleMessage.message()} -- From line ${consoleMessage.lineNumber()} of ${consoleMessage.sourceId()}"
                             )
@@ -173,7 +173,7 @@ object WebViewConfig {
                                 message: String?,
                                 result: android.webkit.JsResult?
                         ): Boolean {
-                            Log.d("WebViewJS", "Alert: $message")
+                            AppLogger.d("WebViewJS", "Alert: $message")
                             result?.confirm()
                             return true
                         }
@@ -184,7 +184,7 @@ object WebViewConfig {
                                 message: String?,
                                 result: android.webkit.JsResult?
                         ): Boolean {
-                            Log.d("WebViewJS", "Confirm: $message")
+                            AppLogger.d("WebViewJS", "Confirm: $message")
                             result?.confirm()
                             return true
                         }
@@ -196,7 +196,7 @@ object WebViewConfig {
                                 defaultValue: String?,
                                 result: android.webkit.JsPromptResult?
                         ): Boolean {
-                            Log.d("WebViewJS", "Prompt: $message, Default: $defaultValue")
+                            AppLogger.d("WebViewJS", "Prompt: $message, Default: $defaultValue")
                             result?.confirm(defaultValue)
                             return true
                         }

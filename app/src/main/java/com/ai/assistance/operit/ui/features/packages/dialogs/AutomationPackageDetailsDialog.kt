@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.packages.dialogs
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -42,11 +42,11 @@ fun AutomationPackageDetailsDialog(
             val config = packageManager.getConfigByAppPackageName(packageInfo.packageName)
             availableFunctions = config?.functionDefinitions?.values?.toList() ?: emptyList()
             if (config == null) {
-                Log.w("AutomationPackageDetailsDialog", "Config not found for package: ${packageInfo.packageName}")
+                AppLogger.w("AutomationPackageDetailsDialog", "Config not found for package: ${packageInfo.packageName}")
                 errorMessage = "无法加载配置文件。"
             }
         } catch (e: Exception) {
-            Log.e("AutomationPackageDetailsDialog", "Failed to load functions for package: ${packageInfo.name}", e)
+            AppLogger.e("AutomationPackageDetailsDialog", "Failed to load functions for package: ${packageInfo.name}", e)
             errorMessage = "加载失败: ${e.message}"
             availableFunctions = emptyList()
         } finally {

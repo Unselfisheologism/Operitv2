@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.automatic
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.*
 import com.ai.assistance.operit.core.tools.automatic.config.AutomationPackageManager
 import com.ai.assistance.operit.data.model.AITool
@@ -31,7 +31,7 @@ class AutomationTools(
      * 搜索是否存在对应包名/应用名称的自动化配置
      */
     suspend fun searchAutomationConfig(tool: AITool): ToolResult {
-        Log.d(TAG, "Searching automation config")
+        AppLogger.d(TAG, "Searching automation config")
         
         val packageName = tool.parameters.find { it.name == "package_name" }?.value
         val appName = tool.parameters.find { it.name == "app_name" }?.value
@@ -97,14 +97,14 @@ class AutomationTools(
                 totalFound = matchingPackages.size
             )
 
-            Log.d(TAG, "Found ${matchingPackages.size} matching automation configs")
+            AppLogger.d(TAG, "Found ${matchingPackages.size} matching automation configs")
             return ToolResult(
                 toolName = tool.name,
                 success = true,
                 result = searchResult
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error searching automation configs", e)
+            AppLogger.e(TAG, "Error searching automation configs", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -118,7 +118,7 @@ class AutomationTools(
      * 获取指定功能的执行计划所需的参数
      */
     suspend fun getPlanParameters(tool: AITool): ToolResult {
-        Log.d(TAG, "Getting plan parameters")
+        AppLogger.d(TAG, "Getting plan parameters")
         
         val functionName = tool.parameters.find { it.name == "function_name" }?.value
         val packageName = tool.parameters.find { it.name == "package_name" }?.value
@@ -138,9 +138,9 @@ class AutomationTools(
                 val config = packageManager.getConfigByAppPackageName(packageName)
                 if (config != null) {
                     uiRouter.loadConfig(config, merge = true)
-                    Log.d(TAG, "Loaded config for package: $packageName")
+                    AppLogger.d(TAG, "Loaded config for package: $packageName")
                 } else {
-                    Log.w(TAG, "No config found for package: $packageName")
+                    AppLogger.w(TAG, "No config found for package: $packageName")
                 }
             }
 
@@ -175,14 +175,14 @@ class AutomationTools(
                 planDescription = "执行 '$functionName' 功能需要 ${plan.path.edges.size} 个步骤"
             )
 
-            Log.d(TAG, "Generated plan for '$functionName' with ${plan.requiredParameters.size} required parameters")
+            AppLogger.d(TAG, "Generated plan for '$functionName' with ${plan.requiredParameters.size} required parameters")
             return ToolResult(
                 toolName = tool.name,
                 success = true,
                 result = parameterInfo
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting plan parameters", e)
+            AppLogger.e(TAG, "Error getting plan parameters", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -196,7 +196,7 @@ class AutomationTools(
      * 根据提供的参数执行自动化计划
      */
     suspend fun executePlan(tool: AITool): ToolResult {
-        Log.d(TAG, "Executing automation plan")
+        AppLogger.d(TAG, "Executing automation plan")
         
         val plan = currentPlan
         val functionName = currentFunctionName
@@ -271,7 +271,7 @@ class AutomationTools(
             currentPlan = null
             currentFunctionName = null
 
-            Log.d(TAG, "Plan execution completed. Success: ${result.success}")
+            AppLogger.d(TAG, "Plan execution completed. Success: ${result.success}")
             return ToolResult(
                 toolName = tool.name,
                 success = result.success,
@@ -279,7 +279,7 @@ class AutomationTools(
                 error = if (result.success) null else result.error
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error executing plan", e)
+            AppLogger.e(TAG, "Error executing plan", e)
             // 清除缓存的计划
             currentPlan = null
             currentFunctionName = null
@@ -297,7 +297,7 @@ class AutomationTools(
      * 获取可用的自动化功能列表
      */
     suspend fun getAvailableFunctions(tool: AITool): ToolResult {
-        Log.d(TAG, "Getting available automation functions")
+        AppLogger.d(TAG, "Getting available automation functions")
         
         try {
             val packageName = tool.parameters.find { it.name == "package_name" }?.value
@@ -307,7 +307,7 @@ class AutomationTools(
                 val config = packageManager.getConfigByAppPackageName(packageName)
                 if (config != null) {
                     uiRouter.loadConfig(config, merge = true)
-                    Log.d(TAG, "Loaded config for package: $packageName")
+                    AppLogger.d(TAG, "Loaded config for package: $packageName")
                 }
             }
 
@@ -324,14 +324,14 @@ class AutomationTools(
                 totalCount = functions.size
             )
 
-            Log.d(TAG, "Found ${functions.size} available automation functions")
+            AppLogger.d(TAG, "Found ${functions.size} available automation functions")
             return ToolResult(
                 toolName = tool.name,
                 success = true,
                 result = functionList
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting available functions", e)
+            AppLogger.e(TAG, "Error getting available functions", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,

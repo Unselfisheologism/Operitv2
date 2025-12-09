@@ -4,7 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -257,7 +257,7 @@ fun ShizukuDemoScreen(
                     val installed = ShizukuInstaller.getInstalledShizukuVersion(context)
                     val bundled = ShizukuInstaller.getBundledShizukuVersion(context)
                     val needsUpdate = ShizukuInstaller.isShizukuUpdateNeeded(context)
-                    Log.d(
+                    AppLogger.d(
                             "ShizukuDemo",
                             "缓存Shizuku版本状态 - 已安装: $installed, 内置: $bundled, 需要更新: $needsUpdate"
                     )
@@ -416,11 +416,11 @@ fun ShizukuDemoScreen(
                         onInstallBundled = {
                             scope.launch(Dispatchers.IO) {
                                 try {
-                                    Log.d("ShizukuDemo", "开始安装内置Shizuku")
+                                    AppLogger.d("ShizukuDemo", "开始安装内置Shizuku")
                                     // 提取APK并安装，无论是否已安装
                                     val apkFile = ShizukuInstaller.extractApkFromAssets(context)
                                     if (apkFile == null) {
-                                        Log.e("ShizukuDemo", "提取APK失败")
+                                        AppLogger.e("ShizukuDemo", "提取APK失败")
                                         withContext(Dispatchers.Main) {
                                             Toast.makeText(
                                                             context,
@@ -435,7 +435,7 @@ fun ShizukuDemoScreen(
                                         return@launch
                                     }
 
-                                    Log.d(
+                                    AppLogger.d(
                                             "ShizukuDemo",
                                             "APK提取成功: ${apkFile.absolutePath}, 大小: ${apkFile.length()} 字节"
                                     )
@@ -452,7 +452,7 @@ fun ShizukuDemoScreen(
                                                 Uri.fromFile(apkFile)
                                             }
 
-                                    Log.d("ShizukuDemo", "生成APK URI: $apkUri")
+                                    AppLogger.d("ShizukuDemo", "生成APK URI: $apkUri")
 
                                     // 创建安装意图
                                     val installIntent =
@@ -468,7 +468,7 @@ fun ShizukuDemoScreen(
                                                 }
                                             }
 
-                                    Log.d("ShizukuDemo", "启动安装界面")
+                                    AppLogger.d("ShizukuDemo", "启动安装界面")
 
                                     // 启动安装界面
                                     withContext(Dispatchers.Main) {
@@ -483,7 +483,7 @@ fun ShizukuDemoScreen(
                                                 .show()
                                     }
                                 } catch (e: Exception) {
-                                    Log.e("ShizukuDemo", "安装内置Shizuku时出错", e)
+                                    AppLogger.e("ShizukuDemo", "安装内置Shizuku时出错", e)
                                     withContext(Dispatchers.Main) {
                                         Toast.makeText(
                                                         context,
@@ -505,15 +505,15 @@ fun ShizukuDemoScreen(
                                                 "moe.shizuku.privileged.api"
                                         )
                                 if (intent != null) {
-                                    Log.d("ShizukuDemo", "打开Shizuku应用")
+                                    AppLogger.d("ShizukuDemo", "打开Shizuku应用")
                                     context.startActivity(intent)
                                 } else {
-                                    Log.e("ShizukuDemo", "无法找到Shizuku应用")
+                                    AppLogger.e("ShizukuDemo", "无法找到Shizuku应用")
                                     Toast.makeText(context, context.getString(R.string.cannot_find_shizuku_app), Toast.LENGTH_SHORT)
                                             .show()
                                 }
                             } catch (e: Exception) {
-                                Log.e("ShizukuDemo", "无法启动Shizuku应用", e)
+                                AppLogger.e("ShizukuDemo", "无法启动Shizuku应用", e)
                                 Toast.makeText(context, context.getString(R.string.cannot_start_shizuku_app), Toast.LENGTH_SHORT).show()
                             }
                         },
@@ -528,9 +528,9 @@ fun ShizukuDemoScreen(
                         },
                         onRequestPermission = {
                             scope.launch {
-                                Log.d("ShizukuDemo", "请求Shizuku权限")
+                                AppLogger.d("ShizukuDemo", "请求Shizuku权限")
                                 ShizukuAuthorizer.requestShizukuPermission { granted ->
-                                    Log.d("ShizukuDemo", "Shizuku权限请求结果: $granted")
+                                    AppLogger.d("ShizukuDemo", "Shizuku权限请求结果: $granted")
                                     scope.launch(Dispatchers.Main) {
                                         if (granted) {
                                             Toast.makeText(
@@ -565,11 +565,11 @@ fun ShizukuDemoScreen(
                         onUpdateShizuku = {
                             scope.launch(Dispatchers.IO) {
                                 try {
-                                    Log.d("ShizukuDemo", "开始更新Shizuku")
+                                    AppLogger.d("ShizukuDemo", "开始更新Shizuku")
                                     // 提取APK并安装，无论是否已安装
                                     val apkFile = ShizukuInstaller.extractApkFromAssets(context)
                                     if (apkFile == null) {
-                                        Log.e("ShizukuDemo", "提取APK失败")
+                                        AppLogger.e("ShizukuDemo", "提取APK失败")
                                         withContext(Dispatchers.Main) {
                                             Toast.makeText(
                                                             context,
@@ -584,7 +584,7 @@ fun ShizukuDemoScreen(
                                         return@launch
                                     }
 
-                                    Log.d(
+                                    AppLogger.d(
                                             "ShizukuDemo",
                                             "APK提取成功: ${apkFile.absolutePath}, 大小: ${apkFile.length()} 字节"
                                     )
@@ -601,7 +601,7 @@ fun ShizukuDemoScreen(
                                                 Uri.fromFile(apkFile)
                                             }
 
-                                    Log.d("ShizukuDemo", "生成APK URI: $apkUri")
+                                    AppLogger.d("ShizukuDemo", "生成APK URI: $apkUri")
 
                                     // 创建安装意图
                                     val installIntent =
@@ -617,7 +617,7 @@ fun ShizukuDemoScreen(
                                                 }
                                             }
 
-                                    Log.d("ShizukuDemo", "启动更新界面")
+                                    AppLogger.d("ShizukuDemo", "启动更新界面")
 
                                     // 启动安装界面
                                     withContext(Dispatchers.Main) {
@@ -632,7 +632,7 @@ fun ShizukuDemoScreen(
                                                 .show()
                                     }
                                 } catch (e: Exception) {
-                                    Log.e("ShizukuDemo", "更新Shizuku时出错", e)
+                                    AppLogger.e("ShizukuDemo", "更新Shizuku时出错", e)
                                     withContext(Dispatchers.Main) {
                                         Toast.makeText(
                                                         context,

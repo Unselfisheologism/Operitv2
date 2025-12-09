@@ -5,7 +5,7 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.k2fsa.sherpa.ncnn.*
 import java.io.File
 import java.io.FileOutputStream
@@ -68,17 +68,17 @@ class SherpaSpeechProvider(private val context: Context) : SpeechService {
 
     override suspend fun initialize(): Boolean {
         if (isInitialized.value) return true
-        Log.d(TAG, "Initializing sherpa-ncnn...")
+        AppLogger.d(TAG, "Initializing sherpa-ncnn...")
         return try {
             withContext(Dispatchers.IO) {
                 createRecognizer()
                 if (recognizer != null) {
-                    Log.d(TAG, "sherpa-ncnn initialized successfully")
+                    AppLogger.d(TAG, "sherpa-ncnn initialized successfully")
                     _isInitialized.value = true
                     _recognitionState.value = SpeechService.RecognitionState.IDLE
                     true
                 } else {
-                    Log.e(TAG, "Failed to create sherpa-ncnn recognizer")
+                    AppLogger.e(TAG, "Failed to create sherpa-ncnn recognizer")
                     _recognitionState.value = SpeechService.RecognitionState.ERROR
                     _recognitionError.value =
                             SpeechService.RecognitionError(-1, "Failed to initialize recognizer")
@@ -86,7 +86,7 @@ class SherpaSpeechProvider(private val context: Context) : SpeechService {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize sherpa-ncnn", e)
+            AppLogger.e(TAG, "Failed to initialize sherpa-ncnn", e)
             _recognitionState.value = SpeechService.RecognitionState.ERROR
             _recognitionError.value =
                     SpeechService.RecognitionError(-1, e.message ?: "Unknown error")
@@ -98,10 +98,10 @@ class SherpaSpeechProvider(private val context: Context) : SpeechService {
     private fun copyAssetDirToCache(assetDir: String, cacheDir: File): File {
         val targetDir = File(cacheDir, assetDir.substringAfterLast('/'))
         if (targetDir.exists() && targetDir.list()?.isNotEmpty() == true) {
-            Log.d(TAG, "Model files already exist in cache: ${targetDir.absolutePath}")
+            AppLogger.d(TAG, "Model files already exist in cache: ${targetDir.absolutePath}")
             return targetDir
         }
-        Log.d(TAG, "Copying model files from assets '$assetDir' to ${targetDir.absolutePath}")
+        AppLogger.d(TAG, "Copying model files from assets '$assetDir' to ${targetDir.absolutePath}")
         targetDir.mkdirs()
 
         val assetManager = context.assets
@@ -129,7 +129,7 @@ class SherpaSpeechProvider(private val context: Context) : SpeechService {
             val assetModelDir = "models/$modelDirName"
             localModelDir = copyAssetDirToCache(assetModelDir, context.filesDir)
         } catch (e: IOException) {
-            Log.e(TAG, "Failed to copy model assets.", e)
+            AppLogger.e(TAG, "Failed to copy model assets.", e)
             _recognitionState.value = SpeechService.RecognitionState.ERROR
             _recognitionError.value =
                     SpeechService.RecognitionError(-1, "Failed to prepare model files.")
@@ -246,7 +246,7 @@ class SherpaSpeechProvider(private val context: Context) : SpeechService {
         // 重置音量
         currentVolume = 0f
         _volumeLevelFlow.value = 0f
-        Log.d(TAG, "Started recording")
+        AppLogger.d(TAG, "Started recording")
 
         recordingJob =
                 scope.launch {
@@ -297,7 +297,7 @@ class SherpaSpeechProvider(private val context: Context) : SpeechService {
                         _recognitionState.value = SpeechService.RecognitionState.IDLE
                         _volumeLevelFlow.value = 0f // 重置音量
                     }
-                    Log.d(TAG, "Stopped recording.")
+                    AppLogger.d(TAG, "Stopped recording.")
                 }
         return true
     }
@@ -306,7 +306,7 @@ class SherpaSpeechProvider(private val context: Context) : SpeechService {
         if (recordingJob?.isActive == true &&
                         _recognitionState.value == SpeechService.RecognitionState.RECOGNIZING
         ) {
-            Log.d(TAG, "Stopping recognition...")
+            AppLogger.d(TAG, "Stopping recognition...")
             recordingJob?.cancel()
             _recognitionState.value =
                     SpeechService.RecognitionState.PROCESSING // Indicate processing then idle

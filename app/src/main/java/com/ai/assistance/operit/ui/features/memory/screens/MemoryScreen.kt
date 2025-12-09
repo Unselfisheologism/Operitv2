@@ -72,7 +72,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStreamReader
 import android.provider.OpenableColumns
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -217,11 +217,11 @@ fun MemoryScreen() {
                                 }
                                 viewModel.importDocument(fileName, fileUri.toString(), content)
                             } else {
-                                Log.e("MemoryScreen", "Tool execution failed: ${result.error}")
+                                AppLogger.e("MemoryScreen", "Tool execution failed: ${result.error}")
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e("MemoryScreen", "Error processing file: $fileUri", e)
+                        AppLogger.e("MemoryScreen", "Error processing file: $fileUri", e)
                     } finally {
                         tempFile?.delete()
                     }
@@ -250,7 +250,7 @@ fun MemoryScreen() {
                 // 框选模式切换按钮
                 FloatingActionButton(
                     onClick = {
-                        android.util.Log.d(
+                        com.ai.assistance.operit.util.AppLogger.d(
                             "MemoryScreen",
                             "Box selection button clicked. Current mode: ${uiState.isBoxSelectionMode}, toggling to ${!uiState.isBoxSelectionMode}"
                         )
@@ -264,7 +264,7 @@ fun MemoryScreen() {
 
                 FloatingActionButton(
                     onClick = {
-                        android.util.Log.d(
+                        com.ai.assistance.operit.util.AppLogger.d(
                             "MemoryScreen",
                             "Linking button clicked. Current mode: ${uiState.isLinkingMode}, toggling to ${!uiState.isLinkingMode}"
                         )

@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.javascript
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.core.tools.packTool.PackageManager
@@ -62,14 +62,14 @@ private constructor(private val context: Context, private val packageManager: Pa
                     packageManager.getPackageScript(packageName)
                             ?: return "Package not found: $packageName"
 
-            Log.d(TAG, "Executing function $functionName in package $packageName")
+            AppLogger.d(TAG, "Executing function $functionName in package $packageName")
 
             // Execute the function in the script
             val result = jsEngine.executeScriptFunction(script, functionName, params)
 
             return result?.toString() ?: "null"
         } catch (e: Exception) {
-            Log.e(TAG, "Error executing script: ${e.message}", e)
+            AppLogger.e(TAG, "Error executing script: ${e.message}", e)
             return "Error: ${e.message}"
         }
     }
@@ -82,7 +82,7 @@ private constructor(private val context: Context, private val packageManager: Pa
      */
     fun executeScript(script: String, tool: AITool): Flow<ToolResult> = channelFlow {
         try {
-            Log.d(TAG, "Executing script for tool: ${tool.name}")
+            AppLogger.d(TAG, "Executing script for tool: ${tool.name}")
 
             // Extract the function name from the tool name (packageName:toolName)
             val parts = tool.name.split(":")
@@ -118,7 +118,7 @@ private constructor(private val context: Context, private val packageManager: Pa
                         else -> param.value // string and other types
                     }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Failed to convert parameter '${param.name}' with value '${param.value}' to type '$paramType'. Using string value. Error: ${e.message}")
+                    AppLogger.w(TAG, "Failed to convert parameter '${param.name}' with value '${param.value}' to type '$paramType'. Using string value. Error: ${e.message}")
                     param.value // Fallback to string
                 }
                 param.name to convertedValue
@@ -127,7 +127,7 @@ private constructor(private val context: Context, private val packageManager: Pa
             // Execute the script with timeout
             try {
                 withTimeout(JsTimeoutConfig.SCRIPT_TIMEOUT_MS) {
-                    Log.d(TAG, "Starting script execution for function: $functionName")
+                    AppLogger.d(TAG, "Starting script execution for function: $functionName")
 
                     val startTime = System.currentTimeMillis()
                     val scriptResult =
@@ -137,7 +137,7 @@ private constructor(private val context: Context, private val packageManager: Pa
                                     params
                             ) { intermediateResult ->
                                 val resultString = intermediateResult?.toString() ?: "null"
-                                Log.d(TAG, "Intermediate JS result: $resultString")
+                                AppLogger.d(TAG, "Intermediate JS result: $resultString")
                                 trySend(
                                         ToolResult(
                                                 toolName = tool.name,
@@ -148,7 +148,7 @@ private constructor(private val context: Context, private val packageManager: Pa
                             }
 
                     val executionTime = System.currentTimeMillis() - startTime
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "Script execution completed in ${executionTime}ms with result type: ${scriptResult?.javaClass?.name ?: "null"}"
                     )
@@ -167,7 +167,7 @@ private constructor(private val context: Context, private val packageManager: Pa
                         }
                         scriptResult is String && scriptResult.startsWith("Error:") -> {
                             val errorMsg = scriptResult.substring("Error:".length).trim()
-                            Log.e(TAG, "Script execution error: $errorMsg")
+                            AppLogger.e(TAG, "Script execution error: $errorMsg")
                             send(
                                     ToolResult(
                                             toolName = tool.name,
@@ -179,7 +179,7 @@ private constructor(private val context: Context, private val packageManager: Pa
                         }
                         else -> {
                             val finalResultString = scriptResult.toString()
-                            Log.d(
+                            AppLogger.d(
                                     TAG,
                                     "Final script result: ${finalResultString.take(100)}${if (finalResultString.length > 100) "..." else ""}"
                             )
@@ -194,7 +194,7 @@ private constructor(private val context: Context, private val packageManager: Pa
                     }
                 }
             } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-                Log.w(TAG, "Script execution timed out: ${e.message}")
+                AppLogger.w(TAG, "Script execution timed out: ${e.message}")
                 send(
                         ToolResult(
                                 toolName = tool.name,
@@ -205,7 +205,7 @@ private constructor(private val context: Context, private val packageManager: Pa
                 )
             } catch (e: Exception) {
                 // Catch other execution exceptions
-                Log.e(TAG, "Exception during script execution: ${e.message}", e)
+                AppLogger.e(TAG, "Exception during script execution: ${e.message}", e)
                 send(
                         ToolResult(
                                 toolName = tool.name,
@@ -216,7 +216,7 @@ private constructor(private val context: Context, private val packageManager: Pa
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error executing script for tool ${tool.name}: ${e.message}", e)
+            AppLogger.e(TAG, "Error executing script for tool ${tool.name}: ${e.message}", e)
             send(
                     ToolResult(
                             toolName = tool.name,

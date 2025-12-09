@@ -6,7 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.Settings
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.Toast
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
@@ -64,7 +64,7 @@ class DemoStateManager(private val context: Context, private val coroutineScope:
     /** Initialize state */
     fun initialize() {
         coroutineScope.launch {
-            Log.d(TAG, "初始化状态...")
+            AppLogger.d(TAG, "初始化状态...")
             registerStateChangeListeners()
             refreshStatusAsync()
         }
@@ -207,7 +207,7 @@ class DemoStateManager(private val context: Context, private val coroutineScope:
 
     /** Initialize state asynchronously */
     suspend fun initializeAsync() {
-        Log.d(TAG, "异步初始化状态...")
+        AppLogger.d(TAG, "异步初始化状态...")
         registerStateChangeListeners()
         refreshStatusAsync()
     }
@@ -246,7 +246,7 @@ class DemoStateManager(private val context: Context, private val coroutineScope:
                 _uiState.value.hasShizukuPermission.value = ShizukuAuthorizer.hasShizukuPermission()
 
                 if (!_uiState.value.hasShizukuPermission.value) {
-                    Log.d(TAG, "缺少Shizuku API_V23权限，显示Shizuku向导卡片")
+                    AppLogger.d(TAG, "缺少Shizuku API_V23权限，显示Shizuku向导卡片")
                     _uiState.value.showShizukuWizard.value = true
                 }
             } else {
@@ -260,7 +260,7 @@ class DemoStateManager(private val context: Context, private val coroutineScope:
             // 延迟300ms以确保UI能够刷新
             delay(300)
         } catch (e: Exception) {
-            Log.e(TAG, "刷新权限状态时出错: ${e.message}", e)
+            AppLogger.e(TAG, "刷新权限状态时出错: ${e.message}", e)
         } finally {
             _uiState.update { currentState ->
                 currentState.copy(isRefreshing = mutableStateOf(false))
@@ -317,10 +317,10 @@ class DemoStateManager(private val context: Context, private val coroutineScope:
             // 更新环境就绪状态 - 只有pnpm和python(包含pip)都准备好时才为true
             isNodejsPythonEnvironmentReady.value = isPnpmInstalled.value && isPythonInstalled.value
             
-            Log.d(TAG, "NodeJS环境检查 - pnpm: ${isPnpmInstalled.value}, python: $hasPython, pip: $hasPip, python环境: ${isPythonInstalled.value}, 整体ready: ${isNodejsPythonEnvironmentReady.value}")
+            AppLogger.d(TAG, "NodeJS环境检查 - pnpm: ${isPnpmInstalled.value}, python: $hasPython, pip: $hasPip, python环境: ${isPythonInstalled.value}, 整体ready: ${isNodejsPythonEnvironmentReady.value}")
             
         } catch (e: Exception) {
-            Log.e(TAG, "检查NodeJS和Python环境时出错", e)
+            AppLogger.e(TAG, "检查NodeJS和Python环境时出错", e)
             isPnpmInstalled.value = false
             isPythonInstalled.value = false
             isNodejsPythonEnvironmentReady.value = false
@@ -343,7 +343,7 @@ suspend fun refreshPermissionsAndStatus(
     updateAccessibilityProviderInstalled: (Boolean) -> Unit,
     updateAccessibilityServiceEnabled: (Boolean) -> Unit
 ) {
-    Log.d(TAG, "刷新应用权限状态...")
+    AppLogger.d(TAG, "刷新应用权限状态...")
 
     // 检查Shizuku安装、运行和权限状态
     val isShizukuInstalled = ShizukuAuthorizer.isShizukuInstalled(context)
@@ -396,7 +396,7 @@ suspend fun refreshPermissionsAndStatus(
             false
         }
     } catch (e: Exception) {
-        Log.e(TAG, "检查NodeJS和Python环境时出错", e)
+        AppLogger.e(TAG, "检查NodeJS和Python环境时出错", e)
         false
     }
     updateOperitTerminalInstalled(isNodejsPythonEnvironmentReady)

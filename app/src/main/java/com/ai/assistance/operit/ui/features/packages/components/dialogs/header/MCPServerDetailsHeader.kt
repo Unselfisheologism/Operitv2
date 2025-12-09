@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.packages.components.dialogs.header
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -45,7 +45,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
- * Header component for the MCP server details dialog.
+ * Header component for the MCP server details diaAppLogger.
  * 
  * @param server The MCP server to display details for
  * @param onDismiss Callback to be invoked when the close button is clicked

@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.system
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.shell.ShellExecutorFactory
 import com.ai.assistance.operit.data.preferences.androidPermissionPreferences
 
@@ -28,7 +28,7 @@ class AndroidShellExecutor {
 
             // 首先尝试使用用户首选的权限级别执行命令
             val preferredLevel = androidPermissionPreferences.getPreferredPermissionLevel()
-            Log.d(TAG, "Using preferred permission level: $preferredLevel")
+            AppLogger.d(TAG, "Using preferred permission level: $preferredLevel")
 
             // 如果preferredLevel为null，使用标准权限级别
             val actualLevel = preferredLevel ?: AndroidPermissionLevel.STANDARD
@@ -38,12 +38,12 @@ class AndroidShellExecutor {
 
             // 尝试使用首选权限级别执行命令
             if (preferredExecutor.isAvailable() && permStatus.granted) {
-                // Log.d(TAG, "Executing command with preferred permission level: $preferredLevel")
+                // AppLogger.d(TAG, "Executing command with preferred permission level: $preferredLevel")
                 val result = preferredExecutor.executeCommand(command)
                 return CommandResult(result.success, result.stdout, result.stderr, result.exitCode)
             }
 
-                        Log.d(
+                        AppLogger.d(
                                 TAG,
                     "Preferred executor not available (${permStatus.reason}), trying highest available executor"
             )
@@ -60,7 +60,7 @@ class AndroidShellExecutor {
                 )
             }
 
-            Log.d(TAG, "Using executor with permission level: ${executor.getPermissionLevel()}")
+            AppLogger.d(TAG, "Using executor with permission level: ${executor.getPermissionLevel()}")
 
             val result = executor.executeCommand(command)
             return CommandResult(result.success, result.stdout, result.stderr, result.exitCode)

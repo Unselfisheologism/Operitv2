@@ -5,7 +5,7 @@ import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.Gravity
 import android.view.WindowManager
 import android.webkit.CookieManager
@@ -119,7 +119,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
             val pageContent = visitWebPage(targetUrl)
             ToolResult(toolName = tool.name, success = true, result = pageContent, error = null)
         } catch (e: Exception) {
-            Log.e(TAG, "Error visiting web page", e)
+            AppLogger.e(TAG, "Error visiting web page", e)
 
             ToolResult(
                     toolName = tool.name,
@@ -222,7 +222,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
             visitCache[visitKey] = resultData
             resultData
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing extracted web content", e)
+            AppLogger.e(TAG, "Error parsing extracted web content", e)
             // Fallback for old format or error
             VisitWebResultData(url = url, title = "Error", content = extractedJson)
         }
@@ -231,7 +231,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
     /** 使用WebView加载页面并提取内容 */
     private suspend fun loadWebPageAndExtractContent(url: String): String {
         return suspendCancellableCoroutine { continuation ->
-            Log.d(TAG, "Starting to load web page: $url")
+            AppLogger.d(TAG, "Starting to load web page: $url")
 
             // 确保UI操作在主线程上执行
             Handler(Looper.getMainLooper()).post {
@@ -269,7 +269,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                     webViewReference = webView
                                 },
                                 onContentExtracted = { content ->
-                                    Log.d(TAG, "Content extracted, length: ${content.length}")
+                                    AppLogger.d(TAG, "Content extracted, length: ${content.length}")
 
                                     // 在完成内容提取后进行资源清理
                                     try {
@@ -293,9 +293,9 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                             // 使用try-catch以确保即使移除窗口失败也能继续
                                             try {
                                                 windowManager.removeView(composeView)
-                                                Log.d(TAG, "ComposeView removed from window")
+                                                AppLogger.d(TAG, "ComposeView removed from window")
                                             } catch (e: Exception) {
-                                                Log.e(
+                                                AppLogger.e(
                                                         TAG,
                                                         "Error removing ComposeView: ${e.message}"
                                                 )
@@ -307,7 +307,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                             }
                                         }
                                     } catch (e: Exception) {
-                                        Log.e(TAG, "Error cleaning up resources: ${e.message}")
+                                        AppLogger.e(TAG, "Error cleaning up resources: ${e.message}")
                                         if (continuation.isActive) {
                                             continuation.resume(
                                                     "Error extracting content: ${e.message}"
@@ -320,7 +320,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
 
                     try {
                         windowManager.addView(composeView, params)
-                        Log.d(TAG, "Web browser window added")
+                        AppLogger.d(TAG, "Web browser window added")
 
                         // 添加取消回调以处理协程取消
                         continuation.invokeOnCancellation {
@@ -338,18 +338,18 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                     // 移除视图
                                     composeView.setContent {}
                                     windowManager.removeView(composeView)
-                                    Log.d(TAG, "Web browser window removed on cancellation")
+                                    AppLogger.d(TAG, "Web browser window removed on cancellation")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Error removing view on cancellation: ${e.message}")
+                                    AppLogger.e(TAG, "Error removing view on cancellation: ${e.message}")
                                 }
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error showing web browser: ${e.message}")
+                        AppLogger.e(TAG, "Error showing web browser: ${e.message}")
                         continuation.resume("Error displaying web browser: ${e.message}")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error in loadWebPageAndExtractContent: ${e.message}")
+                    AppLogger.e(TAG, "Error in loadWebPageAndExtractContent: ${e.message}")
                     continuation.resume("General error: ${e.message}")
                 }
             }
@@ -559,7 +559,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                                             loadedUrl: String
                                                     ) {
                                                         super.onPageFinished(view, loadedUrl)
-                                                        Log.d(TAG, "Loaded URL: $loadedUrl")
+                                                        AppLogger.d(TAG, "Loaded URL: $loadedUrl")
 
                                                         // 检查是否是重定向或新页面
                                                         val isNewPage = lastLoadedUrl != loadedUrl
@@ -571,7 +571,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
 
                                                         // 如果是重定向或新页面，重置提取状态
                                                         if (isNewPage) {
-                                                            Log.d(TAG, "页面发生重定向或加载了新页面，重置提取状态")
+                                                            AppLogger.d(TAG, "页面发生重定向或加载了新页面，重置提取状态")
                                                             isLoading.value = true
                                                             hasExtractedContent.value = false
                                                             pageContent.value = ""
@@ -582,7 +582,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
 
                                                         // 检查是否是Google人机验证页面
                                                         if (loadedUrl.contains("google.com/sorry/index")) {
-                                                            Log.d(TAG, "Google CAPTCHA page detected, returning error.")
+                                                            AppLogger.d(TAG, "Google CAPTCHA page detected, returning error.")
                                                             onContentExtracted("{\"error\":\"Google CAPTCHA detected. Please try again later or solve it in a browser.\"}")
                                                             return@onPageFinished
                                                         }
@@ -612,7 +612,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                                     private fun triggerContentExtraction(view: WebView) {
                                                         Handler(Looper.getMainLooper()).postDelayed({
                                                             if (!view.isAttachedToWindow) {
-                                                                Log.d(TAG, "WebView不再附加到窗口，跳过提取")
+                                                                AppLogger.d(TAG, "WebView不再附加到窗口，跳过提取")
                                                                 return@postDelayed
                                                             }
 
@@ -626,7 +626,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                                                     if (autoModeEnabled.value) {
                                                                         autoCountdownActive.value = true
                                                                         autoScrollToBottom(view) {
-                                                                            Log.d(TAG, "页面滚动完成")
+                                                                            AppLogger.d(TAG, "页面滚动完成")
                                                                         }
                                                                     }
                                                                 }
@@ -640,7 +640,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                                     ): Boolean {
                                                         // 记录URL变化，但允许所有导航
                                                         val newUrl = request.url.toString()
-                                                        Log.d(TAG, "URL变化: $newUrl")
+                                                        AppLogger.d(TAG, "URL变化: $newUrl")
                                                         currentUrl.value = newUrl
 
                                                         // 设置页面正在加载状态
@@ -656,7 +656,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                                             description: String,
                                                             failingUrl: String
                                                     ) {
-                                                        Log.e(
+                                                        AppLogger.e(
                                                                 TAG,
                                                                 "WebView error: $errorCode - $description"
                                                         )
@@ -737,7 +737,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
                                                 // 显示正在提取提示
                                                 isLoading.value = true
 
-                                                Log.d(TAG, "触发内容提取，当前页面: ${currentUrl.value}")
+                                                AppLogger.d(TAG, "触发内容提取，当前页面: ${currentUrl.value}")
 
                                                 extractPageContent(webView) { content ->
                                                     isLoading.value = false
@@ -876,13 +876,13 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
     private fun extractPageContent(webView: WebView, callback: (String) -> Unit) {
         // 检查WebView是否有效
         if (!webView.isAttachedToWindow) {
-            Log.e(TAG, "WebView is not attached to window, cannot extract content")
+            AppLogger.e(TAG, "WebView is not attached to window, cannot extract content")
             callback("Error: WebView is not attached to window")
             return
         }
 
         // 记录提取开始
-        Log.d(TAG, "Starting to extract content from web page")
+        AppLogger.d(TAG, "Starting to extract content from web page")
 
         // 用于提取页面内容的JavaScript
         val extractionScript =
@@ -957,7 +957,7 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
         try {
             webView.evaluateJavascript(extractionScript) { resultContent ->
                 try {
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "Content extraction result received. Length: ${resultContent.length}"
                     )
@@ -977,12 +977,12 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
 
                     callback(processedContent)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error processing extracted content", e)
+                    AppLogger.e(TAG, "Error processing extracted content", e)
                     callback("Error processing content: ${e.message}")
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Exception during JavaScript evaluation", e)
+            AppLogger.e(TAG, "Exception during JavaScript evaluation", e)
             callback("Error evaluating JavaScript: ${e.message}")
         }
     }
@@ -1080,20 +1080,20 @@ class StandardWebVisitTool(private val context: Context) : ToolExecutor {
         """.trimIndent()
 
         try {
-            Log.d(TAG, "开始执行自动滚动脚本")
-            webView.evaluateJavascript(scrollScript) { result -> Log.d(TAG, "滚动脚本初始执行结果: $result") }
+            AppLogger.d(TAG, "开始执行自动滚动脚本")
+            webView.evaluateJavascript(scrollScript) { result -> AppLogger.d(TAG, "滚动脚本初始执行结果: $result") }
 
             // 等待滚动完成后执行回调
             Handler(Looper.getMainLooper())
                     .postDelayed(
                             {
-                                Log.d(TAG, "自动滚动等待完成，继续处理")
+                                AppLogger.d(TAG, "自动滚动等待完成，继续处理")
                                 onScrollComplete()
                             },
                             5000
                     ) // 给页面5秒钟的滚动时间
         } catch (e: Exception) {
-            Log.e(TAG, "执行滚动脚本时出错", e)
+            AppLogger.e(TAG, "执行滚动脚本时出错", e)
             // 出错时也要继续后续流程
             onScrollComplete()
         }
@@ -1125,7 +1125,7 @@ private class ServiceLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, Saved
             savedStateRegistryController.performRestore(null)
         } else {
             // 如果不在主线程上，则记录警告（我们应该确保在主线程上创建实例）
-            Log.w(
+            AppLogger.w(
                     "ServiceLifecycleOwner",
                     "Initializing not on main thread. This may cause issues."
             )

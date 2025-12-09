@@ -8,7 +8,7 @@ import android.text.Selection
 import android.text.SpannableStringBuilder
 import android.text.TextWatcher
 import android.util.AttributeSet
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View

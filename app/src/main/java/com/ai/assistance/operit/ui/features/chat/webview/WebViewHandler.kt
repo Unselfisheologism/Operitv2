@@ -7,7 +7,7 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.util.Base64
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
@@ -107,7 +107,7 @@ class WebViewHandler(private val context: Context) {
                 // 可选：打开文件
                 openDownloadedFile(file, mimeType)
             } catch (e: Exception) {
-                Log.e("WebViewHandler", "Blob数据下载失败", e)
+                AppLogger.e("WebViewHandler", "Blob数据下载失败", e)
                 Handler(Looper.getMainLooper()).post {
                     Toast.makeText(context, context.getString(R.string.download_failed, e.localizedMessage), Toast.LENGTH_LONG).show()
                 }
@@ -116,7 +116,7 @@ class WebViewHandler(private val context: Context) {
 
         @JavascriptInterface
         fun log(message: String) {
-            Log.d("WebViewHandler", "JS: $message")
+            AppLogger.d("WebViewHandler", "JS: $message")
         }
     }
 
@@ -330,7 +330,7 @@ class WebViewHandler(private val context: Context) {
 
                     return true
                 } catch (e: Exception) {
-                    Log.e("WebViewHandler", "无法打开文件选择器", e)
+                    AppLogger.e("WebViewHandler", "无法打开文件选择器", e)
                     filePathCallback?.onReceiveValue(null)
                     this@WebViewHandler.filePathCallback = null
                     return false
@@ -358,7 +358,7 @@ class WebViewHandler(private val context: Context) {
                 // 处理常规下载
                 handleRegularDownload(url, userAgent, contentDisposition, mimetype, contentLength)
             } catch (e: Exception) {
-                Log.e("WebViewHandler", "下载失败: ${e.message}", e)
+                AppLogger.e("WebViewHandler", "下载失败: ${e.message}", e)
                 Toast.makeText(context, context.getString(R.string.download_failed, e.message), Toast.LENGTH_LONG).show()
             }
         }
@@ -597,7 +597,7 @@ class WebViewHandler(private val context: Context) {
             val match = filenamePattern.find(contentDisposition)
             return match?.groupValues?.get(1)?.trim()
         } catch (e: Exception) {
-            Log.e("WebViewHandler", "解析文件名出错: ${e.message}")
+            AppLogger.e("WebViewHandler", "解析文件名出错: ${e.message}")
             return null
         }
     }
@@ -653,7 +653,7 @@ class WebViewHandler(private val context: Context) {
 
             context.startActivity(intent)
         } catch (e: Exception) {
-            Log.e("WebViewHandler", "无法打开文件", e)
+            AppLogger.e("WebViewHandler", "无法打开文件", e)
         }
     }
 

@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.util.Locale
 import java.util.UUID
 import kotlin.coroutines.resume
@@ -67,7 +67,7 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
                                     if (result == TextToSpeech.LANG_MISSING_DATA ||
                                                     result == TextToSpeech.LANG_NOT_SUPPORTED
                                     ) {
-                                        Log.e(TAG, "语言不支持: $locale")
+                                        AppLogger.e(TAG, "语言不支持: $locale")
                                         _isInitialized.value = false
                                         continuation.resumeWith(Result.failure(
                                             TtsException("系统TTS语言不支持: $locale")
@@ -100,7 +100,7 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
                                                     ) {
                                                         super.onError(utteranceId, errorCode)
                                                         _isSpeaking.value = false
-                                                        Log.e(
+                                                        AppLogger.e(
                                                                 TAG,
                                                                 "TTS错误: utteranceId=$utteranceId, errorCode=$errorCode"
                                                         )
@@ -112,7 +112,7 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
                                         continuation.resume(true)
                                     }
                                 } else {
-                                    Log.e(TAG, "TTS初始化失败: $status")
+                                    AppLogger.e(TAG, "TTS初始化失败: $status")
                                     _isInitialized.value = false
                                     continuation.resumeWith(Result.failure(
                                         TtsException("系统TTS初始化失败，状态码: $status")
@@ -184,13 +184,13 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
                         // 检查结果
                         val success = result == TextToSpeech.SUCCESS
                         if (!success) {
-                            Log.e(TAG, "TTS播放失败: $result")
+                            AppLogger.e(TAG, "TTS播放失败: $result")
                         }
 
                         continuation.resume(success)
                     }
                             ?: run {
-                                Log.e(TAG, "TTS引擎未初始化")
+                                AppLogger.e(TAG, "TTS引擎未初始化")
                                 continuation.resume(false)
                             }
                 }
@@ -221,7 +221,7 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
                     val result = it.stop() == TextToSpeech.SUCCESS
                     if (result) {
                         _isSpeaking.value = false
-                        Log.d(TAG, "TTS暂停 (通过stop方法实现)")
+                        AppLogger.d(TAG, "TTS暂停 (通过stop方法实现)")
                     }
                     return@withContext result
                 }
@@ -235,7 +235,7 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
 
                 // 标准的TextToSpeech不直接支持恢复播放
                 // 这里我们只能返回false，因为一旦停止就无法恢复到之前的状态
-                Log.w(TAG, "当前TTS引擎不支持恢复播放功能")
+                AppLogger.w(TAG, "当前TTS引擎不支持恢复播放功能")
                 return@withContext false
             }
 
@@ -246,7 +246,7 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
                 it.stop()
                 it.shutdown()
             } catch (e: Exception) {
-                Log.e(TAG, "关闭TTS引擎失败", e)
+                AppLogger.e(TAG, "关闭TTS引擎失败", e)
             } finally {
                 tts = null
                 _isInitialized.value = false
@@ -296,7 +296,7 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
                     }
                 } else {
                     // 低版本Android不支持获取语音列表
-                    Log.w(TAG, "当前Android版本不支持获取TTS语音列表")
+                    AppLogger.w(TAG, "当前Android版本不支持获取TTS语音列表")
                 }
 
                 return@withContext result
@@ -327,14 +327,14 @@ class SimpleVoiceProvider(private val context: Context) : VoiceService {
                                 }
                                 return@withContext result
                             } else {
-                                Log.e(TAG, "未找到ID为'$voiceId'的语音")
+                                AppLogger.e(TAG, "未找到ID为'$voiceId'的语音")
                                 return@withContext false
                             }
                         }
                     }
                 } else {
                     // 低版本Android不支持设置语音
-                    Log.w(TAG, "当前Android版本不支持设置TTS语音")
+                    AppLogger.w(TAG, "当前Android版本不支持设置TTS语音")
                 }
 
                 return@withContext false

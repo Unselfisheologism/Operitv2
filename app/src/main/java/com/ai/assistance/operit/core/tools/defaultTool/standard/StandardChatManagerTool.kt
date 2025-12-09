@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.ChatCreationResultData
 import com.ai.assistance.operit.core.tools.ChatListResultData
 import com.ai.assistance.operit.core.tools.ChatServiceStartResultData
@@ -43,22 +43,22 @@ class StandardChatManagerTool(private val context: Context) {
     // Service 连接回调
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            Log.d(TAG, "Service connected")
+            AppLogger.d(TAG, "Service connected")
             val binder = service as? FloatingChatService.LocalBinder
             if (binder != null) {
                 floatingService = binder.getService()
                 chatCore = binder.getChatCore()
                 isBound = true
                 connectionDeferred.complete(true)
-                Log.d(TAG, "ChatServiceCore obtained successfully")
+                AppLogger.d(TAG, "ChatServiceCore obtained successfully")
             } else {
-                Log.e(TAG, "Failed to cast binder")
+                AppLogger.e(TAG, "Failed to cast binder")
                 connectionDeferred.complete(false)
             }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            Log.d(TAG, "Service disconnected")
+            AppLogger.d(TAG, "Service disconnected")
             chatCore = null
             floatingService = null
             isBound = false
@@ -82,7 +82,7 @@ class StandardChatManagerTool(private val context: Context) {
                     connectionDeferred.await()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Service connection timeout", e)
+                AppLogger.e(TAG, "Service connection timeout", e)
                 false
             }
         }
@@ -112,7 +112,7 @@ class StandardChatManagerTool(private val context: Context) {
             )
             
             if (!bound) {
-                Log.e(TAG, "Failed to bind service")
+                AppLogger.e(TAG, "Failed to bind service")
                 connectionDeferred.complete(false)
                 return false
             }
@@ -122,7 +122,7 @@ class StandardChatManagerTool(private val context: Context) {
                 connectionDeferred.await()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to ensure service connected", e)
+            AppLogger.e(TAG, "Failed to ensure service connected", e)
             connectionDeferred.completeExceptionally(e)
             false
         }
@@ -138,9 +138,9 @@ class StandardChatManagerTool(private val context: Context) {
                 isBound = false
                 chatCore = null
                 floatingService = null
-                Log.d(TAG, "Service unbound")
+                AppLogger.d(TAG, "Service unbound")
             } catch (e: Exception) {
-                Log.e(TAG, "Error unbinding service", e)
+                AppLogger.e(TAG, "Error unbinding service", e)
             }
         }
     }
@@ -167,7 +167,7 @@ class StandardChatManagerTool(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start chat service", e)
+            AppLogger.e(TAG, "Failed to start chat service", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -228,7 +228,7 @@ class StandardChatManagerTool(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create new chat", e)
+            AppLogger.e(TAG, "Failed to create new chat", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -294,7 +294,7 @@ class StandardChatManagerTool(private val context: Context) {
                 )
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to list chats", e)
+            AppLogger.e(TAG, "Failed to list chats", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -378,7 +378,7 @@ class StandardChatManagerTool(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to switch chat", e)
+            AppLogger.e(TAG, "Failed to switch chat", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -472,7 +472,7 @@ class StandardChatManagerTool(private val context: Context) {
                 )
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to send message", e)
+            AppLogger.e(TAG, "Failed to send message", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,

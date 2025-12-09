@@ -6,7 +6,7 @@ import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import android.provider.DocumentsProvider
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileNotFoundException
@@ -59,13 +59,13 @@ class WorkspaceDocumentsProvider : DocumentsProvider() {
             
             if (!workspaceRoot.exists()) {
                 workspaceRoot.mkdirs()
-                Log.d(TAG, "Created workspace directory: ${workspaceRoot.absolutePath}")
+                AppLogger.d(TAG, "Created workspace directory: ${workspaceRoot.absolutePath}")
             }
             
-            Log.d(TAG, "WorkspaceDocumentsProvider initialized, root: ${workspaceRoot.absolutePath}")
+            AppLogger.d(TAG, "WorkspaceDocumentsProvider initialized, root: ${workspaceRoot.absolutePath}")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize provider", e)
+            AppLogger.e(TAG, "Failed to initialize provider", e)
             false
         }
     }
@@ -105,7 +105,7 @@ class WorkspaceDocumentsProvider : DocumentsProvider() {
         val parent = getFileForDocId(parentDocumentId)
         
         if (!parent.isDirectory) {
-            Log.w(TAG, "queryChildDocuments called on non-directory: $parentDocumentId")
+            AppLogger.w(TAG, "queryChildDocuments called on non-directory: $parentDocumentId")
             return result
         }
         
@@ -158,7 +158,7 @@ class WorkspaceDocumentsProvider : DocumentsProvider() {
             
             return getDocIdForFile(file)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create document", e)
+            AppLogger.e(TAG, "Failed to create document", e)
             throw e
         }
     }
@@ -193,7 +193,7 @@ class WorkspaceDocumentsProvider : DocumentsProvider() {
         return try {
             child.canonicalPath.startsWith(parent.canonicalPath)
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking child document", e)
+            AppLogger.e(TAG, "Error checking child document", e)
             false
         }
     }

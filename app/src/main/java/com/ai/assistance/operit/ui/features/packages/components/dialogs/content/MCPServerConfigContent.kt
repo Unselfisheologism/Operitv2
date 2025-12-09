@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 /**
- * Config content component for the MCP server details dialog.
+ * Config content component for the MCP server details diaAppLogger.
  * 
  * @param localPluginConfig The current plugin configuration
  * @param onConfigChanged Callback to be invoked when the config is changed

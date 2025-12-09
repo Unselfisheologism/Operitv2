@@ -4,7 +4,7 @@ import com.huaban.analysis.jieba.JiebaSegmenter
 import com.huaban.analysis.jieba.WordDictionary
 import java.io.File
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.util.concurrent.ConcurrentHashMap
 import java.nio.file.Path
 
@@ -37,11 +37,11 @@ object TextSegmenter {
                 val dictFile = File(it)
                 if (dictFile.exists()) {
                     WordDictionary.getInstance().loadUserDict(dictFile.toPath())
-                    Log.d(TAG, "已加载自定义词典: $it")
+                    AppLogger.d(TAG, "已加载自定义词典: $it")
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "初始化分词器失败", e)
+            AppLogger.e(TAG, "初始化分词器失败", e)
         }
     }
     
@@ -77,7 +77,7 @@ object TextSegmenter {
             
             return result
         } catch (e: Exception) {
-            Log.e(TAG, "分词失败: ${e.message}")
+            AppLogger.e(TAG, "分词失败: ${e.message}")
             // 失败时使用简单的空格分割作为备选方案
             return text.split(Regex("\\s+|,|，|\\.|。"))
                 .filter { it.length > 1 }

@@ -9,7 +9,7 @@ import android.text.style.ImageSpan
 import android.text.style.StyleSpan
 import android.text.style.URLSpan
 import android.text.style.UnderlineSpan
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.util.LruCache
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -1117,7 +1117,7 @@ private fun buildSpannableFromChildren(
                         )
                     } catch (e: Exception) {
                         // 渲染失败时回退到文本显示
-                        Log.e("CanvasMarkdown", "行内LaTeX渲染失败: $latexContent", e)
+                        AppLogger.e("CanvasMarkdown", "行内LaTeX渲染失败: $latexContent", e)
                         val start = builder.length
                         builder.append("[$latexContent]")
                         val end = builder.length

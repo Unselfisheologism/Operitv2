@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.data.preferences
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -46,7 +46,7 @@ class AndroidPermissionPreferences(private val context: Context) {
      * @param permissionLevel 要设置的权限级别
      */
     suspend fun savePreferredPermissionLevel(permissionLevel: AndroidPermissionLevel) {
-        Log.d(TAG, "Saving preferred permission level: $permissionLevel")
+        AppLogger.d(TAG, "Saving preferred permission level: $permissionLevel")
         context.androidPermissionDataStore.edit { preferences ->
             preferences[PREFERRED_PERMISSION_LEVEL] = permissionLevel.name
         }
@@ -61,7 +61,7 @@ class AndroidPermissionPreferences(private val context: Context) {
             try {
                 preferredPermissionLevelFlow.first()
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting preferred permission level", e)
+                AppLogger.e(TAG, "Error getting preferred permission level", e)
                 null
             }
         }
@@ -76,7 +76,7 @@ class AndroidPermissionPreferences(private val context: Context) {
             try {
                 preferredPermissionLevelFlow.first() != null
             } catch (e: Exception) {
-                Log.e(TAG, "Error checking if permission level is set", e)
+                AppLogger.e(TAG, "Error checking if permission level is set", e)
                 false
             }
         }
@@ -84,7 +84,7 @@ class AndroidPermissionPreferences(private val context: Context) {
 
     /** 重置权限级别（清除设置） */
     suspend fun resetPermissionLevel() {
-        Log.d(TAG, "Resetting permission level")
+        AppLogger.d(TAG, "Resetting permission level")
         context.androidPermissionDataStore.edit { preferences ->
             preferences.remove(PREFERRED_PERMISSION_LEVEL)
         }

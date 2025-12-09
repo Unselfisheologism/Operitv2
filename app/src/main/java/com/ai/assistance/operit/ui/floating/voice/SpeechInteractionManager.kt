@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.floating.voice
 
 import android.content.Context
 import android.content.Context.INPUT_METHOD_SERVICE
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.runtime.getValue
@@ -63,7 +63,7 @@ class SpeechInteractionManager(
             speechService.initialize()
             voiceService.initialize()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to initialize speech services", e)
+            AppLogger.e(TAG, "Failed to initialize speech services", e)
         }
     }
 
@@ -180,7 +180,7 @@ class SpeechInteractionManager(
                     silenceTimeoutJob?.cancel()
                     silenceTimeoutJob = coroutineScope.launch {
                         delay(2000)
-                        Log.d(TAG, "Silence timeout, sending...")
+                        AppLogger.d(TAG, "Silence timeout, sending...")
                         finalizeSpeechInput(isTimeout = true)
                     }
                 }
@@ -198,7 +198,7 @@ class SpeechInteractionManager(
         timeoutJob = coroutineScope.launch {
             delay(3000)
             if (isProcessingSpeech) {
-                Log.w(TAG, "Fallback timeout")
+                AppLogger.w(TAG, "Fallback timeout")
                 finalizeSpeechInput()
             }
         }
@@ -230,7 +230,7 @@ class SpeechInteractionManager(
             try {
                 voiceService.speak(text, interrupt, 1.2f, 1.0f)
             } catch (e: Exception) {
-                Log.e(TAG, "TTS Error", e)
+                AppLogger.e(TAG, "TTS Error", e)
             }
         }
     }

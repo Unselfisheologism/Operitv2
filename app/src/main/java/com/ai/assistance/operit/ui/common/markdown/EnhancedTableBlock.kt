@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.common.markdown
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
@@ -55,7 +55,7 @@ fun EnhancedTableBlock(
 ) {
     // 使用remember创建组件唯一ID
     val componentId = remember { "table-${System.identityHashCode(tableContent)}" }
-    Log.d(TAG, "表格组件初始化: id=$componentId, 内容长度=${tableContent.length}")
+    AppLogger.d(TAG, "表格组件初始化: id=$componentId, 内容长度=${tableContent.length}")
     
     // 表格颜色
     val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)

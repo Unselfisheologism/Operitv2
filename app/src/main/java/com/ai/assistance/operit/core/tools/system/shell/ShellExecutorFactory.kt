@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.system.shell
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import com.ai.assistance.operit.data.preferences.androidPermissionPreferences
 
@@ -20,11 +20,11 @@ class ShellExecutorFactory {
          * @return 对应的Shell执行器
          */
         fun getExecutor(context: Context, permissionLevel: AndroidPermissionLevel): ShellExecutor {
-            // Log.d(TAG, "Requested shell executor for permission level: $permissionLevel")
+            // AppLogger.d(TAG, "Requested shell executor for permission level: $permissionLevel")
 
             // 检查缓存中是否已有该级别的执行器
             executors[permissionLevel]?.let {
-                // Log.d(TAG, "Returning cached executor for level: $permissionLevel")
+                // AppLogger.d(TAG, "Returning cached executor for level: $permissionLevel")
                 return it
             }
 
@@ -71,13 +71,13 @@ class ShellExecutorFactory {
                 val permStatus = executor.hasPermission()
 
                 if (executor.isAvailable() && permStatus.granted) {
-                    Log.d(TAG, "Found highest available executor: ${executor.getPermissionLevel()}")
+                    AppLogger.d(TAG, "Found highest available executor: ${executor.getPermissionLevel()}")
                     return Pair(executor, permStatus)
                 }
             }
 
             // 如果没有找到可用的执行器，返回标准执行器（至少能执行基本命令）
-            Log.d(TAG, "No available executor found, falling back to STANDARD")
+            AppLogger.d(TAG, "No available executor found, falling back to STANDARD")
             val standardExecutor = getExecutor(context, AndroidPermissionLevel.STANDARD)
             return Pair(standardExecutor, standardExecutor.hasPermission())
         }
@@ -94,7 +94,7 @@ class ShellExecutorFactory {
                 val actualLevel = preferredLevel ?: AndroidPermissionLevel.STANDARD
                 return getExecutor(context, actualLevel)
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting preferred permission level, falling back to STANDARD", e)
+                AppLogger.e(TAG, "Error getting preferred permission level, falling back to STANDARD", e)
                 return getExecutor(context, AndroidPermissionLevel.STANDARD)
             }
         }
@@ -116,10 +116,10 @@ class ShellExecutorFactory {
         fun clearCache(permissionLevel: AndroidPermissionLevel? = null) {
             if (permissionLevel != null) {
                 executors.remove(permissionLevel)
-                Log.d(TAG, "Cleared executor cache for level: $permissionLevel")
+                AppLogger.d(TAG, "Cleared executor cache for level: $permissionLevel")
             } else {
                 executors.clear()
-                Log.d(TAG, "Cleared all executor caches")
+                AppLogger.d(TAG, "Cleared all executor caches")
             }
         }
 

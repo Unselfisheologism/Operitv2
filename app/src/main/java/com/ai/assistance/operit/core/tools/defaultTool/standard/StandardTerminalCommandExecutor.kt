@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.standard
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.*
 import com.ai.assistance.operit.data.model.AITool
 import com.ai.assistance.operit.data.model.ToolResult
@@ -66,7 +66,7 @@ class StandardTerminalCommandExecutor(private val context: Context) {
                     )
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "创建或获取终端会话时出错", e)
+                AppLogger.e(TAG, "创建或获取终端会话时出错", e)
                 ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -134,13 +134,13 @@ class StandardTerminalCommandExecutor(private val context: Context) {
                             }
                         }
                     } catch (e: TimeoutCancellationException) {
-                        Log.w(TAG, "Command execution timed out after ${timeout}ms")
+                        AppLogger.w(TAG, "Command execution timed out after ${timeout}ms")
                         hasCompleted = true
                         exitCode = -1
                     }
 
                     val fullOutput = events.joinToString("")
-                    Log.d(TAG, "Command output collected: '$fullOutput', exitCode: $exitCode")
+                    AppLogger.d(TAG, "Command output collected: '$fullOutput', exitCode: $exitCode")
 
                     ToolResult(
                             toolName = tool.name,
@@ -161,7 +161,7 @@ class StandardTerminalCommandExecutor(private val context: Context) {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "执行终端命令时出错", e)
+                AppLogger.e(TAG, "执行终端命令时出错", e)
                 ToolResult(
                         toolName = tool.name,
                         success = false,
@@ -202,7 +202,7 @@ class StandardTerminalCommandExecutor(private val context: Context) {
                     )
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "关闭终端会话时出错", e)
+                AppLogger.e(TAG, "关闭终端会话时出错", e)
                 ToolResult(
                     toolName = tool.name,
                     success = false,

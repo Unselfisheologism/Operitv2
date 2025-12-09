@@ -2,7 +2,7 @@ package com.ai.assistance.operit.services
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -30,7 +30,7 @@ class ServiceLifecycleOwner : LifecycleOwner, ViewModelStoreOwner, SavedStateReg
             savedStateRegistryController.performRestore(null)
         } else {
             // 如果不在主线程上，使用Handler将初始化转到主线程
-            Log.w(TAG, "Initializing ServiceLifecycleOwner not on main thread. Moving to main thread.")
+            AppLogger.w(TAG, "Initializing ServiceLifecycleOwner not on main thread. Moving to main thread.")
             mainHandler.post { savedStateRegistryController.performRestore(null) }
         }
     }

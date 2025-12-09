@@ -71,8 +71,8 @@ object WaifuMessageProcessor {
         val splitRegex = Regex("(?<=[。！？~～])|(?<=[.!?]{1}(?![.]))|(?<=\\.{3})|(?<=[…](?![…]))")
 
 
-        android.util.Log.d("WaifuMessageProcessor", "分割正则: $splitRegex")
-        android.util.Log.d("WaifuMessageProcessor", "待分割内容: '$cleanedContent'")
+        com.ai.assistance.operit.util.AppLogger.d("WaifuMessageProcessor", "分割正则: $splitRegex")
+        com.ai.assistance.operit.util.AppLogger.d("WaifuMessageProcessor", "待分割内容: '$cleanedContent'")
         
         var sentences = cleanedContent.split(splitRegex)
             .filter { it.isNotBlank() }
@@ -129,7 +129,7 @@ object WaifuMessageProcessor {
             currentSentence
         }
 
-        android.util.Log.d("WaifuMessageProcessor", "分割出${finalResult.size}个结果")
+        com.ai.assistance.operit.util.AppLogger.d("WaifuMessageProcessor", "分割出${finalResult.size}个结果")
         
         return finalResult
     }
@@ -249,7 +249,7 @@ object WaifuMessageProcessor {
         val shouldSplit = hasEmotionTags || (hasSentenceEnders && isLongEnough && hasMultipleSentences)
         
         // 添加调试日志
-        android.util.Log.d("WaifuMessageProcessor", 
+        com.ai.assistance.operit.util.AppLogger.d("WaifuMessageProcessor", 
             "shouldSplitMessage - 包含表情包: $hasEmotionTags, 句子数: ${sentences.size}, 结果: $shouldSplit")
         
         return shouldSplit
@@ -343,7 +343,7 @@ object WaifuMessageProcessor {
             result.add(content)
         }
         
-        android.util.Log.d("WaifuMessageProcessor", "分离表情包和文本: ${result.size}个元素")
+        com.ai.assistance.operit.util.AppLogger.d("WaifuMessageProcessor", "分离表情包和文本: ${result.size}个元素")
         return result
     }
     
@@ -363,7 +363,7 @@ object WaifuMessageProcessor {
                             val randomEmoji = emojis.random()
                             val file = repo.getEmojiFile(randomEmoji)
                             if (file.exists()) {
-                                android.util.Log.d("WaifuMessageProcessor", "使用自定义表情: ${file.absolutePath}")
+                                com.ai.assistance.operit.util.AppLogger.d("WaifuMessageProcessor", "使用自定义表情: ${file.absolutePath}")
                                 return@runBlocking file.absolutePath
                             }
                         }
@@ -371,7 +371,7 @@ object WaifuMessageProcessor {
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("WaifuMessageProcessor", "查询自定义表情失败", e)
+                com.ai.assistance.operit.util.AppLogger.e("WaifuMessageProcessor", "查询自定义表情失败", e)
                 null
             }
             
@@ -381,11 +381,11 @@ object WaifuMessageProcessor {
             }
             
             // 如果自定义表情中没有找到，则直接返回null
-            android.util.Log.w("WaifuMessageProcessor", "在自定义表情中未找到对于情绪 '$emotion' 的表情")
+            com.ai.assistance.operit.util.AppLogger.w("WaifuMessageProcessor", "在自定义表情中未找到对于情绪 '$emotion' 的表情")
             return null
             
         } catch (e: Exception) {
-            android.util.Log.e("WaifuMessageProcessor", "获取表情图片失败: $emotion", e)
+            com.ai.assistance.operit.util.AppLogger.e("WaifuMessageProcessor", "获取表情图片失败: $emotion", e)
             return null
         }
     }

@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.api.chat.llmprovider
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.preferences.ModelConfigManager
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -19,7 +19,7 @@ interface ApiKeyProvider {
  */
 class SingleApiKeyProvider(private val apiKey: String) : ApiKeyProvider {
     override suspend fun getApiKey(): String {
-        Log.d("ApiKeyProvider", "Using single API key: ${apiKey.take(4)}...${apiKey.takeLast(4)}")
+        AppLogger.d("ApiKeyProvider", "Using single API key: ${apiKey.take(4)}...${apiKey.takeLast(4)}")
         return apiKey
     }
 }
@@ -42,15 +42,15 @@ class MultiApiKeyProvider(
             
             // 筛选出启用的key
             val enabledKeys = config.apiKeyPool.filter { it.isEnabled }
-            Log.d("ApiKeyProvider", "Config ${config.name}: Found ${enabledKeys.size} enabled keys out of ${config.apiKeyPool.size} total keys")
+            AppLogger.d("ApiKeyProvider", "Config ${config.name}: Found ${enabledKeys.size} enabled keys out of ${config.apiKeyPool.size} total keys")
             
             if (enabledKeys.isEmpty()) {
                 // 如果池为空，尝试回退到单key
                 if (config.apiKey.isNotBlank()) {
-                    Log.d("ApiKeyProvider", "Config ${config.name}: No enabled keys in pool, falling back to single API key: sk-...${config.apiKey.takeLast(4)}")
+                    AppLogger.d("ApiKeyProvider", "Config ${config.name}: No enabled keys in pool, falling back to single API key: sk-...${config.apiKey.takeLast(4)}")
                     return@withLock config.apiKey
                 }
-                Log.e("ApiKeyProvider", "Config ${config.name}: API key pool is empty or all keys are disabled, and no fallback API key is available")
+                AppLogger.e("ApiKeyProvider", "Config ${config.name}: API key pool is empty or all keys are disabled, and no fallback API key is available")
                 throw IllegalStateException("API key pool for ${config.name} is empty or all keys are disabled, and no fallback API key is available.")
             }
 
@@ -58,7 +58,7 @@ class MultiApiKeyProvider(
             val startIndex = config.currentKeyIndex % enabledKeys.size
             val selectedKey = enabledKeys[startIndex]
             
-            Log.d("ApiKeyProvider", "Config ${config.name}: Using key ${startIndex + 1}/${enabledKeys.size} - '${selectedKey.name}' (sk-...${selectedKey.key.takeLast(4)})")
+            AppLogger.d("ApiKeyProvider", "Config ${config.name}: Using key ${startIndex + 1}/${enabledKeys.size} - '${selectedKey.name}' (sk-...${selectedKey.key.takeLast(4)})")
 
             // 更新并保存下一个索引
             val nextIndex = (startIndex + 1) % enabledKeys.size

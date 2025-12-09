@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.api.chat.enhance
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.core.tools.ToolExecutor
@@ -64,7 +64,7 @@ object ToolExecutionManager {
             }
         }
 
-        Log.d(
+        AppLogger.d(
             TAG,
             "Found ${invocations.size} tool invocations: ${invocations.map { it.tool.name }}"
         )
@@ -123,7 +123,7 @@ object ToolExecutionManager {
         }
 
         return executor.invokeAndStream(invocation.tool).catch { e ->
-            Log.e(TAG, "工具执行错误: ${invocation.tool.name}", e)
+            AppLogger.e(TAG, "工具执行错误: ${invocation.tool.name}", e)
             emit(
                 ToolResult(
                     toolName = invocation.tool.name,
@@ -382,7 +382,7 @@ object ToolExecutionManager {
             val isToolRegistered = toolHandler.getToolExecutor(toolName) != null
 
             if (isAvailable && !isToolRegistered) {
-                Log.d(TAG, "尝试自动激活工具包: $packName for tool $toolName")
+                AppLogger.d(TAG, "尝试自动激活工具包: $packName for tool $toolName")
                 // 调用 usePackage 来加载和注册工具
                 packageManager.usePackage(packName)
                 // 激活后，再次检查工具是否已注册

@@ -3,7 +3,7 @@ package com.ai.assistance.operit.api.voice
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,10 +79,10 @@ class SiliconFlowVoiceProvider(
             }
             
             _isInitialized.value = true
-            Log.i(TAG, "硅基流动TTS初始化成功")
+            AppLogger.i(TAG, "硅基流动TTS初始化成功")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "硅基流动TTS初始化失败", e)
+            AppLogger.e(TAG, "硅基流动TTS初始化失败", e)
             _isInitialized.value = false
             if (e is TtsException) throw e
             throw TtsException("初始化硅基流动TTS服务时发生意外错误", cause = e)
@@ -97,7 +97,7 @@ class SiliconFlowVoiceProvider(
         extraParams: Map<String, String>
     ): Boolean = withContext(Dispatchers.IO) {
         if (!isInitialized) {
-            Log.e(TAG, "TTS未初始化")
+            AppLogger.e(TAG, "TTS未初始化")
             return@withContext false
         }
         
@@ -168,8 +168,8 @@ class SiliconFlowVoiceProvider(
                 append("}")
             }
 
-            Log.d(TAG, "TTS请求参数 - model: $model, voice: $voice")
-            Log.d(TAG, "TTS请求体: $requestBody")
+            AppLogger.d(TAG, "TTS请求参数 - model: $model, voice: $voice")
+            AppLogger.d(TAG, "TTS请求体: $requestBody")
 
             // 发送HTTP请求
             val url = URL(API_URL)
@@ -203,7 +203,7 @@ class SiliconFlowVoiceProvider(
                 return@withContext true
             } else {
                 val errorBody = connection.errorStream?.bufferedReader()?.readText()
-                Log.e(TAG, "TTS请求失败，响应码: $responseCode, Body: $errorBody")
+                AppLogger.e(TAG, "TTS请求失败，响应码: $responseCode, Body: $errorBody")
                 _isSpeaking.value = false
                 throw TtsException(
                     message = "TTS request failed with code $responseCode",
@@ -212,7 +212,7 @@ class SiliconFlowVoiceProvider(
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "TTS speak失败", e)
+            AppLogger.e(TAG, "TTS speak失败", e)
             _isSpeaking.value = false
             if (e is TtsException) throw e
             throw TtsException("TTS speak failed", cause = e)
@@ -235,7 +235,7 @@ class SiliconFlowVoiceProvider(
                     file.delete() // 清理临时文件
                 }
                 setOnErrorListener { _, what, extra ->
-                    Log.e(TAG, "MediaPlayer错误: what=$what, extra=$extra")
+                    AppLogger.e(TAG, "MediaPlayer错误: what=$what, extra=$extra")
                     _isSpeaking.value = false
                     file.delete() // 清理临时文件
                     true
@@ -244,7 +244,7 @@ class SiliconFlowVoiceProvider(
                 start()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "播放音频失败", e)
+            AppLogger.e(TAG, "播放音频失败", e)
             _isSpeaking.value = false
             file.delete() // 清理临时文件
         }
@@ -262,7 +262,7 @@ class SiliconFlowVoiceProvider(
             _isSpeaking.value = false
             true
         } catch (e: Exception) {
-            Log.e(TAG, "停止播放失败", e)
+            AppLogger.e(TAG, "停止播放失败", e)
             false
         }
     }
@@ -272,7 +272,7 @@ class SiliconFlowVoiceProvider(
             mediaPlayer?.pause()
             true
         } catch (e: Exception) {
-            Log.e(TAG, "暂停播放失败", e)
+            AppLogger.e(TAG, "暂停播放失败", e)
             false
         }
     }
@@ -282,7 +282,7 @@ class SiliconFlowVoiceProvider(
             mediaPlayer?.start()
             true
         } catch (e: Exception) {
-            Log.e(TAG, "恢复播放失败", e)
+            AppLogger.e(TAG, "恢复播放失败", e)
             false
         }
     }
@@ -302,10 +302,10 @@ class SiliconFlowVoiceProvider(
         // 支持系统预置音色和用户自定义音色（以speech:开头）
         if (AVAILABLE_VOICES.any { it.id == voiceId } || voiceId.startsWith("speech:")) {
             this.voiceId = voiceId
-            Log.d(TAG, "设置音色: $voiceId")
+            AppLogger.d(TAG, "设置音色: $voiceId")
             return true
         }
-        Log.w(TAG, "不支持的音色ID: $voiceId")
+        AppLogger.w(TAG, "不支持的音色ID: $voiceId")
         return false
     }
 } 

@@ -3,7 +3,7 @@ package com.ai.assistance.operit.data.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.core.content.edit
 import com.ai.assistance.operit.core.avatar.common.factory.AvatarModelFactory
 import com.ai.assistance.operit.core.avatar.common.model.AvatarModel
@@ -206,13 +206,13 @@ class AvatarRepository(
                 for (modelFolder in modelFolders) {
                     val destDir = File(userAvatarDir, modelFolder)
                     if (!destDir.exists()) {
-                        Log.d(TAG, "Populating asset model '$modelFolder' of type '$typeDir'")
+                        AppLogger.d(TAG, "Populating asset model '$modelFolder' of type '$typeDir'")
                         copyAssetDirectory("$ASSETS_AVATAR_DIR/$typeDir/$modelFolder", destDir.absolutePath)
                     }
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error synchronizing assets: ${e.message}", e)
+            AppLogger.e(TAG, "Error synchronizing assets: ${e.message}", e)
         }
     }
 
@@ -285,13 +285,13 @@ class AvatarRepository(
     suspend fun deleteAvatar(avatarId: String): Boolean = withContext(Dispatchers.IO) {
         val config = _configs.value.find { it.id == avatarId } ?: return@withContext false
         if (config.isBuiltIn) {
-            Log.w(TAG, "Cannot delete a built-in avatar.")
+            AppLogger.w(TAG, "Cannot delete a built-in avatar.")
             return@withContext false
         }
 
         val folderPath = config.getBasePath()
         if (folderPath == null) {
-            Log.e(TAG, "Avatar config for ${config.id} is missing folderPath or basePath.")
+            AppLogger.e(TAG, "Avatar config for ${config.id} is missing folderPath or basePath.")
             return@withContext false
         }
         val modelDir = File(folderPath)
@@ -299,7 +299,7 @@ class AvatarRepository(
         val deletionSucceeded = if (modelDir.exists()) {
             modelDir.deleteRecursively()
         } else {
-            Log.w(TAG, "Avatar directory to delete did not exist, proceeding to remove config entry: $folderPath")
+            AppLogger.w(TAG, "Avatar directory to delete did not exist, proceeding to remove config entry: $folderPath")
             true // If directory doesn't exist, we can still proceed to remove it from config
         }
 
@@ -311,10 +311,10 @@ class AvatarRepository(
             if (loadSettingsFromPrefs().currentAvatarId == avatarId) {
                 updateCurrentAvatar(updatedConfigs.firstOrNull()?.id)
             }
-            Log.i(TAG, "Successfully removed avatar config: ${config.name}")
+            AppLogger.i(TAG, "Successfully removed avatar config: ${config.name}")
             true
         } else {
-            Log.e(TAG, "Failed to delete avatar directory: $folderPath")
+            AppLogger.e(TAG, "Failed to delete avatar directory: $folderPath")
             false
         }
     }
@@ -354,7 +354,7 @@ class AvatarRepository(
             } ?: emptyList()
             
             if (foundConfigs.isEmpty()) {
-                Log.w(TAG, "No valid avatar configs found in the imported ZIP.")
+                AppLogger.w(TAG, "No valid avatar configs found in the imported ZIP.")
                 return@withContext false
             }
 
@@ -365,18 +365,18 @@ class AvatarRepository(
                     if (sourceDir.exists()) {
                         val targetDir = File(userAvatarDir, sourceDir.name)
                         sourceDir.copyRecursively(targetDir, true)
-                        Log.i(TAG, "Imported avatar model: ${sourceDir.name}")
+                        AppLogger.i(TAG, "Imported avatar model: ${sourceDir.name}")
                     } else {
-                        Log.w(TAG, "Source directory does not exist for imported config: ${config.id} at $sourcePath")
+                        AppLogger.w(TAG, "Source directory does not exist for imported config: ${config.id} at $sourcePath")
                     }
                 } else {
-                    Log.w(TAG, "Could not find path for imported config: ${config.id}")
+                    AppLogger.w(TAG, "Could not find path for imported config: ${config.id}")
                 }
             }
             refreshAvatars()
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to import avatar from ZIP", e)
+            AppLogger.e(TAG, "Failed to import avatar from ZIP", e)
             false
         } finally {
             tempDir.deleteRecursively()
@@ -404,7 +404,7 @@ class AvatarRepository(
             val type = object : TypeToken<List<AvatarConfig>>() {}.type
             gson.fromJson(json, type)
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing avatar configs from JSON", e)
+            AppLogger.e(TAG, "Error parsing avatar configs from JSON", e)
             emptyList()
         }
     }
@@ -420,7 +420,7 @@ class AvatarRepository(
             val type = object : TypeToken<Map<String, AvatarInstanceSettings>>() {}.type
             gson.fromJson(json, type)
         } catch (e: Exception) {
-            Log.e(TAG, "Error parsing instance settings from JSON", e)
+            AppLogger.e(TAG, "Error parsing instance settings from JSON", e)
             emptyMap()
         }
     }

@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import androidx.work.Configuration as WorkConfiguration
@@ -78,25 +78,28 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
     override fun onCreate() {
         super.onCreate()
         val startTime = System.currentTimeMillis()
-        Log.d(TAG, "【启动计时】应用启动开始")
-        
         instance = this
-        Log.d(TAG, "【启动计时】实例初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+
+        // 每次应用冷启动时重置上一轮日志，避免日志无限增长
+        AppLogger.resetLogFile()
+
+        AppLogger.d(TAG, "【启动计时】应用启动开始")
+        AppLogger.d(TAG, "【启动计时】实例初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // Initialize ActivityLifecycleManager to track the current activity
         ActivityLifecycleManager.initialize(this)
-        Log.d(TAG, "【启动计时】ActivityLifecycleManager初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】ActivityLifecycleManager初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // Initialize AIMessageManager
         AIMessageManager.initialize(this)
-        Log.d(TAG, "【启动计时】AIMessageManager初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】AIMessageManager初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // Initialize Embedding Service asynchronously in background
         // Using ONNX-based multilingual model for better Chinese support
         applicationScope.launch {
             val embeddingStartTime = System.currentTimeMillis()
             OnnxEmbeddingService.initialize(this@OperitApplication)
-            Log.d(TAG, "【启动计时】OnnxEmbeddingService初始化完成（异步） - ${System.currentTimeMillis() - embeddingStartTime}ms")
+            AppLogger.d(TAG, "【启动计时】OnnxEmbeddingService初始化完成（异步） - ${System.currentTimeMillis() - embeddingStartTime}ms")
         }
 
         // Initialize ANR monitor
@@ -104,7 +107,7 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
 
         // 在所有其他初始化之前设置全局异常处理器
         Thread.setDefaultUncaughtExceptionHandler(GlobalExceptionHandler(this))
-        Log.d(TAG, "【启动计时】全局异常处理器设置完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】全局异常处理器设置完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // Initialize the JSON serializer with our custom module
         json = Json {
@@ -114,64 +117,64 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
             prettyPrint = false
             encodeDefaults = true
         }
-        Log.d(TAG, "【启动计时】JSON序列化器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】JSON序列化器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // 初始化用户偏好管理器
         val defaultProfileName = applicationContext.getString(R.string.default_profile)
         initUserPreferencesManager(applicationContext, defaultProfileName)
-        Log.d(TAG, "【启动计时】用户偏好管理器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】用户偏好管理器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // 初始化Android权限偏好管理器
         initAndroidPermissionPreferences(applicationContext)
-        Log.d(TAG, "【启动计时】Android权限偏好管理器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】Android权限偏好管理器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // 初始化功能提示词管理器
         applicationScope.launch {
             val characterStartTime = System.currentTimeMillis()
             CharacterCardManager.getInstance(applicationContext).initializeIfNeeded()
-            Log.d(TAG, "【启动计时】功能提示词管理器初始化完成（异步） - ${System.currentTimeMillis() - characterStartTime}ms")
+            AppLogger.d(TAG, "【启动计时】功能提示词管理器初始化完成（异步） - ${System.currentTimeMillis() - characterStartTime}ms")
         }
 
         // 初始化自定义表情
         applicationScope.launch {
             val emojiStartTime = System.currentTimeMillis()
             CustomEmojiRepository.getInstance(applicationContext).initializeBuiltinEmojis()
-            Log.d(TAG, "【启动计时】自定义表情初始化完成（异步） - ${System.currentTimeMillis() - emojiStartTime}ms")
+            AppLogger.d(TAG, "【启动计时】自定义表情初始化完成（异步） - ${System.currentTimeMillis() - emojiStartTime}ms")
         }
 
         // 在最早时机初始化并应用语言设置
         initializeAppLanguage()
-        Log.d(TAG, "【启动计时】语言设置初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】语言设置初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // 初始化AndroidShellExecutor上下文
         AndroidShellExecutor.setContext(applicationContext)
-        Log.d(TAG, "【启动计时】AndroidShellExecutor初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】AndroidShellExecutor初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // 初始化PDFBox资源加载器
         PDFBoxResourceLoader.init(getApplicationContext());
-        Log.d(TAG, "【启动计时】PDFBox资源加载器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】PDFBox资源加载器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // 初始化语言支持
         LanguageFactory.init()
-        Log.d(TAG, "【启动计时】语言工厂初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】语言工厂初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // 初始化TextSegmenter
         applicationScope.launch {
             val segmenterStartTime = System.currentTimeMillis()
             TextSegmenter.initialize(applicationContext)
-            Log.d(TAG, "【启动计时】TextSegmenter初始化完成（异步） - ${System.currentTimeMillis() - segmenterStartTime}ms")
+            AppLogger.d(TAG, "【启动计时】TextSegmenter初始化完成（异步） - ${System.currentTimeMillis() - segmenterStartTime}ms")
         }
         
         // Initialize WaifuMessageProcessor
         WaifuMessageProcessor.initialize(applicationContext)
-        Log.d(TAG, "【启动计时】WaifuMessageProcessor初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】WaifuMessageProcessor初始化完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // 预加载数据库
         applicationScope.launch {
             val dbStartTime = System.currentTimeMillis()
             // 简单访问数据库以触发初始化
             database.problemDao().getProblemCount()
-            Log.d(TAG, "【启动计时】数据库预加载完成（异步） - ${System.currentTimeMillis() - dbStartTime}ms")
+            AppLogger.d(TAG, "【启动计时】数据库预加载完成（异步） - ${System.currentTimeMillis() - dbStartTime}ms")
         }
 
         // 初始化全局图片加载器，设置强大的缓存策略
@@ -201,38 +204,38 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
                             coil.memory.MemoryCache.Builder(this).maxSizePercent(0.15).build()
                         }
                         .build()
-        Log.d(TAG, "【启动计时】全局图片加载器初始化完成（超时配置：连接30s/读取60s） - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】全局图片加载器初始化完成（超时配置：连接30s/读取60s） - ${System.currentTimeMillis() - startTime}ms")
         
         // 初始化图片池管理器，支持本地持久化缓存
         ImagePoolManager.initialize(filesDir)
-        Log.d(TAG, "【启动计时】图片池管理器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】图片池管理器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
         
         // 初始化AIToolHandler并注册默认工具
         val toolHandler = AIToolHandler.getInstance(this)
         toolHandler.registerDefaultTools()
-        Log.d(TAG, "【启动计时】AIToolHandler初始化并注册工具完成 - ${System.currentTimeMillis() - startTime}ms")
+        AppLogger.d(TAG, "【启动计时】AIToolHandler初始化并注册工具完成 - ${System.currentTimeMillis() - startTime}ms")
         
         // 初始化工作流调度器（异步）
         applicationScope.launch {
             val schedulerStartTime = System.currentTimeMillis()
             WorkflowSchedulerInitializer.initialize(applicationContext)
-            Log.d(TAG, "【启动计时】WorkflowScheduler初始化完成（异步） - ${System.currentTimeMillis() - schedulerStartTime}ms")
+            AppLogger.d(TAG, "【启动计时】WorkflowScheduler初始化完成（异步） - ${System.currentTimeMillis() - schedulerStartTime}ms")
         }
 
         // 在应用启动时尝试绑定无障碍服务提供者（解决后台绑定限制问题）
         applicationScope.launch {
-            Log.d(TAG, "【启动计时】开始预绑定无障碍服务提供者...")
+            AppLogger.d(TAG, "【启动计时】开始预绑定无障碍服务提供者...")
             val bindStartTime = System.currentTimeMillis()
             try {
                 val bound = com.ai.assistance.operit.data.repository.UIHierarchyManager.bindToService(this@OperitApplication)
-                Log.d(TAG, "【启动计时】无障碍服务预绑定完成（异步） - 结果: $bound, 耗时: ${System.currentTimeMillis() - bindStartTime}ms")
+                AppLogger.d(TAG, "【启动计时】无障碍服务预绑定完成（异步） - 结果: $bound, 耗时: ${System.currentTimeMillis() - bindStartTime}ms")
             } catch (e: Exception) {
-                Log.e(TAG, "无障碍服务预绑定失败", e)
+                AppLogger.e(TAG, "无障碍服务预绑定失败", e)
             }
         }
         
         val totalTime = System.currentTimeMillis() - startTime
-        Log.d(TAG, "【启动计时】应用启动全部完成 - 总耗时: ${totalTime}ms")
+        AppLogger.d(TAG, "【启动计时】应用启动全部完成 - 总耗时: ${totalTime}ms")
     }
 
     /**
@@ -249,7 +252,7 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
      */
     override val workManagerConfiguration: WorkConfiguration
         get() = WorkConfiguration.Builder()
-            .setMinimumLoggingLevel(if (BuildConfig.DEBUG) Log.DEBUG else Log.INFO)
+            .setMinimumLoggingLevel(if (BuildConfig.DEBUG) AppLogger.DEBUG else AppLogger.INFO)
             .build()
 
     /** 初始化应用语言设置 */
@@ -266,12 +269,12 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
                         UserPreferencesManager.DEFAULT_LANGUAGE
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "获取语言设置失败", e)
+                    AppLogger.e(TAG, "获取语言设置失败", e)
                     UserPreferencesManager.DEFAULT_LANGUAGE
                 }
             }
 
-            Log.d(TAG, "获取语言设置: $languageCode")
+            AppLogger.d(TAG, "获取语言设置: $languageCode")
 
             // 立即应用语言设置
             val locale = Locale(languageCode)
@@ -282,7 +285,7 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
                 // Android 13+ 使用AppCompatDelegate API
                 val localeList = LocaleListCompat.create(locale)
                 AppCompatDelegate.setApplicationLocales(localeList)
-                Log.d(TAG, "使用AppCompatDelegate设置语言: $languageCode")
+                AppLogger.d(TAG, "使用AppCompatDelegate设置语言: $languageCode")
             } else {
                 // 较旧版本Android - 此处使用的部分更新将在attachBaseContext中完成更完整更新
                 val config = Configuration()
@@ -295,10 +298,10 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
                 }
 
                 resources.updateConfiguration(config, resources.displayMetrics)
-                Log.d(TAG, "使用Configuration设置语言: $languageCode")
+                AppLogger.d(TAG, "使用Configuration设置语言: $languageCode")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "初始化语言设置失败", e)
+            AppLogger.e(TAG, "初始化语言设置失败", e)
         }
     }
 
@@ -322,9 +325,9 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
             // 使用createConfigurationContext创建新的上下文
             val context = base.createConfigurationContext(config)
             super.attachBaseContext(context)
-            Log.d(TAG, "成功应用基础上下文语言: $code")
+            AppLogger.d(TAG, "成功应用基础上下文语言: $code")
         } catch (e: Exception) {
-            Log.e(TAG, "应用基础上下文语言失败", e)
+            AppLogger.e(TAG, "应用基础上下文语言失败", e)
             super.attachBaseContext(base)
         }
     }
@@ -336,10 +339,10 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Terminal.getInstance(applicationContext).destroy()
-                Log.d(TAG, "应用终止，已清理所有终端会话和SSH连接")
+                AppLogger.d(TAG, "应用终止，已清理所有终端会话和SSH连接")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "清理终端管理器失败: ${e.message}", e)
+            AppLogger.e(TAG, "清理终端管理器失败: ${e.message}", e)
         }
         
         // 在应用终止时关闭LocalWebServer服务器
@@ -347,15 +350,15 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
             val webServer = LocalWebServer.getInstance(applicationContext, LocalWebServer.ServerType.WORKSPACE)
             if (webServer.isRunning()) {
                 webServer.stop()
-                Log.d(TAG, "应用终止，已关闭本地Web服务器")
+                AppLogger.d(TAG, "应用终止，已关闭本地Web服务器")
             }
             val computerServer = LocalWebServer.getInstance(applicationContext, LocalWebServer.ServerType.COMPUTER)
             if (computerServer.isRunning()) {
                 computerServer.stop()
-                Log.d(TAG, "应用终止，已关闭AI电脑服务器")
+                AppLogger.d(TAG, "应用终止，已关闭AI电脑服务器")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "关闭本地Web服务器失败: ${e.message}", e)
+            AppLogger.e(TAG, "关闭本地Web服务器失败: ${e.message}", e)
         }
     }
 }

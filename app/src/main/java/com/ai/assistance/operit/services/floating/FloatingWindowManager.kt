@@ -6,7 +6,7 @@ import android.content.Context
 import android.graphics.PixelFormat
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -104,9 +104,9 @@ class FloatingWindowManager(
             val params = createLayoutParams()
             windowManager.addView(composeView, params)
             isViewAdded = true
-            Log.d(TAG, "Floating view added at (${params.x}, ${params.y})")
+            AppLogger.d(TAG, "Floating view added at (${params.x}, ${params.y})")
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating floating view", e)
+            AppLogger.e(TAG, "Error creating floating view", e)
         }
     }
 
@@ -117,7 +117,7 @@ class FloatingWindowManager(
                 try {
                     windowManager.removeView(it)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error removing view", e)
+                    AppLogger.e(TAG, "Error removing view", e)
                 }
                 composeView = null
                 isViewAdded = false
@@ -175,19 +175,19 @@ class FloatingWindowManager(
                     // Restore interactiveness by removing the flag
                     params.flags = params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
                 }
-                Log.d(TAG, "Floating window interaction enabled.")
+                AppLogger.d(TAG, "Floating window interaction enabled.")
             } else { // Interaction is disabled
                 if (currentMode == FloatingMode.FULLSCREEN || currentMode == FloatingMode.WINDOW) {
                     // For fullscreen or window mode, hide the view completely to avoid interfering with screen capture
                     view.visibility = View.GONE
                     showStatusIndicator()
-                    Log.d(TAG, "Floating window view hidden for $currentMode mode, showing status indicator.")
+                    AppLogger.d(TAG, "Floating window view hidden for $currentMode mode, showing status indicator.")
                 } else {
                     // For other modes, just make it non-touchable but keep it visible for the overlay
                     updateViewLayout { params ->
                         params.flags = params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
                     }
-                    Log.d(TAG, "Floating window interaction disabled for mode: $currentMode.")
+                    AppLogger.d(TAG, "Floating window interaction disabled for mode: $currentMode.")
                 }
             }
         }
@@ -222,7 +222,7 @@ class FloatingWindowManager(
         }
         windowManager.addView(statusIndicatorView, params)
         isIndicatorAdded = true
-        Log.d(TAG, "Status indicator shown.")
+        AppLogger.d(TAG, "Status indicator shown.")
     }
 
     private fun hideStatusIndicator() {
@@ -231,12 +231,12 @@ class FloatingWindowManager(
                 try {
                     windowManager.removeView(it)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error removing status indicator view", e)
+                    AppLogger.e(TAG, "Error removing status indicator view", e)
                 }
             }
             statusIndicatorView = null
             isIndicatorAdded = false
-            Log.d(TAG, "Status indicator hidden.")
+            AppLogger.d(TAG, "Status indicator hidden.")
         }
     }
 
@@ -364,7 +364,7 @@ class FloatingWindowManager(
             val field = params.javaClass.getField("privateFlags")
             field.setInt(params, field.getInt(params) or flags)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to set privateFlags", e)
+            AppLogger.e(TAG, "Failed to set privateFlags", e)
         }
     }
 
@@ -429,7 +429,7 @@ class FloatingWindowManager(
         val startX = currentParams.x
         val startY = currentParams.y
         
-        android.util.Log.d("FloatingWindowManager", 
+        com.ai.assistance.operit.util.AppLogger.d("FloatingWindowManager", 
             "switchMode: from=${state.currentMode.value} to=$newMode, " +
             "startPos=($startX,$startY), startSize=($startWidth,$startHeight), " +
             "screenSize=($screenWidth,$screenHeight)")
@@ -501,12 +501,12 @@ class FloatingWindowManager(
                     )
                 }
                 
-                android.util.Log.d("FloatingWindowManager", 
+                com.ai.assistance.operit.util.AppLogger.d("FloatingWindowManager", 
                     "Ball target before coerce: newPos=($newX,$newY), ballSize=$ballSizeInPx")
                     val minVisible = ballSizeInPx / 2
                 val finalX = newX.coerceIn(-ballSizeInPx + minVisible, screenWidth - minVisible)
                 val finalY = newY.coerceIn(0, screenHeight - minVisible)
-                android.util.Log.d("FloatingWindowManager", 
+                com.ai.assistance.operit.util.AppLogger.d("FloatingWindowManager", 
                     "Ball target after coerce: finalPos=($finalX,$finalY)")
                 TargetParams(ballSizeInPx, ballSizeInPx, finalX, finalY, flags)
                 }

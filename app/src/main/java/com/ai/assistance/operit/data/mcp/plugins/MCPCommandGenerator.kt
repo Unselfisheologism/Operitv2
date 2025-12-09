@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.data.mcp.plugins
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.io.File
 
 /**
@@ -36,7 +36,7 @@ class MCPCommandGenerator {
 
                 if (pipInstallCommand != null) {
                     // 使用README中指定的pip安装命令
-                    Log.d(TAG, "使用README中指定的pip安装命令: $pipInstallCommand")
+                    AppLogger.d(TAG, "使用README中指定的pip安装命令: $pipInstallCommand")
                     commands.add(pipInstallCommand)
                 } else {
                     // 先安装依赖
@@ -162,7 +162,7 @@ class MCPCommandGenerator {
             }
             ProjectType.UNKNOWN -> {
                 // 无法确定项目类型，尝试通用命令
-                Log.w(TAG, "无法确定项目类型，尝试通用命令")
+                AppLogger.w(TAG, "无法确定项目类型，尝试通用命令")
             }
         }
 

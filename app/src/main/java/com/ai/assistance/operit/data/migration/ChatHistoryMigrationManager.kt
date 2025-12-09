@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.data.migration
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -55,13 +55,13 @@ class ChatHistoryMigrationManager(private val context: Context) {
         if (migrationVersion != null &&
                         migrationVersion.toIntOrNull() ?: 0 >= CURRENT_MIGRATION_VERSION
         ) {
-            Log.d(TAG, "数据已迁移到版本 $migrationVersion，不需要迁移")
+            AppLogger.d(TAG, "数据已迁移到版本 $migrationVersion，不需要迁移")
             return false
         }
 
         // 检查旧数据是否存在
         val hasOldData = checkOldDataExists()
-        Log.d(TAG, "旧版数据存在: $hasOldData")
+        AppLogger.d(TAG, "旧版数据存在: $hasOldData")
 
         return hasOldData
     }
@@ -91,7 +91,7 @@ class ChatHistoryMigrationManager(private val context: Context) {
             val histories = json.decodeFromString<List<ChatHistory>>(historiesJson)
             return histories.isNotEmpty()
         } catch (e: Exception) {
-            Log.e(TAG, "检查旧数据失败", e)
+            AppLogger.e(TAG, "检查旧数据失败", e)
             return false
         }
     }
@@ -133,11 +133,11 @@ class ChatHistoryMigrationManager(private val context: Context) {
             val histories = json.decodeFromString<List<ChatHistory>>(historiesJson)
 
             if (histories.isEmpty()) {
-                Log.d(TAG, "没有找到需要迁移的聊天记录")
+                AppLogger.d(TAG, "没有找到需要迁移的聊天记录")
                 return 0
             }
 
-            Log.d(TAG, "开始迁移 ${histories.size} 条聊天记录")
+            AppLogger.d(TAG, "开始迁移 ${histories.size} 条聊天记录")
 
             // 将每个聊天历史保存到新的Room数据库
             for (history in histories) {
@@ -151,10 +151,10 @@ class ChatHistoryMigrationManager(private val context: Context) {
             // 创建迁移完成标记文件
             createMigrationCompletedFile(migratedCount)
 
-            Log.d(TAG, "成功迁移 $migratedCount 条聊天记录")
+            AppLogger.d(TAG, "成功迁移 $migratedCount 条聊天记录")
             return migratedCount
         } catch (e: Exception) {
-            Log.e(TAG, "迁移聊天历史失败", e)
+            AppLogger.e(TAG, "迁移聊天历史失败", e)
             return -1
         }
     }
@@ -176,7 +176,7 @@ class ChatHistoryMigrationManager(private val context: Context) {
 
             // 如果没有数据，返回null
             if (historiesJson == "[]") {
-                Log.d(TAG, "没有找到需要导出的聊天记录")
+                AppLogger.d(TAG, "没有找到需要导出的聊天记录")
                 return null
             }
 
@@ -194,10 +194,10 @@ class ChatHistoryMigrationManager(private val context: Context) {
             // 写入数据到备份文件
             backupFile.writeText(historiesJson)
 
-            Log.d(TAG, "成功导出聊天记录到: ${backupFile.absolutePath}")
+            AppLogger.d(TAG, "成功导出聊天记录到: ${backupFile.absolutePath}")
             return backupFile.absolutePath
         } catch (e: Exception) {
-            Log.e(TAG, "导出聊天记录失败", e)
+            AppLogger.e(TAG, "导出聊天记录失败", e)
             return null
         }
     }
@@ -214,7 +214,7 @@ class ChatHistoryMigrationManager(private val context: Context) {
         try {
             val file = File(filePath)
             if (!file.exists() || !file.canRead()) {
-                Log.e(TAG, "备份文件不存在或无法读取: $filePath")
+                AppLogger.e(TAG, "备份文件不存在或无法读取: $filePath")
                 return -1
             }
 
@@ -225,11 +225,11 @@ class ChatHistoryMigrationManager(private val context: Context) {
             val histories = json.decodeFromString<List<ChatHistory>>(historiesJson)
 
             if (histories.isEmpty()) {
-                Log.d(TAG, "备份文件中没有聊天记录")
+                AppLogger.d(TAG, "备份文件中没有聊天记录")
                 return 0
             }
 
-            Log.d(TAG, "开始导入 ${histories.size} 条聊天记录")
+            AppLogger.d(TAG, "开始导入 ${histories.size} 条聊天记录")
 
             // 将每个聊天历史保存到Room数据库
             for (history in histories) {
@@ -256,10 +256,10 @@ class ChatHistoryMigrationManager(private val context: Context) {
             """.trimIndent()
             )
 
-            Log.d(TAG, "成功导入 $importedCount 条聊天记录")
+            AppLogger.d(TAG, "成功导入 $importedCount 条聊天记录")
             return importedCount
         } catch (e: Exception) {
-            Log.e(TAG, "导入聊天记录失败", e)
+            AppLogger.e(TAG, "导入聊天记录失败", e)
             return -1
         }
     }
@@ -289,9 +289,9 @@ class ChatHistoryMigrationManager(private val context: Context) {
             """.trimIndent()
             )
 
-            Log.d(TAG, "已创建迁移完成标记文件: ${migrationFile.absolutePath}")
+            AppLogger.d(TAG, "已创建迁移完成标记文件: ${migrationFile.absolutePath}")
         } catch (e: Exception) {
-            Log.e(TAG, "创建迁移标记文件失败", e)
+            AppLogger.e(TAG, "创建迁移标记文件失败", e)
         }
     }
 }

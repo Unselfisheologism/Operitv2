@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.packages.utils
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.api.GitHubIssue
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -102,7 +102,7 @@ object MCPPluginParser {
                 val json = Json { ignoreUnknownKeys = true }
                 json.decodeFromString<MCPMetadata>(jsonString)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to parse MCP metadata JSON from issue body.", e)
+                AppLogger.e(TAG, "Failed to parse MCP metadata JSON from issue body.", e)
                 null
             }
         }

@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.common.markdown
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.webkit.WebView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

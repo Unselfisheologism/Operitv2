@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.api.chat.enhance
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.config.SystemPromptConfig
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.packTool.PackageManager
@@ -94,7 +94,7 @@ class ConversationService(
                 ${previousSummary.trim()}
                 请将以上摘要中的关键信息，与本次新的对话内容相融合，生成一份全新的、更完整的摘要。
                 """
-                Log.d(TAG, "添加上一条摘要内容到系统提示")
+                AppLogger.d(TAG, "添加上一条摘要内容到系统提示")
             }
 
             val finalMessages = listOf(Pair("system", systemPrompt)) + messages
@@ -134,20 +134,20 @@ class ConversationService(
 
             // 将总结token计数添加到用户偏好分析的token统计中
             try {
-                Log.d(TAG, "总结生成使用了输入token: $inputTokens, 缓存token: $cachedInputTokens, 输出token: $outputTokens")
+                AppLogger.d(TAG, "总结生成使用了输入token: $inputTokens, 缓存token: $cachedInputTokens, 输出token: $outputTokens")
                 apiPreferences.updateTokensForProviderModel(summaryService.providerModel, inputTokens, outputTokens, cachedInputTokens)
                 
                 // Update request count for summary generation
                 apiPreferences.incrementRequestCountForProviderModel(summaryService.providerModel)
                 
-                Log.d(TAG, "已将总结token统计添加到用户偏好分析token计数中")
+                AppLogger.d(TAG, "已将总结token统计添加到用户偏好分析token计数中")
             } catch (e: Exception) {
-                Log.e(TAG, "更新token统计失败", e)
+                AppLogger.e(TAG, "更新token统计失败", e)
             }
 
             return summaryContent
         } catch (e: Exception) {
-            Log.e(TAG, "生成总结时出错", e)
+            AppLogger.e(TAG, "生成总结时出错", e)
             // return "对话摘要：生成摘要时出错，但对话仍在继续。"
             throw e
         }
@@ -225,7 +225,7 @@ class ConversationService(
                 val waifuRulesText = if(waifuPreferences.enableWaifuModeFlow.first()) buildWaifuRulesText() else ""
                 // 桌宠模式：添加<mood>标签协议（仅桌宠环境生效）
                 val desktopPetRulesText = if (promptFunctionType == PromptFunctionType.DESKTOP_PET) buildDesktopPetMoodRulesText() else ""
-                Log.d("petRules", desktopPetRulesText)
+                AppLogger.d("petRules", desktopPetRulesText)
 
                 // 构建最终的系统提示词
                 val finalSystemPrompt = buildString {
@@ -332,7 +332,7 @@ class ConversationService(
                 results.add(listOf(tagNames[i], tagContents[i]))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "使用Stream解析XML标签时出错", e)
+            AppLogger.e(TAG, "使用Stream解析XML标签时出错", e)
         }
 
         return results
@@ -623,7 +623,7 @@ class ConversationService(
             val availableCategories = try {
                 customEmojiRepository.getAllCategories().first()
             } catch (e: Exception) {
-                android.util.Log.e("ConversationService", "获取表情分组失败", e)
+                com.ai.assistance.operit.util.AppLogger.e("ConversationService", "获取表情分组失败", e)
                 emptyList()
             }
             
@@ -899,7 +899,7 @@ $toolList
                 result
             }
         } catch (e: Exception) {
-            Log.e(TAG, "生成工具包描述时出错", e)
+            AppLogger.e(TAG, "生成工具包描述时出错", e)
             return ""
         }
     }
@@ -950,7 +950,7 @@ $toolList
             
             result.toString()
         } catch (e: Exception) {
-            Log.e(TAG, "识图分析失败", e)
+            AppLogger.e(TAG, "识图分析失败", e)
             "识图分析失败: ${e.message}"
         }
     }

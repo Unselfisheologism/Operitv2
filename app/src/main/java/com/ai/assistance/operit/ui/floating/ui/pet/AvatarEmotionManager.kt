@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.floating.ui.pet
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.avatar.common.state.AvatarEmotion
 
 /**
@@ -72,19 +72,19 @@ object AvatarEmotionManager {
      * 优先使用mood标签，如果没有则使用关键词推理
      */
     fun analyzeEmotion(text: String): AvatarEmotion {
-        Log.d("AvatarEmotionManager", "分析情感 - 原始文本: $text")
+        AppLogger.d("AvatarEmotionManager", "分析情感 - 原始文本: $text")
         
         // 首先尝试从mood标签获取
         val parsedMood = extractMoodTag(text)
         if (parsedMood != null) {
             val emotion = moodToEmotion(parsedMood)
-            Log.d("AvatarEmotionManager", "从mood标签解析: $parsedMood -> $emotion")
+            AppLogger.d("AvatarEmotionManager", "从mood标签解析: $parsedMood -> $emotion")
             return emotion
         }
         
         // 如果没有mood标签，则使用关键词推理
         val emotion = inferEmotionFromText(text)
-        Log.d("AvatarEmotionManager", "使用关键词推理: $emotion")
+        AppLogger.d("AvatarEmotionManager", "使用关键词推理: $emotion")
         return emotion
     }
     

@@ -5,7 +5,7 @@ import android.graphics.ImageDecoder
 import android.graphics.drawable.AnimatedImageDrawable
 import android.graphics.drawable.BitmapDrawable
 import android.os.Build
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.ImageView
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
@@ -72,7 +72,7 @@ fun WebPRenderer(
         }
 
         val assets = context.assets
-        Log.d("WebPRenderer", "Decode start: $animationPath")
+        AppLogger.d("WebPRenderer", "Decode start: $animationPath")
         
         try {
             if (Build.VERSION.SDK_INT >= 28) {
@@ -94,9 +94,9 @@ fun WebPRenderer(
                         model.repeatCount
                     }
                     drawable.start()
-                    Log.d("WebPRenderer", "Animated start: $animationPath")
+                    AppLogger.d("WebPRenderer", "Animated start: $animationPath")
                 } else {
-                    Log.d("WebPRenderer", "Decoded non-animated drawable for: $animationPath")
+                    AppLogger.d("WebPRenderer", "Decoded non-animated drawable for: $animationPath")
                 }
             } else {
                 // API < 28: show first frame as static
@@ -107,10 +107,10 @@ fun WebPRenderer(
                 }
                 val bmp = inputStream.use { BitmapFactory.decodeStream(it) }
                 drawableState.value = BitmapDrawable(context.resources, bmp)
-                Log.d("WebPRenderer", "Static fallback (API<28): $animationPath")
+                AppLogger.d("WebPRenderer", "Static fallback (API<28): $animationPath")
             }
         } catch (e: Exception) {
-            Log.e("WebPRenderer", "Decode error for $animationPath: ${e.message}", e)
+            AppLogger.e("WebPRenderer", "Decode error for $animationPath: ${e.message}", e)
             drawableState.value = null
             onError("Failed to load animation: ${e.message}")
         }

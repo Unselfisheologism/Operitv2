@@ -3,7 +3,7 @@ package com.ai.assistance.operit.core.tools.javascript
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.packTool.PackageManager
 import java.io.File
@@ -31,14 +31,14 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
             val isTempFile = intent.getBooleanExtra(EXTRA_TEMP_FILE, false)
 
             if (filePath == null || functionName == null) {
-                Log.e(
+                AppLogger.e(
                         TAG,
                         "Missing required parameters: filePath=$filePath, functionName=$functionName"
                 )
                 return
             }
 
-            Log.d(TAG, "Received request to execute JS file: $filePath, function: $functionName")
+            AppLogger.d(TAG, "Received request to execute JS file: $filePath, function: $functionName")
             executeJavaScript(context, filePath, functionName, paramsJson, isTempFile)
         }
     }
@@ -54,13 +54,13 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
             try {
                 val file = File(filePath)
                 if (!file.exists()) {
-                    Log.e(TAG, "JavaScript file not found: $filePath")
+                    AppLogger.e(TAG, "JavaScript file not found: $filePath")
                     return@launch
                 }
 
                 // 读取文件内容
                 val scriptContent = file.readText()
-                Log.d(TAG, "Loaded JavaScript file, size: ${scriptContent.length} bytes")
+                AppLogger.d(TAG, "Loaded JavaScript file, size: ${scriptContent.length} bytes")
 
                 // 获取JsEngine实例
                 val aiToolHandler = AIToolHandler.getInstance(context)
@@ -77,26 +77,26 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
                             }
                             paramsMap
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error parsing params: $paramsJson", e)
+                            AppLogger.e(TAG, "Error parsing params: $paramsJson", e)
                             mapOf<String, String>()
                         }
 
                 // 执行JavaScript
                 val result = jsEngine.executeScriptFunction(scriptContent, functionName, params)
 
-                Log.d(TAG, "JavaScript execution result: $result")
+                AppLogger.d(TAG, "JavaScript execution result: $result")
 
                 // 如果是临时文件，执行完成后删除
                 if (isTempFile) {
                     try {
                         file.delete()
-                        Log.d(TAG, "Deleted temporary file: $filePath")
+                        AppLogger.d(TAG, "Deleted temporary file: $filePath")
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error deleting temporary file: $filePath", e)
+                        AppLogger.e(TAG, "Error deleting temporary file: $filePath", e)
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error executing JavaScript: ${e.message}", e)
+                AppLogger.e(TAG, "Error executing JavaScript: ${e.message}", e)
             }
         }
     }

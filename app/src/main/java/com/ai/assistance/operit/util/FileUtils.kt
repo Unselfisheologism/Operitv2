@@ -2,7 +2,7 @@ package com.ai.assistance.operit.util
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileOutputStream
@@ -91,7 +91,7 @@ object FileUtils {
                 return isTextLikeBytes(buffer, bytesRead)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking if file is text-like: ${file.path}", e)
+            AppLogger.e(TAG, "Error checking if file is text-like: ${file.path}", e)
             return false
         }
     }
@@ -285,7 +285,7 @@ object FileUtils {
         try {
             inputStream = context.contentResolver.openInputStream(uri)
             if (inputStream == null) {
-                Log.e("FileUtils", "Failed to open input stream for URI: $uri")
+                AppLogger.e("FileUtils", "Failed to open input stream for URI: $uri")
                 return null
             }
 
@@ -303,17 +303,17 @@ object FileUtils {
             }
             outputStream.flush()
             
-            Log.d("FileUtils", "File copied successfully to internal storage: ${file.absolutePath}")
+            AppLogger.d("FileUtils", "File copied successfully to internal storage: ${file.absolutePath}")
             return Uri.fromFile(file)
         } catch (e: Exception) {
-            Log.e("FileUtils", "Error copying file to internal storage", e)
+            AppLogger.e("FileUtils", "Error copying file to internal storage", e)
             return null
         } finally {
             try {
                 inputStream?.close()
                 outputStream?.close()
             } catch (e: Exception) {
-                Log.e("FileUtils", "Error closing streams", e)
+                AppLogger.e("FileUtils", "Error closing streams", e)
             }
         }
     }
@@ -376,7 +376,7 @@ object FileUtils {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error cleaning old background files", e)
+            AppLogger.e(TAG, "Error cleaning old background files", e)
         }
     }
 
@@ -395,7 +395,7 @@ object FileUtils {
                 return fileSize <= maxSizeBytes
             }
         } catch (e: Exception) {
-            Log.e("FileUtils", "检查视频大小时出错", e)
+            AppLogger.e("FileUtils", "检查视频大小时出错", e)
         }
         // 如果无法检查大小，返回true以避免阻止用户选择
         return true

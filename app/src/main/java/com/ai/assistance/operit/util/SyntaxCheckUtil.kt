@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.util
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.io.File
 
 /**

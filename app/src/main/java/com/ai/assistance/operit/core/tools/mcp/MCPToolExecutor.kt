@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.mcp
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.core.tools.ToolExecutor
 import com.ai.assistance.operit.data.mcp.plugins.MCPBridgeClient
@@ -211,7 +211,7 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
                 jsonString
             }
         } catch (e: Exception) {
-            Log.w(TAG, "JSON 格式化失败: ${e.message}")
+            AppLogger.w(TAG, "JSON 格式化失败: ${e.message}")
             jsonString
         }
     }
@@ -255,7 +255,7 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
             )
         }
 
-        Log.d(TAG, "准备调用MCP工具: $serverName:$actualToolName")
+        AppLogger.d(TAG, "准备调用MCP工具: $serverName:$actualToolName")
 
         // 将AITool参数转换为Map
         val parameters = tool.parameters.associate { it.name to it.value }
@@ -274,7 +274,7 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
 
                     if (response == null) {
                         // 如果响应为空（不应该发生，但做个保护）
-                        Log.e(TAG, "MCP工具调用返回空响应: $serverName:$actualToolName")
+                        AppLogger.e(TAG, "MCP工具调用返回空响应: $serverName:$actualToolName")
                         ToolResult(
                                 toolName = tool.name,
                                 success = false,
@@ -289,7 +289,7 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
                             val resultData = response.optJSONObject("result")
                             val extractedContent = extractContentFromResult(resultData)
                             val truncatedResult = kotlinx.coroutines.runBlocking { truncateResult(extractedContent) }
-                            Log.d(TAG, "MCP工具调用成功: $serverName:$actualToolName")
+                            AppLogger.d(TAG, "MCP工具调用成功: $serverName:$actualToolName")
                             ToolResult(
                                     toolName = tool.name,
                                     success = true,
@@ -307,7 +307,7 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
                                 "工具调用失败，但未返回错误信息"
                             }
                             
-                            Log.w(TAG, "MCP工具调用失败: $serverName:$actualToolName - $errorMessage")
+                            AppLogger.w(TAG, "MCP工具调用失败: $serverName:$actualToolName - $errorMessage")
                             ToolResult(
                                     toolName = tool.name,
                                     success = false,
@@ -318,7 +318,7 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
                     }
                 } catch (e: Exception) {
                     val errorMessage = "调用工具时发生异常: ${e.message}"
-                    Log.e(TAG, "调用MCP工具时发生异常: $errorMessage", e)
+                    AppLogger.e(TAG, "调用MCP工具时发生异常: $errorMessage", e)
                     ToolResult(
                             toolName = tool.name,
                             success = false,
@@ -338,7 +338,7 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
 
             return tools.find { it.optString("name") == toolName }
         } catch (e: Exception) {
-            Log.w(TAG, "获取工具信息失败: ${e.message}")
+            AppLogger.w(TAG, "获取工具信息失败: ${e.message}")
             return null
         }
     }
@@ -367,7 +367,7 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
             val convertedValue = MCPToolParameter.smartConvert(value, expectedType)
 
             if (convertedValue != value) {
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "参数 $name 从 ${value::class.java.simpleName} 转换为 ${convertedValue::class.java.simpleName}: $value -> $convertedValue"
                 )
@@ -453,18 +453,18 @@ class MCPManager(private val context: Context) {
         if (cachedClient != null) {
             // 检查客户端连接状态 - 只做轻量检查，不要过早断开
             if (cachedClient.isConnected()) {
-                Log.d(TAG, "使用已缓存的客户端: $serverName")
+                AppLogger.d(TAG, "使用已缓存的客户端: $serverName")
                 return cachedClient
             } else {
                 // 尝试重新连接现有客户端
-                Log.d(TAG, "尝试重新连接缓存的客户端: $serverName")
+                AppLogger.d(TAG, "尝试重新连接缓存的客户端: $serverName")
                 val reconnected = kotlinx.coroutines.runBlocking { cachedClient.connect() }
                 if (reconnected) {
-                    Log.d(TAG, "成功重新连接到服务: $serverName")
+                    AppLogger.d(TAG, "成功重新连接到服务: $serverName")
                     return cachedClient
                 }
                 // 客户端不再可用，从缓存移除
-                Log.w(TAG, "无法重新连接到服务: $serverName，将创建新的连接")
+                AppLogger.w(TAG, "无法重新连接到服务: $serverName，将创建新的连接")
                 clientCache.remove(serverName)
             }
         }
@@ -478,19 +478,19 @@ class MCPManager(private val context: Context) {
                     com.ai.assistance.operit.data.mcp.plugins.MCPBridgeClient(context, serverName)
 
             // 尝试连接 - 带详细日志
-            Log.d(TAG, "正在创建新的连接到服务: $serverName")
+            AppLogger.d(TAG, "正在创建新的连接到服务: $serverName")
             val connectResult = kotlinx.coroutines.runBlocking { client.connect() }
 
             if (connectResult) {
                 // 连接成功，在会话期间保持此连接
-                Log.d(TAG, "成功连接到服务: $serverName，将在会话期间保持连接")
+                AppLogger.d(TAG, "成功连接到服务: $serverName，将在会话期间保持连接")
                 clientCache[serverName] = client
                 return client
             } else {
-                Log.w(TAG, "无法连接到服务: $serverName")
+                AppLogger.w(TAG, "无法连接到服务: $serverName")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "创建桥接客户端时出错: ${e.message}", e)
+            AppLogger.e(TAG, "创建桥接客户端时出错: ${e.message}", e)
         }
 
         return null

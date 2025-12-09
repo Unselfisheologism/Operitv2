@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import java.util.UUID
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.util.Base64
 import java.io.InputStream
 import java.io.ByteArrayOutputStream
@@ -310,7 +310,7 @@ class CharacterCardManager private constructor(private val context: Context) {
         if (isInitialized) {
             // This is a new installation or an old user updating.
             // We should migrate their existing theme settings to the default character card.
-            Log.d("CharacterCardManager", "First initialization detected. Migrating current theme to default character card.")
+            AppLogger.d("CharacterCardManager", "First initialization detected. Migrating current theme to default character card.")
             userPreferencesManager.copyCurrentThemeToCharacterCard(DEFAULT_CHARACTER_CARD_ID)
             userPreferencesManager.saveAiAvatarForCharacterCard(DEFAULT_CHARACTER_CARD_ID, "file:///android_asset/operit.png")
         }
@@ -620,12 +620,12 @@ class CharacterCardManager private constructor(private val context: Context) {
             // 检查角色卡是否有专属主题配置
             if (userPreferencesManager.hasCharacterCardTheme(characterCardId)) {
                 userPreferencesManager.switchToCharacterCardTheme(characterCardId)
-                Log.d("CharacterCardManager", "已切换到角色卡 $characterCardId 的专属主题")
+                AppLogger.d("CharacterCardManager", "已切换到角色卡 $characterCardId 的专属主题")
             } else {
-                Log.d("CharacterCardManager", "角色卡 $characterCardId 没有专属主题配置，保持当前主题")
+                AppLogger.d("CharacterCardManager", "角色卡 $characterCardId 没有专属主题配置，保持当前主题")
             }
         } catch (e: Exception) {
-            Log.e("CharacterCardManager", "切换角色卡主题失败", e)
+            AppLogger.e("CharacterCardManager", "切换角色卡主题失败", e)
         }
     }
 
@@ -636,9 +636,9 @@ class CharacterCardManager private constructor(private val context: Context) {
         try {
             val activeCardId = activeCharacterCardFlow.first().id
             userPreferencesManager.saveCurrentThemeToCharacterCard(activeCardId)
-            Log.d("CharacterCardManager", "已为角色卡 $activeCardId 保存主题配置")
+            AppLogger.d("CharacterCardManager", "已为角色卡 $activeCardId 保存主题配置")
         } catch (e: Exception) {
-            Log.e("CharacterCardManager", "为活跃角色卡保存主题失败", e)
+            AppLogger.e("CharacterCardManager", "为活跃角色卡保存主题失败", e)
         }
     }
 
@@ -648,9 +648,9 @@ class CharacterCardManager private constructor(private val context: Context) {
     suspend fun deleteThemeForCharacterCard(characterCardId: String) {
         try {
             userPreferencesManager.deleteCharacterCardTheme(characterCardId)
-            Log.d("CharacterCardManager", "已删除角色卡 $characterCardId 的主题配置")
+            AppLogger.d("CharacterCardManager", "已删除角色卡 $characterCardId 的主题配置")
         } catch (e: Exception) {
-            Log.e("CharacterCardManager", "删除角色卡主题配置失败", e)
+            AppLogger.e("CharacterCardManager", "删除角色卡主题配置失败", e)
         }
     }
 
@@ -661,7 +661,7 @@ class CharacterCardManager private constructor(private val context: Context) {
         return try {
             userPreferencesManager.hasCharacterCardTheme(characterCardId)
         } catch (e: Exception) {
-            Log.e("CharacterCardManager", "检查角色卡主题配置失败", e)
+            AppLogger.e("CharacterCardManager", "检查角色卡主题配置失败", e)
             false
         }
     }
@@ -675,12 +675,12 @@ class CharacterCardManager private constructor(private val context: Context) {
             waifuPreferences.switchToCharacterCardWaifuSettings(characterCardId)
             
             if (waifuPreferences.hasCharacterCardWaifuSettings(characterCardId)) {
-                Log.d("CharacterCardManager", "已切换到角色卡 $characterCardId 的Waifu模式配置")
+                AppLogger.d("CharacterCardManager", "已切换到角色卡 $characterCardId 的Waifu模式配置")
             } else {
-                Log.d("CharacterCardManager", "角色卡 $characterCardId 没有Waifu模式配置，已清空当前配置")
+                AppLogger.d("CharacterCardManager", "角色卡 $characterCardId 没有Waifu模式配置，已清空当前配置")
             }
         } catch (e: Exception) {
-            Log.e("CharacterCardManager", "切换角色卡Waifu模式配置失败", e)
+            AppLogger.e("CharacterCardManager", "切换角色卡Waifu模式配置失败", e)
         }
     }
 
@@ -691,9 +691,9 @@ class CharacterCardManager private constructor(private val context: Context) {
         try {
             val activeCardId = activeCharacterCardFlow.first().id
             waifuPreferences.saveCurrentWaifuSettingsToCharacterCard(activeCardId)
-            Log.d("CharacterCardManager", "已为角色卡 $activeCardId 保存Waifu模式配置")
+            AppLogger.d("CharacterCardManager", "已为角色卡 $activeCardId 保存Waifu模式配置")
         } catch (e: Exception) {
-            Log.e("CharacterCardManager", "为活跃角色卡保存Waifu配置失败", e)
+            AppLogger.e("CharacterCardManager", "为活跃角色卡保存Waifu配置失败", e)
         }
     }
 } 

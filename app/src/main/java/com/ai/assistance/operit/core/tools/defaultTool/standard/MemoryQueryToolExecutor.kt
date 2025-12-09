@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.standard
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.MemoryQueryResultData
 import com.ai.assistance.operit.core.tools.MemoryLinkResultData
 import com.ai.assistance.operit.core.tools.StringResultData
@@ -76,7 +76,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
         // limit 无上限，但至少为 1
         val validLimit = if (finalLimit < 1) 1 else finalLimit
 
-        Log.d(TAG, "Executing memory query: '$query' in folder: '${folderPath ?: "All"}', threshold: $validThreshold, limit: $validLimit")
+        AppLogger.d(TAG, "Executing memory query: '$query' in folder: '${folderPath ?: "All"}', threshold: $validThreshold, limit: $validLimit")
 
         return try {
             val results = memoryRepository.searchMemories(
@@ -86,10 +86,10 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             )
             
             val formattedResult = buildResultData(results.take(validLimit), query, validLimit)
-            Log.d(TAG, "Memory query result for '$query':\n$formattedResult")
+            AppLogger.d(TAG, "Memory query result for '$query':\n$formattedResult")
             ToolResult(toolName = tool.name, success = true, result = formattedResult)
         } catch (e: Exception) {
-            Log.e(TAG, "Memory query failed", e)
+            AppLogger.e(TAG, "Memory query failed", e)
             ToolResult(toolName = tool.name, success = false, result = StringResultData(""), error = "Failed to execute memory query: ${e.message}")
         }
     }
@@ -110,7 +110,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
         val chunkRangeParam = tool.parameters.find { it.name == "chunk_range" }?.value
         val queryParam = tool.parameters.find { it.name == "query" }?.value
 
-        Log.d(TAG, "Getting memory by title: $title, chunk_index: $chunkIndexParam, chunk_range: $chunkRangeParam, query: $queryParam")
+        AppLogger.d(TAG, "Getting memory by title: $title, chunk_index: $chunkIndexParam, chunk_range: $chunkRangeParam, query: $queryParam")
 
         return try {
             val memory = memoryRepository.findMemoryByTitle(title)
@@ -130,14 +130,14 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
 
             // 默认行为：返回完整记忆
             val formattedResult = buildResultData(listOf(memory), title, 1)
-            Log.d(TAG, "Found memory by title '$title':\n$formattedResult")
+            AppLogger.d(TAG, "Found memory by title '$title':\n$formattedResult")
             ToolResult(
                 toolName = tool.name,
                 success = true,
                 result = formattedResult
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get memory by title", e)
+            AppLogger.e(TAG, "Failed to get memory by title", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -161,7 +161,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             val chunks = when {
                 // 模糊搜索分块
                 !queryParam.isNullOrBlank() -> {
-                    Log.d(TAG, "Searching chunks in document '${memory.title}' with query: '$queryParam'")
+                    AppLogger.d(TAG, "Searching chunks in document '${memory.title}' with query: '$queryParam'")
                     memoryRepository.searchChunksInDocument(memory.id, queryParam)
                 }
                 // 范围查询
@@ -187,7 +187,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                             error = "Chunk range out of bounds. Document has $totalChunks chunks. Valid range: 1-$totalChunks"
                         )
                     }
-                    Log.d(TAG, "Retrieving chunk range ${startIndex + 1}-${endIndex + 1} from document '${memory.title}'")
+                    AppLogger.d(TAG, "Retrieving chunk range ${startIndex + 1}-${endIndex + 1} from document '${memory.title}'")
                     memoryRepository.getChunksByRange(memory.id, startIndex, endIndex)
                 }
                 // 单个分块
@@ -202,7 +202,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                             error = "Chunk index out of bounds. Document has $totalChunks chunks. Valid range: 1-$totalChunks"
                         )
                     }
-                    Log.d(TAG, "Retrieving chunk ${chunkIndex + 1} from document '${memory.title}'")
+                    AppLogger.d(TAG, "Retrieving chunk ${chunkIndex + 1} from document '${memory.title}'")
                     val chunk = memoryRepository.getChunkByIndex(memory.id, chunkIndex)
                     listOfNotNull(chunk)
                 }
@@ -231,7 +231,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                 "Chunks ${chunks.map { it.chunkIndex + 1 }.joinToString(", ")}/$totalChunks"
             }
 
-            Log.d(TAG, "Retrieved ${chunks.size} chunks from document '${memory.title}': $chunkInfo")
+            AppLogger.d(TAG, "Retrieved ${chunks.size} chunks from document '${memory.title}': $chunkInfo")
             
             ToolResult(
                 toolName = toolName,
@@ -246,7 +246,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                 error = "Invalid number format in chunk parameters: ${e.message}"
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to retrieve document chunks", e)
+            AppLogger.e(TAG, "Failed to retrieve document chunks", e)
             ToolResult(
                 toolName = toolName,
                 success = false,
@@ -269,7 +269,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             )
         }
 
-        Log.d(TAG, "Creating memory: $title")
+        AppLogger.d(TAG, "Creating memory: $title")
 
         return try {
             val contentType = tool.parameters.find { it.name == "content_type" }?.value ?: "text/plain"
@@ -286,7 +286,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             
             if (memory != null) {
                 val message = "Successfully created memory: '$title' (UUID: ${memory.uuid})"
-                Log.d(TAG, message)
+                AppLogger.d(TAG, message)
                 ToolResult(
                     toolName = tool.name,
                     success = true,
@@ -301,7 +301,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create memory", e)
+            AppLogger.e(TAG, "Failed to create memory", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -323,7 +323,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             )
         }
 
-        Log.d(TAG, "Updating memory with title: $oldTitle")
+        AppLogger.d(TAG, "Updating memory with title: $oldTitle")
 
         return try {
             val memory = memoryRepository.findMemoryByTitle(oldTitle)
@@ -361,7 +361,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             
             if (updatedMemory != null) {
                 val message = "Successfully updated memory from '$oldTitle' to '$newTitle'"
-                Log.d(TAG, message)
+                AppLogger.d(TAG, message)
                 ToolResult(
                     toolName = tool.name,
                     success = true,
@@ -376,7 +376,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update memory", e)
+            AppLogger.e(TAG, "Failed to update memory", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -398,7 +398,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             )
         }
 
-        Log.d(TAG, "Deleting memory with title: $title")
+        AppLogger.d(TAG, "Deleting memory with title: $title")
 
         return try {
             val memory = memoryRepository.findMemoryByTitle(title)
@@ -415,7 +415,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             
             if (deleted) {
                 val message = "Successfully deleted memory: '$title'"
-                Log.d(TAG, message)
+                AppLogger.d(TAG, message)
                 ToolResult(
                     toolName = tool.name,
                     success = true,
@@ -430,7 +430,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to delete memory", e)
+            AppLogger.e(TAG, "Failed to delete memory", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -441,7 +441,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
     }
 
     private suspend fun executeUpdateUserPreferences(tool: AITool): ToolResult {
-        Log.d(TAG, "Executing update user preferences")
+        AppLogger.d(TAG, "Executing update user preferences")
 
         return try {
             // 从参数中提取各项偏好设置
@@ -484,7 +484,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             aiStyle?.let { updatedFields.add("ai_style") }
 
             val message = "Successfully updated user preferences: ${updatedFields.joinToString(", ")}"
-            Log.d(TAG, message)
+            AppLogger.d(TAG, message)
             
             ToolResult(
                 toolName = tool.name,
@@ -492,7 +492,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                 result = StringResultData(message)
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update user preferences", e)
+            AppLogger.e(TAG, "Failed to update user preferences", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -515,7 +515,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             )
         }
 
-        Log.d(TAG, "Linking memories: '$sourceTitle' -> '$targetTitle'")
+        AppLogger.d(TAG, "Linking memories: '$sourceTitle' -> '$targetTitle'")
 
         return try {
             // 提取可选参数
@@ -564,7 +564,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                 description = description
             )
             
-            Log.d(TAG, "Successfully linked memories: '$sourceTitle' -> '$targetTitle' (type: $linkType, weight: $validWeight)")
+            AppLogger.d(TAG, "Successfully linked memories: '$sourceTitle' -> '$targetTitle' (type: $linkType, weight: $validWeight)")
             
             ToolResult(
                 toolName = tool.name,
@@ -572,7 +572,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
                 result = resultData
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to link memories", e)
+            AppLogger.e(TAG, "Failed to link memories", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -595,7 +595,7 @@ class MemoryQueryToolExecutor(private val context: Context) : ToolExecutor {
             
             if (memory.isDocumentNode) {
                 // 对于文档节点，执行"二次探查"，获取匹配的区块内容
-                Log.d(TAG, "Memory result is a document ('${memory.title}'). Fetching specific matching chunks for query: '$query'")
+                AppLogger.d(TAG, "Memory result is a document ('${memory.title}'). Fetching specific matching chunks for query: '$query'")
                 val matchingChunks = memoryRepository.searchChunksInDocument(memory.id, query)
                 val totalChunks = memoryRepository.getTotalChunkCount(memory.id)
 

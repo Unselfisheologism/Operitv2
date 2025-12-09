@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.workflow
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.work.*
 import com.ai.assistance.operit.data.model.TriggerNode
 import com.ai.assistance.operit.data.model.Workflow
@@ -54,7 +54,7 @@ class WorkflowScheduler(private val context: Context) {
             .firstOrNull { it.triggerType == "schedule" }
 
         if (triggerNode == null) {
-            Log.w(TAG, "No schedule trigger found for workflow: ${workflow.id}")
+            AppLogger.w(TAG, "No schedule trigger found for workflow: ${workflow.id}")
             return false
         }
 
@@ -63,7 +63,7 @@ class WorkflowScheduler(private val context: Context) {
         val enabled = config[CONFIG_ENABLED]?.toBoolean() ?: true
 
         if (!enabled) {
-            Log.d(TAG, "Schedule is disabled for workflow: ${workflow.id}")
+            AppLogger.d(TAG, "Schedule is disabled for workflow: ${workflow.id}")
             return false
         }
 
@@ -72,7 +72,7 @@ class WorkflowScheduler(private val context: Context) {
             SCHEDULE_TYPE_SPECIFIC_TIME -> scheduleOneTimeWorkflow(workflow.id, triggerNode.id, config)
             SCHEDULE_TYPE_CRON -> scheduleCronWorkflow(workflow.id, triggerNode.id, config)
             else -> {
-                Log.e(TAG, "Unknown schedule type: $scheduleType")
+                AppLogger.e(TAG, "Unknown schedule type: $scheduleType")
                 false
             }
         }
@@ -86,7 +86,7 @@ class WorkflowScheduler(private val context: Context) {
         val repeat = config[CONFIG_REPEAT]?.toBoolean() ?: true
 
         if (!repeat) {
-            Log.w(TAG, "Interval scheduling requires repeat=true")
+            AppLogger.w(TAG, "Interval scheduling requires repeat=true")
             return false
         }
 
@@ -116,7 +116,7 @@ class WorkflowScheduler(private val context: Context) {
             workRequest
         )
 
-        Log.d(TAG, "Scheduled interval workflow: $workflowId, trigger: $triggerNodeId, interval: $intervalMinutes minutes")
+        AppLogger.d(TAG, "Scheduled interval workflow: $workflowId, trigger: $triggerNodeId, interval: $intervalMinutes minutes")
         return true
     }
 
@@ -130,7 +130,7 @@ class WorkflowScheduler(private val context: Context) {
         val targetTime = try {
             parseDateTime(specificTimeStr)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse specific_time: $specificTimeStr", e)
+            AppLogger.e(TAG, "Failed to parse specific_time: $specificTimeStr", e)
             return false
         }
 
@@ -138,7 +138,7 @@ class WorkflowScheduler(private val context: Context) {
         val delay = targetTime - currentTime
 
         if (delay < 0) {
-            Log.w(TAG, "Specific time is in the past: $specificTimeStr")
+            AppLogger.w(TAG, "Specific time is in the past: $specificTimeStr")
             return false
         }
 
@@ -164,7 +164,7 @@ class WorkflowScheduler(private val context: Context) {
             workRequest
         )
 
-        Log.d(TAG, "Scheduled one-time workflow: $workflowId, trigger: $triggerNodeId, time: $specificTimeStr, delay: ${delay}ms")
+        AppLogger.d(TAG, "Scheduled one-time workflow: $workflowId, trigger: $triggerNodeId, time: $specificTimeStr, delay: ${delay}ms")
         return true
     }
 
@@ -179,7 +179,7 @@ class WorkflowScheduler(private val context: Context) {
 
         val nextExecutionTime = calculateNextCronTime(cronExpression)
         if (nextExecutionTime == null) {
-            Log.e(TAG, "Failed to calculate next cron time for: $cronExpression")
+            AppLogger.e(TAG, "Failed to calculate next cron time for: $cronExpression")
             return false
         }
 
@@ -187,7 +187,7 @@ class WorkflowScheduler(private val context: Context) {
         val delay = nextExecutionTime - currentTime
 
         if (delay < 0) {
-            Log.w(TAG, "Calculated cron time is in the past")
+            AppLogger.w(TAG, "Calculated cron time is in the past")
             return false
         }
 
@@ -220,15 +220,15 @@ class WorkflowScheduler(private val context: Context) {
                     ExistingPeriodicWorkPolicy.REPLACE,
                     workRequest
                 )
-                Log.d(TAG, "Scheduled cron workflow (periodic): $workflowId, trigger: $triggerNodeId, expression: $cronExpression")
+                AppLogger.d(TAG, "Scheduled cron workflow (periodic): $workflowId, trigger: $triggerNodeId, expression: $cronExpression")
             } else {
                 // Fallback to one-time for complex cron patterns
                 scheduleOneTimeWorkflowWithDelay(workflowId, triggerNodeId, delay)
-                Log.d(TAG, "Scheduled cron workflow (one-time): $workflowId, trigger: $triggerNodeId, expression: $cronExpression")
+                AppLogger.d(TAG, "Scheduled cron workflow (one-time): $workflowId, trigger: $triggerNodeId, expression: $cronExpression")
             }
         } else {
             scheduleOneTimeWorkflowWithDelay(workflowId, triggerNodeId, delay)
-            Log.d(TAG, "Scheduled cron workflow (one-time): $workflowId, trigger: $triggerNodeId, expression: $cronExpression")
+            AppLogger.d(TAG, "Scheduled cron workflow (one-time): $workflowId, trigger: $triggerNodeId, expression: $cronExpression")
         }
 
         return true
@@ -266,7 +266,7 @@ class WorkflowScheduler(private val context: Context) {
      */
     fun cancelWorkflow(workflowId: String) {
         workManager.cancelUniqueWork(getWorkName(workflowId))
-        Log.d(TAG, "Cancelled workflow schedule: $workflowId")
+        AppLogger.d(TAG, "Cancelled workflow schedule: $workflowId")
     }
 
     /**
@@ -321,7 +321,7 @@ class WorkflowScheduler(private val context: Context) {
     private fun calculateNextCronTime(cronExpression: String): Long? {
         val parts = cronExpression.trim().split("\\s+".toRegex())
         if (parts.size < 5) {
-            Log.e(TAG, "Invalid cron expression: $cronExpression")
+            AppLogger.e(TAG, "Invalid cron expression: $cronExpression")
             return null
         }
 
@@ -361,7 +361,7 @@ class WorkflowScheduler(private val context: Context) {
                 nextTime.timeInMillis
             }
             else -> {
-                Log.w(TAG, "Unsupported cron pattern: $cronExpression")
+                AppLogger.w(TAG, "Unsupported cron pattern: $cronExpression")
                 null
             }
         }

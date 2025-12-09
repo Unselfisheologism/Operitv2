@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.api.chat.enhance
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.model.FunctionType
 import com.github.difflib.DiffUtils
 import com.github.difflib.UnifiedDiffUtils
@@ -57,25 +57,25 @@ class FileBindingService(context: Context) {
             aiGeneratedCode: String
     ): Pair<String, String> {
         if (aiGeneratedCode.contains("[START-")) {
-            Log.d(TAG, "Structured edit blocks detected. Attempting fuzzy patch.")
+            AppLogger.d(TAG, "Structured edit blocks detected. Attempting fuzzy patch.")
             try {
                 val (success, resultString) = applyFuzzyPatch(originalContent, aiGeneratedCode)
                 if (success) {
-                    Log.d(TAG, "Fuzzy patch succeeded.")
+                    AppLogger.d(TAG, "Fuzzy patch succeeded.")
                     val diffString = generateDiff(originalContent.replace("\r\n", "\n"), resultString)
                     return Pair(resultString, diffString)
                 } else {
-                    Log.w(TAG, "Fuzzy patch application failed. Reason: $resultString")
+                    AppLogger.w(TAG, "Fuzzy patch application failed. Reason: $resultString")
                     return Pair(originalContent, "Error: Could not apply patch. Reason: $resultString")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error during fuzzy patch process.", e)
+                AppLogger.e(TAG, "Error during fuzzy patch process.", e)
                 return Pair(originalContent, "Error: An unexpected exception occurred during the patching process: ${e.message}")
             }
         }
 
         // Default to full file replacement if no special instructions are found
-        Log.d(TAG, "No structured blocks found. Assuming full file replacement.")
+        AppLogger.d(TAG, "No structured blocks found. Assuming full file replacement.")
         val normalizedOriginalContent = originalContent.replace("\r\n", "\n")
         val normalizedAiGeneratedCode = aiGeneratedCode.replace("\r\n", "\n").trim()
         val diffString = generateDiff(normalizedOriginalContent, normalizedAiGeneratedCode)
@@ -188,7 +188,7 @@ class FileBindingService(context: Context) {
             for (op in operations) {
                 val (start, end) = findBestMatchRange(originalLines, op.oldContent)
                 if (start == -1) {
-                    Log.w(TAG, "Could not find a suitable match for OLD block: ${op.oldContent.take(100)}...")
+                    AppLogger.w(TAG, "Could not find a suitable match for OLD block: ${op.oldContent.take(100)}...")
                     return Pair(false, "Could not find a match for an OLD block. The file may have changed too much.")
                 }
                 enrichedOps.add(Triple(op, start, end))
@@ -198,7 +198,7 @@ class FileBindingService(context: Context) {
             enrichedOps.sortByDescending { it.second }
 
             for ((op, start, end) in enrichedOps) {
-                Log.d(TAG, "Applying ${op.action} at lines ${start + 1}-${end + 1}")
+                AppLogger.d(TAG, "Applying ${op.action} at lines ${start + 1}-${end + 1}")
                 
                 // Remove the old lines
                 for (i in end downTo start) {
@@ -213,7 +213,7 @@ class FileBindingService(context: Context) {
 
             return Pair(true, originalLines.joinToString("\n"))
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to apply fuzzy patch", e)
+            AppLogger.e(TAG, "Failed to apply fuzzy patch", e)
             return Pair(false, "Failed to apply fuzzy patch due to an exception: ${e.message}")
         }
     }
@@ -284,26 +284,26 @@ class FileBindingService(context: Context) {
         if (numOldLines == 0) return -1 to -1
         if (originalLines.isEmpty()) return -1 to -1
 
-        Log.d(TAG, "开始查找最佳匹配范围，原始文件行数: ${originalLines.size}, 目标块行数: $numOldLines")
+        AppLogger.d(TAG, "开始查找最佳匹配范围，原始文件行数: ${originalLines.size}, 目标块行数: $numOldLines")
         val startTime = System.currentTimeMillis()
         var totalWindows = 0
         var lcsCalculations = 0
 
         // --- 优化1：预计算与规范化 ---
-        Log.d(TAG, "开始预计算与规范化...")
+        AppLogger.d(TAG, "开始预计算与规范化...")
         val normalizedOldContent = oldContent.replace(Regex("\\s+"), "")
         val lineStartIndices = mutableListOf<Int>()
         val normalizedOriginalContent = buildString {
             originalLines.forEachIndexed { index, line ->
                 if (index % 1000 == 0 && index > 0) {
-                    Log.d(TAG, "正在预处理行: $index/${originalLines.size}")
+                    AppLogger.d(TAG, "正在预处理行: $index/${originalLines.size}")
                 }
                 lineStartIndices.add(length)
                 append(line.replace(Regex("\\s+"), ""))
             }
             lineStartIndices.add(length) // 添加一个末尾索引，方便计算最后一行
         }
-        Log.d(TAG, "预计算完成，规范化后字符数: ${normalizedOriginalContent.length}")
+        AppLogger.d(TAG, "预计算完成，规范化后字符数: ${normalizedOriginalContent.length}")
 
         // --- 阶段一：计算目标窗口尺寸范围 ---
         val delta = (numOldLines * 0.2).toInt() + 2 // 扩大到20%的容错范围，并确保至少有2行的浮动
@@ -314,7 +314,7 @@ class FileBindingService(context: Context) {
 
         // --- 阶段二：并行滑动窗口搜索 ---
         val totalIterations = originalLines.size * targetSizes.count()
-        Log.d(TAG, "开始滑动窗口匹配（并行），总迭代次数: $totalIterations")
+        AppLogger.d(TAG, "开始滑动窗口匹配（并行），总迭代次数: $totalIterations")
 
         val availableCores = Runtime.getRuntime().availableProcessors().coerceAtLeast(2)
         val threadCount = minOf(availableCores, originalLines.size)
@@ -367,14 +367,14 @@ class FileBindingService(context: Context) {
                                 localBestStart = i
                                 localBestEnd = endLine - 1
                                 val matchPercentage = (localBestScore * 100).toInt()
-                                Log.d(
+                                AppLogger.d(
                                         TAG,
                                         "并行块[$threadIndex] 发现更佳匹配: 行 ${i + 1}-$endLine, 相似度: $matchPercentage%"
                                 )
 
                                 if (localBestScore == 1.0) {
                                     foundPerfectMatch.set(true)
-                                    Log.d(TAG, "并行块[$threadIndex] 已找到100%匹配，提前结束该块搜索。")
+                                    AppLogger.d(TAG, "并行块[$threadIndex] 已找到100%匹配，提前结束该块搜索。")
                                     return@Callable MatchSearchResult(
                                             localBestScore,
                                             localBestStart,
@@ -405,7 +405,7 @@ class FileBindingService(context: Context) {
             }
 
             if (bestMatchScore == 1.0) {
-                Log.d(TAG, "并行模式下已找到100%匹配。")
+                AppLogger.d(TAG, "并行模式下已找到100%匹配。")
             }
         } finally {
             executor.shutdown()
@@ -415,12 +415,12 @@ class FileBindingService(context: Context) {
         val totalTime = (System.currentTimeMillis() - startTime) / 1000.0
         val result = if (bestMatchScore > 0.9) {
             val (start, end) = bestMatchRange
-            Log.d(TAG, "匹配完成! 最佳匹配: 行 ${start + 1}-${end + 1}, 相似度: ${(bestMatchScore * 100).toInt()}%, " +
+            AppLogger.d(TAG, "匹配完成! 最佳匹配: 行 ${start + 1}-${end + 1}, 相似度: ${(bestMatchScore * 100).toInt()}%, " +
                     "总耗时: ${String.format("%.2f", totalTime)}s, " +
                     "总窗口数: $totalWindows, 总LCS计算: $lcsCalculations")
             bestMatchRange
         } else {
-            Log.w(TAG, "未找到足够好的匹配 (最高相似度: ${(bestMatchScore * 100).toInt()}% < 90%)")
+            AppLogger.w(TAG, "未找到足够好的匹配 (最高相似度: ${(bestMatchScore * 100).toInt()}% < 90%)")
             -1 to -1
         }
 

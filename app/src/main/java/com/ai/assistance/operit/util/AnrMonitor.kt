@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Debug
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
@@ -82,19 +82,19 @@ class AnrMonitor(
      */
     fun start() {
         if (running.getAndSet(true)) {
-            Log.w(tag, "ANR监控器已经在运行中")
+            AppLogger.w(tag, "ANR监控器已经在运行中")
             return
         }
         
-        Log.d(tag, "启动ANR监控器")
+        AppLogger.d(tag, "启动ANR监控器")
         lastResponseTime.set(System.currentTimeMillis())
         
         // 尝试获取主线程引用
         try {
             mainThread = getMainThread()
-            Log.d(tag, "已获取主线程引用: $mainThread")
+            AppLogger.d(tag, "已获取主线程引用: $mainThread")
         } catch (e: Exception) {
-            Log.e(tag, "获取主线程引用失败", e)
+            AppLogger.e(tag, "获取主线程引用失败", e)
         }
         
         try {
@@ -107,7 +107,7 @@ class AnrMonitor(
             }
         } catch (e: Exception) {
             // 如果协程启动失败，使用线程池作为备选方案
-            Log.e(tag, "协程启动失败，使用备选线程池监控", e)
+            AppLogger.e(tag, "协程启动失败，使用备选线程池监控", e)
             startUsingExecutor()
         }
     }
@@ -142,7 +142,7 @@ class AnrMonitor(
             return
         }
         
-        Log.d(tag, "停止ANR监控器，监控结果：ANR次数=${anrCount.get()}, 警告次数=${warningCount.get()}, 最长阻塞时间=${maxBlockDuration.get()}ms")
+        AppLogger.d(tag, "停止ANR监控器，监控结果：ANR次数=${anrCount.get()}, 警告次数=${warningCount.get()}, 最长阻塞时间=${maxBlockDuration.get()}ms")
         monitoringJob?.cancel()
         scheduledExecutor?.shutdown()
         
@@ -171,10 +171,10 @@ class AnrMonitor(
             
             if (responseTime > ANR_THRESHOLD_MS) {
                 val anrCount = anrCount.incrementAndGet()
-                Log.e(tag, "检测到可能的ANR! 响应时间: ${responseTime}ms, 这是第${anrCount}次ANR")
+                AppLogger.e(tag, "检测到可能的ANR! 响应时间: ${responseTime}ms, 这是第${anrCount}次ANR")
                 captureFullThreadDump()
             } else {
-                Log.w(tag, "主线程响应缓慢: ${responseTime}ms")
+                AppLogger.w(tag, "主线程响应缓慢: ${responseTime}ms")
             }
         }
     }
@@ -204,7 +204,7 @@ class AnrMonitor(
             
             if (timeSinceLastResponse > ANR_THRESHOLD_MS) {
                 // 已超过ANR阈值
-                Log.e(tag, "$message - 可能发生ANR!")
+                AppLogger.e(tag, "$message - 可能发生ANR!")
                 anrCount.incrementAndGet()
                 
                 // 记录堆栈跟踪 - 使用增强的堆栈捕获
@@ -215,7 +215,7 @@ class AnrMonitor(
                 }
             } else {
                 // 超过警告阈值但未到ANR阈值
-                Log.w(tag, "$message - 警告")
+                AppLogger.w(tag, "$message - 警告")
                 warningCount.incrementAndGet()
             }
         }
@@ -245,9 +245,9 @@ class AnrMonitor(
                 // 分析堆栈
                 val analysis = analyzeStackTrace(stackTrace)
                 
-                Log.e(tag, "主线程堆栈跟踪:\n$stackTrace\n$analysis")
+                AppLogger.e(tag, "主线程堆栈跟踪:\n$stackTrace\n$analysis")
             } catch (e: Exception) {
-                Log.e(tag, "捕获堆栈失败", e)
+                AppLogger.e(tag, "捕获堆栈失败", e)
             }
         }
     }
@@ -268,7 +268,7 @@ class AnrMonitor(
             
             return threads.filterNotNull().find { it.name == MAIN_THREAD_NAME }
         } catch (e: Exception) {
-            Log.e(tag, "获取主线程失败", e)
+            AppLogger.e(tag, "获取主线程失败", e)
             return null
         }
     }
@@ -302,7 +302,7 @@ class AnrMonitor(
             
             // 检查是否和上次ANR相同，如果相同则不输出
             if (analysis == lastAnrAnalysis) {
-                Log.w(tag, "检测到重复的ANR，跳过输出")
+                AppLogger.w(tag, "检测到重复的ANR，跳过输出")
                 return
             }
             
@@ -331,10 +331,10 @@ class AnrMonitor(
             }
             
             // 输出到日志
-            Log.e(tag, "检测到ANR! 完整线程转储:\n${sbDump}")
+            AppLogger.e(tag, "检测到ANR! 完整线程转储:\n${sbDump}")
             
         } catch (e: Exception) {
-            Log.e(tag, "捕获线程转储失败", e)
+            AppLogger.e(tag, "捕获线程转储失败", e)
             // 失败时尝试旧方法
             captureMainThreadStack()
         }
@@ -418,9 +418,9 @@ class AnrMonitor(
                 }
             }
             
-            Log.i(tag, "ANR报告已保存到: ${file.absolutePath}")
+            AppLogger.i(tag, "ANR报告已保存到: ${file.absolutePath}")
         } catch (e: Exception) {
-            Log.e(tag, "保存ANR报告失败", e)
+            AppLogger.e(tag, "保存ANR报告失败", e)
         }
     }
 } 

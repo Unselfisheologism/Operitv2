@@ -4,7 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -72,7 +72,7 @@ class AccessibilityShellExecutor(private val context: Context) : ShellExecutor {
             // 由于无法知道用户是否启用了服务，返回false，让调用者自行处理后续检查
             onResult(false)
         } catch (e: Exception) {
-            Log.e(TAG, "Error opening accessibility settings", e)
+            AppLogger.e(TAG, "Error opening accessibility settings", e)
             onResult(false)
         }
     }
@@ -101,7 +101,7 @@ class AccessibilityShellExecutor(private val context: Context) : ShellExecutor {
                     return@withContext ShellExecutor.CommandResult(false, "", permStatus.reason, -1)
                 }
 
-                Log.d(TAG, "Executing command via accessibility: $command")
+                AppLogger.d(TAG, "Executing command via accessibility: $command")
 
                 // 无障碍服务不能直接执行shell命令，此处应该转换为UI操作
                 // 这里仅作为一个框架，实际实现将根据应用程序需求而定

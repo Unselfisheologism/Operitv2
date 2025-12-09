@@ -2,7 +2,7 @@ package com.ai.assistance.operit.core.chat
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.EnhancedAIService
 import com.ai.assistance.operit.api.chat.plan.PlanModeManager
 import com.ai.assistance.operit.core.tools.AIToolHandler
@@ -100,7 +100,7 @@ object AIMessageManager {
                 )
                 "<workspace_attachment>$workspaceContent</workspace_attachment>"
             } catch (e: Exception) {
-                Log.e(TAG, "生成工作区附着失败", e)
+                AppLogger.e(TAG, "生成工作区附着失败", e)
                 ""
             }
         } else ""
@@ -114,7 +114,7 @@ object AIMessageManager {
                         val imageId = ImagePoolManager.addImage(attachment.filePath)
                         "<link type=\"image\" id=\"$imageId\"></link>"
                     } catch (e: Exception) {
-                        Log.e(TAG, "添加图片到池失败: ${attachment.filePath}", e)
+                        AppLogger.e(TAG, "添加图片到池失败: ${attachment.filePath}", e)
                         // 失败时回退到普通附件格式
                         val attributes = buildString {
                             append("id=\"${attachment.filePath}\" ")
@@ -194,7 +194,7 @@ object AIMessageManager {
                 
                 if (shouldUseDeepSearch) {
                     activePlanModeManager = planModeManager // Store active manager
-                    Log.d(TAG, "启用深度搜索模式处理消息")
+                    AppLogger.d(TAG, "启用深度搜索模式处理消息")
                     
                     // 设置执行计划的特定UI状态
                     enhancedAiService.setInputProcessingState(
@@ -212,7 +212,7 @@ object AIMessageManager {
                     ).share(scope)
                 } else {
                     activePlanModeManager = null // Clear manager if not used
-                    Log.d(TAG, "消息不适合深度搜索模式，使用普通模式")
+                    AppLogger.d(TAG, "消息不适合深度搜索模式，使用普通模式")
                 }
             } else {
                 activePlanModeManager = null // Clear manager if disabled
@@ -247,22 +247,22 @@ object AIMessageManager {
      * 这会同时尝试取消计划执行（如果正在进行）和底层的AI流。
      */
     fun cancelCurrentOperation() {
-        Log.d(TAG, "请求取消当前AI操作...")
+        AppLogger.d(TAG, "请求取消当前AI操作...")
 
         // 1. 取消计划模式（如果正在运行）
         activePlanModeManager?.let {
-            Log.d(TAG, "正在取消计划模式执行...")
+            AppLogger.d(TAG, "正在取消计划模式执行...")
             it.cancel()
             activePlanModeManager = null // 取消后清除引用
         }
 
         // 2. 取消底层的 EnhancedAIService（处理普通流和工具调用）
         activeEnhancedAiService?.let {
-            Log.d(TAG, "正在取消 EnhancedAIService 对话...")
+            AppLogger.d(TAG, "正在取消 EnhancedAIService 对话...")
             it.cancelConversation()
         }
 
-        Log.d(TAG, "AI操作取消请求已发送。")
+        AppLogger.d(TAG, "AI操作取消请求已发送。")
     }
 
     /**
@@ -288,7 +288,7 @@ object AIMessageManager {
         }
 
         if (messagesToSummarize.isEmpty()) {
-            Log.d(TAG, "没有新消息需要总结")
+            AppLogger.d(TAG, "没有新消息需要总结")
             return null
         }
 
@@ -318,12 +318,12 @@ object AIMessageManager {
         }
 
         return try {
-            Log.d(TAG, "开始使用AI生成对话总结：总结 ${messagesToSummarize.size} 条消息")
+            AppLogger.d(TAG, "开始使用AI生成对话总结：总结 ${messagesToSummarize.size} 条消息")
             val summary = enhancedAiService.generateSummary(conversationToSummarize, previousSummary)
-            Log.d(TAG, "AI生成总结完成: ${summary.take(50)}...")
+            AppLogger.d(TAG, "AI生成总结完成: ${summary.take(50)}...")
 
             if (summary.isBlank()) {
-                Log.e(TAG, "AI生成的总结内容为空，放弃本次总结")
+                AppLogger.e(TAG, "AI生成的总结内容为空，放弃本次总结")
                 null
             } else {
                 // 如果是自动续写，在总结消息尾部添加续写提示
@@ -356,7 +356,7 @@ object AIMessageManager {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "AI生成总结过程中发生异常", e)
+            AppLogger.e(TAG, "AI生成总结过程中发生异常", e)
             null
         }
     }
@@ -387,7 +387,7 @@ object AIMessageManager {
         if (maxTokens > 0) {
             val usageRatio = currentTokens.toDouble() / maxTokens.toDouble()
             if (usageRatio >= tokenUsageThreshold) {
-                Log.d(TAG, "Token usage ($usageRatio) exceeds threshold ($tokenUsageThreshold). Triggering summary.")
+                AppLogger.d(TAG, "Token usage ($usageRatio) exceeds threshold ($tokenUsageThreshold). Triggering summary.")
                 return true
             }
         }
@@ -403,12 +403,12 @@ object AIMessageManager {
             val userAiMessagesSinceLastSummary = relevantMessages.count { it.sender == "user"}
 
             if (userAiMessagesSinceLastSummary >= summaryMessageCountThreshold) {
-                Log.d(TAG, "自上次总结后新消息数量达到阈值 ($userAiMessagesSinceLastSummary)，生成总结.")
+                AppLogger.d(TAG, "自上次总结后新消息数量达到阈值 ($userAiMessagesSinceLastSummary)，生成总结.")
                 return true
             }
         }
 
-        Log.d(TAG, "未达到生成总结的条件. Token使用率: ${if (maxTokens > 0) currentTokens.toDouble() / maxTokens else 0.0}")
+        AppLogger.d(TAG, "未达到生成总结的条件. Token使用率: ${if (maxTokens > 0) currentTokens.toDouble() / maxTokens else 0.0}")
         return false
     }
 

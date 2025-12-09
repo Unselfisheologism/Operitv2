@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.chat.webview.workspace.process
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.io.File
 
 /**
@@ -29,12 +29,12 @@ object GitIgnoreFilter {
                     .map { it.trim() }
                     .filter { it.isNotEmpty() && !it.startsWith("#") } // 排除空行和注释
                     .forEach { rules.add(it) }
-                Log.d(TAG, "已加载 ${rules.size} 条规则 from ${gitignoreFile.absolutePath}")
+                AppLogger.d(TAG, "已加载 ${rules.size} 条规则 from ${gitignoreFile.absolutePath}")
             } else {
-                Log.d(TAG, ".gitignore 文件不存在，仅使用默认排除规则")
+                AppLogger.d(TAG, ".gitignore 文件不存在，仅使用默认排除规则")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "加载 .gitignore 文件失败", e)
+            AppLogger.e(TAG, "加载 .gitignore 文件失败", e)
         }
         
         return rules

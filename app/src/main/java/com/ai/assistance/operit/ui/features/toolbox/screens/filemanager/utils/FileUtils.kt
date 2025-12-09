@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.utils
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -108,14 +108,14 @@ fun formatDate(dateString: String): String {
 fun parseFileList(result: String): List<FileItem> {
     return try {
         if (result.isBlank()) {
-            Log.d("FileUtils", "Empty result string")
+            AppLogger.d("FileUtils", "Empty result string")
             return emptyList()
         }
 
-        Log.d("FileUtils", "Parsing directory listing: $result")
+        AppLogger.d("FileUtils", "Parsing directory listing: $result")
 
         val directoryListing = Json.decodeFromString<DirectoryListingData>(result)
-        Log.d("FileUtils", "Parsed directory listing: $directoryListing")
+        AppLogger.d("FileUtils", "Parsed directory listing: $directoryListing")
 
         directoryListing.entries.map { entry ->
             FileItem(
@@ -126,7 +126,7 @@ fun parseFileList(result: String): List<FileItem> {
             )
         }
     } catch (e: Exception) {
-        Log.e("FileUtils", "Error parsing file list", e)
+        AppLogger.e("FileUtils", "Error parsing file list", e)
         emptyList()
     }
 }

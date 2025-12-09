@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.components
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -106,7 +106,7 @@ fun FileContextMenu(
                         withContext(Dispatchers.Main) { error = result.error ?: "打开文件失败" }
                     }
                 } catch (e: Exception) {
-                    Log.e("FileContextMenu", "Error opening file", e)
+                    AppLogger.e("FileContextMenu", "Error opening file", e)
                     withContext(Dispatchers.Main) { error = "打开文件错误: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }
@@ -139,7 +139,7 @@ fun FileContextMenu(
                         withContext(Dispatchers.Main) { error = result.error ?: "分享文件失败" }
                     }
                 } catch (e: Exception) {
-                    Log.e("FileContextMenu", "Error sharing file", e)
+                    AppLogger.e("FileContextMenu", "Error sharing file", e)
                     withContext(Dispatchers.Main) { error = "分享文件错误: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }
@@ -179,7 +179,7 @@ fun FileContextMenu(
                         withContext(Dispatchers.Main) { error = result.error ?: "Unknown error" }
                     }
                 } catch (e: Exception) {
-                    Log.e("FileContextMenu", "Error deleting file", e)
+                    AppLogger.e("FileContextMenu", "Error deleting file", e)
                     withContext(Dispatchers.Main) { error = "Error: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }
@@ -216,7 +216,7 @@ fun FileContextMenu(
                         withContext(Dispatchers.Main) { error = result.error ?: "Unknown error" }
                     }
                 } catch (e: Exception) {
-                    Log.e("FileContextMenu", "Error renaming file", e)
+                    AppLogger.e("FileContextMenu", "Error renaming file", e)
                     withContext(Dispatchers.Main) { error = "Error: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }
@@ -257,7 +257,7 @@ fun FileContextMenu(
                         withContext(Dispatchers.Main) { error = result.error ?: "压缩失败" }
                     }
                 } catch (e: Exception) {
-                    Log.e("FileContextMenu", "Error compressing files", e)
+                    AppLogger.e("FileContextMenu", "Error compressing files", e)
                     withContext(Dispatchers.Main) { error = "压缩错误: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }
@@ -294,7 +294,7 @@ fun FileContextMenu(
                         withContext(Dispatchers.Main) { error = result.error ?: "解压失败" }
                     }
                 } catch (e: Exception) {
-                    Log.e("FileContextMenu", "Error unzipping file", e)
+                    AppLogger.e("FileContextMenu", "Error unzipping file", e)
                     withContext(Dispatchers.Main) { error = "解压错误: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }
@@ -347,7 +347,7 @@ fun FileContextMenu(
 
                     withContext(Dispatchers.Main) { onFilesUpdated() }
                 } catch (e: Exception) {
-                    Log.e("FileContextMenu", "Error batch renaming files", e)
+                    AppLogger.e("FileContextMenu", "Error batch renaming files", e)
                     withContext(Dispatchers.Main) { error = "批量重命名错误: ${e.message}" }
                 } finally {
                     withContext(Dispatchers.Main) { isLoading = false }

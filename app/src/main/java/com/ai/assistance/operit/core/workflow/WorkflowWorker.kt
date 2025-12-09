@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.workflow
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.ai.assistance.operit.data.repository.WorkflowRepository
@@ -28,25 +28,25 @@ class WorkflowWorker(
         val triggerNodeId = inputData.getString(KEY_TRIGGER_NODE_ID)
         
         if (workflowId.isNullOrBlank()) {
-            Log.e(TAG, "Workflow ID is missing from input data")
+            AppLogger.e(TAG, "Workflow ID is missing from input data")
             return Result.failure()
         }
 
-        Log.d(TAG, "Executing scheduled workflow: $workflowId, trigger: $triggerNodeId")
+        AppLogger.d(TAG, "Executing scheduled workflow: $workflowId, trigger: $triggerNodeId")
 
         return try {
             val repository = WorkflowRepository(applicationContext)
             val result = repository.triggerWorkflow(workflowId, triggerNodeId)
             
             if (result.isSuccess) {
-                Log.d(TAG, "Workflow execution succeeded: ${result.getOrNull()}")
+                AppLogger.d(TAG, "Workflow execution succeeded: ${result.getOrNull()}")
                 Result.success()
             } else {
-                Log.e(TAG, "Workflow execution failed: ${result.exceptionOrNull()?.message}")
+                AppLogger.e(TAG, "Workflow execution failed: ${result.exceptionOrNull()?.message}")
                 Result.failure()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error executing workflow", e)
+            AppLogger.e(TAG, "Error executing workflow", e)
             Result.failure()
         }
     }

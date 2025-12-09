@@ -9,7 +9,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.widget.Toast
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.animation.AnimatedVisibility
@@ -372,7 +372,7 @@ class PermissionRequestOverlay(private val context: Context) {
                     ).show()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error requesting overlay permission", e)
+                AppLogger.e(TAG, "Error requesting overlay permission", e)
             }
         }
     }
@@ -385,7 +385,7 @@ class PermissionRequestOverlay(private val context: Context) {
         if (overlayView != null) return
 
         if (!hasOverlayPermission()) {
-            Log.e(TAG, "Cannot show overlay without permission")
+            AppLogger.e(TAG, "Cannot show overlay without permission")
             onResult(PermissionRequestResult.DENY)
             return
         }
@@ -445,9 +445,9 @@ class PermissionRequestOverlay(private val context: Context) {
 
         try {
             windowManager?.addView(overlayView, params)
-            Log.d(TAG, "Overlay view added successfully")
+            AppLogger.d(TAG, "Overlay view added successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "Error adding overlay view", e)
+            AppLogger.e(TAG, "Error adding overlay view", e)
             onResult(PermissionRequestResult.DENY)
             dismiss()
         }
@@ -464,10 +464,10 @@ class PermissionRequestOverlay(private val context: Context) {
                 windowManager?.removeView(view)
                 overlayView = null
                 lifecycleOwner = null
-                Log.d(TAG, "Overlay view dismissed")
+                AppLogger.d(TAG, "Overlay view dismissed")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error dismissing overlay view", e)
+            AppLogger.e(TAG, "Error dismissing overlay view", e)
         }
         windowManager = null
     }

@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.repository.UIHierarchyManager
 import kotlin.math.min
 
@@ -38,7 +38,7 @@ class AccessibilityProviderInstaller {
                 cachedBundledVersion = versionInfo
                 return versionInfo
             } catch (e: Exception) {
-                Log.e(TAG, "获取内置无障碍服务版本失败", e)
+                AppLogger.e(TAG, "获取内置无障碍服务版本失败", e)
                 cachedBundledVersion = "未知"
                 return "未知"
             }
@@ -66,7 +66,7 @@ class AccessibilityProviderInstaller {
                 cachedInstalledVersion = null
                 return null
             } catch (e: Exception) {
-                Log.e(TAG, "获取已安装无障碍服务版本出错", e)
+                AppLogger.e(TAG, "获取已安装无障碍服务版本出错", e)
                 cachedInstalledVersion = null
                 return null
             }
@@ -122,7 +122,7 @@ class AccessibilityProviderInstaller {
                 updateCacheTimestamp()
                 return false
             } catch (e: Exception) {
-                Log.e(TAG, "比较无障碍服务版本时出错", e)
+                AppLogger.e(TAG, "比较无障碍服务版本时出错", e)
                 cachedUpdateNeeded = false
                 updateCacheTimestamp()
                 return false
@@ -150,7 +150,7 @@ class AccessibilityProviderInstaller {
             cachedBundledVersion = null
             cachedUpdateNeeded = null
             lastCheckTime = 0
-            Log.d(TAG, "无障碍服务版本缓存已清除")
+            AppLogger.d(TAG, "无障碍服务版本缓存已清除")
         }
     }
 } 

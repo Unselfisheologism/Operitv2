@@ -2,7 +2,7 @@ package com.ai.assistance.operit.core.subpack
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.android.apksig.ApkSigner
 import dev.rushii.arsc.*
 import java.io.*
@@ -67,10 +67,10 @@ class ApkReverseEngineer(private val context: Context) {
                 }
             }
 
-            Log.d(TAG, "成功解析APK信息: 包名=${result["package"]}, 版本=${result["versionName"]}")
+            AppLogger.d(TAG, "成功解析APK信息: 包名=${result["package"]}, 版本=${result["versionName"]}")
             return result
         } catch (e: Exception) {
-            Log.e(TAG, "读取APK信息失败", e)
+            AppLogger.e(TAG, "读取APK信息失败", e)
             return mapOf("error" to (e.message ?: "未知错误"))
         }
     }
@@ -104,10 +104,10 @@ class ApkReverseEngineer(private val context: Context) {
                     }
                 }
             }
-            Log.d(TAG, "APK解压成功: ${extractDir.absolutePath}")
+            AppLogger.d(TAG, "APK解压成功: ${extractDir.absolutePath}")
             return extractDir
         } catch (e: Exception) {
-            Log.e(TAG, "APK解压失败", e)
+            AppLogger.e(TAG, "APK解压失败", e)
             throw RuntimeException("APK解压失败: ${e.message}")
         }
     }
@@ -121,7 +121,7 @@ class ApkReverseEngineer(private val context: Context) {
     fun modifyPackageName(extractedDir: File, newPackageName: String): Boolean {
         val manifestFile = File(extractedDir, ANDROID_MANIFEST)
         if (!manifestFile.exists()) {
-            Log.e(TAG, "未找到AndroidManifest.xml文件")
+            AppLogger.e(TAG, "未找到AndroidManifest.xml文件")
             return false
         }
 
@@ -145,7 +145,7 @@ class ApkReverseEngineer(private val context: Context) {
                     for (attr in node.attrs) {
                         if (attr.name == "package") {
                             oldPackageName = attr.value as String
-                            Log.d(TAG, "找到原始包名: $oldPackageName, 将替换为: $newPackageName")
+                            AppLogger.d(TAG, "找到原始包名: $oldPackageName, 将替换为: $newPackageName")
                             // 修改包名
                             attr.value = newPackageName
                             packageFound = true
@@ -169,7 +169,7 @@ class ApkReverseEngineer(private val context: Context) {
             }
 
             if (!packageFound || oldPackageName.isEmpty()) {
-                Log.e(TAG, "未在AndroidManifest.xml中找到manifest元素或package属性")
+                AppLogger.e(TAG, "未在AndroidManifest.xml中找到manifest元素或package属性")
                 return false
             }
 
@@ -190,10 +190,10 @@ class ApkReverseEngineer(private val context: Context) {
             // 写入修改后的文件
             FileOutputStream(manifestFile).use { it.write(modifiedBytes) }
 
-            Log.d(TAG, "成功修改AndroidManifest.xml中的包名和相关引用")
+            AppLogger.d(TAG, "成功修改AndroidManifest.xml中的包名和相关引用")
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "修改包名时发生异常", e)
+            AppLogger.e(TAG, "修改包名时发生异常", e)
             return false
         }
     }
@@ -220,14 +220,14 @@ class ApkReverseEngineer(private val context: Context) {
                     if (strValue == "$oldPackageName.MainActivity" ||
                                     strValue.endsWith(".$oldPackageName.MainActivity")
                     ) {
-                        Log.d(TAG, "保留MainActivity引用不变: $strValue")
+                        AppLogger.d(TAG, "保留MainActivity引用不变: $strValue")
                         continue
                     }
 
                     // 替换所有其他引用旧包名的情况
                     if (strValue.contains(oldPackageName)) {
                         val newValue = strValue.replace(oldPackageName, newPackageName)
-                        Log.d(TAG, "替换包名引用: $strValue -> $newValue")
+                        AppLogger.d(TAG, "替换包名引用: $strValue -> $newValue")
                         attr.value = newValue
                     }
                 }
@@ -321,11 +321,11 @@ class ApkReverseEngineer(private val context: Context) {
                         // 写入修改后的文件
                         FileOutputStream(manifestFile).use { it.write(modifiedBytes) }
 
-                        Log.d(TAG, "已在AndroidManifest.xml中更新应用名称为: $newAppName")
+                        AppLogger.d(TAG, "已在AndroidManifest.xml中更新应用名称为: $newAppName")
                         return true
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "修改AndroidManifest.xml中的应用名称失败: ${e.message}", e)
+                    AppLogger.e(TAG, "修改AndroidManifest.xml中的应用名称失败: ${e.message}", e)
                     // 尝试备用方法 - 修改strings.xml
                 }
             }
@@ -336,10 +336,10 @@ class ApkReverseEngineer(private val context: Context) {
                 return true
             }
 
-            Log.e(TAG, "无法修改应用名称，既找不到AndroidManifest.xml中的label属性，也找不到strings.xml中的app_name")
+            AppLogger.e(TAG, "无法修改应用名称，既找不到AndroidManifest.xml中的label属性，也找不到strings.xml中的app_name")
             return false
         } catch (e: Exception) {
-            Log.e(TAG, "修改应用名称失败", e)
+            AppLogger.e(TAG, "修改应用名称失败", e)
             return false
         }
     }
@@ -348,7 +348,7 @@ class ApkReverseEngineer(private val context: Context) {
     fun modifyVersion(extractedDir: File, newVersionName: String, newVersionCode: String): Boolean {
         val manifestFile = File(extractedDir, ANDROID_MANIFEST)
         if (!manifestFile.exists()) {
-            Log.e(TAG, "未找到AndroidManifest.xml文件")
+            AppLogger.e(TAG, "未找到AndroidManifest.xml文件")
             return false
         }
 
@@ -367,7 +367,7 @@ class ApkReverseEngineer(private val context: Context) {
             }
 
             if (manifestNode == null) {
-                Log.e(TAG, "未在AndroidManifest.xml中找到manifest元素")
+                AppLogger.e(TAG, "未在AndroidManifest.xml中找到manifest元素")
                 return false
             }
 
@@ -410,10 +410,10 @@ class ApkReverseEngineer(private val context: Context) {
 
             FileOutputStream(manifestFile).use { it.write(modifiedBytes) }
 
-            Log.d(TAG, "成功修改版本为: $newVersionName ($newVersionCode)")
+            AppLogger.d(TAG, "成功修改版本为: $newVersionName ($newVersionCode)")
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "修改版本信息时发生异常", e)
+            AppLogger.e(TAG, "修改版本信息时发生异常", e)
             return false
         }
     }
@@ -466,13 +466,13 @@ class ApkReverseEngineer(private val context: Context) {
                     transformer.transform(source, result)
 
                     success = true
-                    Log.d(TAG, "已在 ${stringsFile.path} 中更新应用名称为: $newAppName")
+                    AppLogger.d(TAG, "已在 ${stringsFile.path} 中更新应用名称为: $newAppName")
                 }
             }
 
             return success
         } catch (e: Exception) {
-            Log.e(TAG, "修改strings.xml中的应用名称失败", e)
+            AppLogger.e(TAG, "修改strings.xml中的应用名称失败", e)
             return false
         }
     }
@@ -485,10 +485,10 @@ class ApkReverseEngineer(private val context: Context) {
      */
     fun changeAppIcon(extractedDir: File, newIconBitmap: Bitmap): Boolean {
         try {
-            Log.d(TAG, "开始更换应用图标，提供的图标尺寸: ${newIconBitmap.width}x${newIconBitmap.height}")
+            AppLogger.d(TAG, "开始更换应用图标，提供的图标尺寸: ${newIconBitmap.width}x${newIconBitmap.height}")
             val resDir = File(extractedDir, "res")
             if (!resDir.exists()) {
-                Log.e(TAG, "res目录不存在: ${resDir.absolutePath}")
+                AppLogger.e(TAG, "res目录不存在: ${resDir.absolutePath}")
                 return false
             }
 
@@ -505,7 +505,7 @@ class ApkReverseEngineer(private val context: Context) {
             for (iconFile in knownIconFiles) {
                 if (iconFile.exists()) {
                     try {
-                        Log.d(TAG, "找到已知图标文件: ${iconFile.absolutePath}, 大小: ${iconFile.length()}字节")
+                        AppLogger.d(TAG, "找到已知图标文件: ${iconFile.absolutePath}, 大小: ${iconFile.length()}字节")
 
                         // 根据文件大小确定合适的输出尺寸
                         val size =
@@ -533,19 +533,19 @@ class ApkReverseEngineer(private val context: Context) {
 
                         replacedCount++
                         success = true
-                        Log.d(TAG, "成功替换图标: ${iconFile.absolutePath}")
+                        AppLogger.d(TAG, "成功替换图标: ${iconFile.absolutePath}")
                     } catch (e: Exception) {
-                        Log.e(TAG, "替换图标文件失败: ${iconFile.absolutePath}, 错误: ${e.message}")
+                        AppLogger.e(TAG, "替换图标文件失败: ${iconFile.absolutePath}, 错误: ${e.message}")
                     }
                 } else {
-                    Log.d(TAG, "未找到已知图标文件: ${iconFile.absolutePath}")
+                    AppLogger.d(TAG, "未找到已知图标文件: ${iconFile.absolutePath}")
                 }
             }
 
-            Log.d(TAG, "图标替换总结: 成功替换 $replacedCount 个图标文件")
+            AppLogger.d(TAG, "图标替换总结: 成功替换 $replacedCount 个图标文件")
             return success
         } catch (e: Exception) {
-            Log.e(TAG, "替换应用图标失败: ${e.message}", e)
+            AppLogger.e(TAG, "替换应用图标失败: ${e.message}", e)
             return false
         }
     }
@@ -603,7 +603,7 @@ class ApkReverseEngineer(private val context: Context) {
                 addDirToZip(extractedDir, extractedDir, zipOut)
             }
 
-            Log.d(TAG, "APK初步打包完成，准备进行zipalign对齐: ${tempUnalignedApk.absolutePath}")
+            AppLogger.d(TAG, "APK初步打包完成，准备进行zipalign对齐: ${tempUnalignedApk.absolutePath}")
 
             val aligned = zipalign(tempUnalignedApk, outputApk, 4)
 
@@ -611,14 +611,14 @@ class ApkReverseEngineer(private val context: Context) {
             tempUnalignedApk.delete()
 
             if (!aligned) {
-                Log.e(TAG, "APK对齐失败")
+                AppLogger.e(TAG, "APK对齐失败")
                 return false
             }
 
-            Log.d(TAG, "APK重新打包成功并完成4字节对齐: ${outputApk.absolutePath}")
+            AppLogger.d(TAG, "APK重新打包成功并完成4字节对齐: ${outputApk.absolutePath}")
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "APK重新打包失败", e)
+            AppLogger.e(TAG, "APK重新打包失败", e)
             return false
         }
     }
@@ -634,7 +634,7 @@ class ApkReverseEngineer(private val context: Context) {
         try {
             if (outputApk.exists()) outputApk.delete()
 
-            Log.d(
+            AppLogger.d(
                     TAG,
                     "使用zipalign-java库进行${alignment}字节对齐: ${inputApk.absolutePath} -> ${outputApk.absolutePath}"
             )
@@ -649,10 +649,10 @@ class ApkReverseEngineer(private val context: Context) {
             rafIn.close()
             fos.close()
 
-            Log.d(TAG, "APK对齐完成")
+            AppLogger.d(TAG, "APK对齐完成")
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "zipalign处理失败", e)
+            AppLogger.e(TAG, "zipalign处理失败", e)
             return false
         }
     }
@@ -740,7 +740,7 @@ class ApkReverseEngineer(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "计算CRC32失败: ${e.message}", e)
+            AppLogger.e(TAG, "计算CRC32失败: ${e.message}", e)
         }
         return crc.value
     }
@@ -749,7 +749,7 @@ class ApkReverseEngineer(private val context: Context) {
     fun cleanup() {
         if (tempDir.exists()) {
             tempDir.deleteRecursively()
-            Log.d(TAG, "临时文件清理完成")
+            AppLogger.d(TAG, "临时文件清理完成")
         }
     }
 
@@ -774,18 +774,18 @@ class ApkReverseEngineer(private val context: Context) {
         try {
             if (!unsignedApk.exists()) {
                 val message = "未签名的APK文件不存在: ${unsignedApk.absolutePath}"
-                Log.e(TAG, message)
+                AppLogger.e(TAG, message)
                 return Pair(false, message)
             }
 
             if (!keyStoreFile.exists()) {
                 val message = "密钥库文件不存在: ${keyStoreFile.absolutePath}"
-                Log.e(TAG, message)
+                AppLogger.e(TAG, message)
                 return Pair(false, message)
             }
 
-            Log.d(TAG, "开始签名APK，使用密钥: ${keyStoreFile.absolutePath}, 别名: $keyAlias")
-            Log.d(TAG, "密钥文件大小: ${keyStoreFile.length()}字节")
+            AppLogger.d(TAG, "开始签名APK，使用密钥: ${keyStoreFile.absolutePath}, 别名: $keyAlias")
+            AppLogger.d(TAG, "密钥文件大小: ${keyStoreFile.length()}字节")
 
             if (outputApk.exists()) outputApk.delete()
             outputApk.parentFile?.mkdirs()
@@ -822,11 +822,11 @@ class ApkReverseEngineer(private val context: Context) {
 
             val errorMessage =
                     "使用PKCS12和JKS格式均无法加载密钥库进行签名。\nPKCS12错误: ${pkcs12Result.second}\nJKS错误: ${jksResult.second}"
-            Log.e(TAG, errorMessage)
+            AppLogger.e(TAG, errorMessage)
             return Pair(false, errorMessage)
         } catch (e: Exception) {
             val errorMessage = "APK签名失败: ${e.message}"
-            Log.e(TAG, errorMessage, e)
+            AppLogger.e(TAG, errorMessage, e)
             return Pair(false, errorMessage)
         }
     }
@@ -842,23 +842,23 @@ class ApkReverseEngineer(private val context: Context) {
             keyStoreType: String
     ): Pair<Boolean, String?> {
         try {
-            Log.d(TAG, "尝试以$keyStoreType 格式加载密钥库")
+            AppLogger.d(TAG, "尝试以$keyStoreType 格式加载密钥库")
 
             // 使用KeyStoreHelper获取密钥库实例
             val keyStore = KeyStoreHelper.getKeyStoreInstance(keyStoreType)
             if (keyStore == null) {
                 val errorMessage = "获取$keyStoreType 密钥库实例失败"
-                Log.e(TAG, errorMessage)
+                AppLogger.e(TAG, errorMessage)
                 return Pair(false, errorMessage)
             }
 
             FileInputStream(keyStoreFile).use { input ->
                 try {
                     keyStore.load(input, keyStorePassword.toCharArray())
-                    Log.d(TAG, "成功以$keyStoreType 格式加载密钥库")
+                    AppLogger.d(TAG, "成功以$keyStoreType 格式加载密钥库")
                 } catch (e: Exception) {
                     val errorMessage = "加载$keyStoreType 密钥库失败: ${e.message}"
-                    Log.e(TAG, errorMessage)
+                    AppLogger.e(TAG, errorMessage)
                     return Pair(false, errorMessage)
                 }
 
@@ -871,14 +871,14 @@ class ApkReverseEngineer(private val context: Context) {
 
                 if (aliasList.isEmpty()) {
                     val errorMessage = "$keyStoreType 密钥库中没有任何密钥别名"
-                    Log.e(TAG, errorMessage)
+                    AppLogger.e(TAG, errorMessage)
                     return Pair(false, errorMessage)
                 } else {
-                    Log.d(TAG, "$keyStoreType 密钥库中的别名: ${aliasList.joinToString()}")
+                    AppLogger.d(TAG, "$keyStoreType 密钥库中的别名: ${aliasList.joinToString()}")
 
                     // 如果指定的别名不存在，但有其他别名，使用第一个别名
                     if (!aliasList.contains(keyAlias) && aliasList.isNotEmpty()) {
-                        Log.w(TAG, "指定的别名'$keyAlias'不存在，将使用可用的别名: ${aliasList[0]}")
+                        AppLogger.w(TAG, "指定的别名'$keyAlias'不存在，将使用可用的别名: ${aliasList[0]}")
                         val actualKeyAlias = aliasList[0]
                         return signWithKeyStore(
                                 keyStore,
@@ -894,7 +894,7 @@ class ApkReverseEngineer(private val context: Context) {
             }
         } catch (e: Exception) {
             val errorMessage = "以$keyStoreType 格式加载密钥库失败: ${e.message}"
-            Log.e(TAG, errorMessage, e)
+            AppLogger.e(TAG, errorMessage, e)
             return Pair(false, errorMessage)
         }
     }
@@ -912,13 +912,13 @@ class ApkReverseEngineer(private val context: Context) {
             val key = keyStore.getKey(keyAlias, keyPassword.toCharArray())
             if (key == null) {
                 val errorMessage = "在密钥库中找不到别名为'$keyAlias'的密钥"
-                Log.e(TAG, errorMessage)
+                AppLogger.e(TAG, errorMessage)
                 return Pair(false, errorMessage)
             }
 
             if (key !is PrivateKey) {
                 val errorMessage = "找到的密钥不是私钥类型: ${key.javaClass.name}"
-                Log.e(TAG, errorMessage)
+                AppLogger.e(TAG, errorMessage)
                 return Pair(false, errorMessage)
             }
             val privateKey = key
@@ -927,7 +927,7 @@ class ApkReverseEngineer(private val context: Context) {
             val certificateChain = keyStore.getCertificateChain(keyAlias)
             if (certificateChain == null || certificateChain.isEmpty()) {
                 val errorMessage = "无法获取别名为'$keyAlias'的证书链"
-                Log.e(TAG, errorMessage)
+                AppLogger.e(TAG, errorMessage)
                 return Pair(false, errorMessage)
             }
 
@@ -935,7 +935,7 @@ class ApkReverseEngineer(private val context: Context) {
                     certificateChain.map { cert ->
                         if (cert !is X509Certificate) {
                             val errorMessage = "证书不是X509Certificate类型: ${cert.javaClass.name}"
-                            Log.e(TAG, errorMessage)
+                            AppLogger.e(TAG, errorMessage)
                             return Pair(false, errorMessage)
                         }
                         cert as X509Certificate
@@ -958,15 +958,15 @@ class ApkReverseEngineer(private val context: Context) {
                 apkSigner.sign()
             } catch (e: Exception) {
                 val errorMessage = "ApkSigner执行失败: ${e.message}"
-                Log.e(TAG, errorMessage, e)
+                AppLogger.e(TAG, errorMessage, e)
                 return Pair(false, errorMessage)
             }
 
-            Log.d(TAG, "APK签名完成: ${outputApk.absolutePath}")
+            AppLogger.d(TAG, "APK签名完成: ${outputApk.absolutePath}")
             return Pair(true, null)
         } catch (e: Exception) {
             val errorMessage = "使用KeyStore签名APK失败: ${e.message}"
-            Log.e(TAG, errorMessage, e)
+            AppLogger.e(TAG, errorMessage, e)
             return Pair(false, errorMessage)
         }
     }

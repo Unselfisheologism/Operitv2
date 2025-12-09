@@ -2,7 +2,7 @@ package com.ai.assistance.operit.data.repository
 
 import android.content.Context
 import android.os.Environment
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.workflow.NodeExecutionState
 import com.ai.assistance.operit.core.workflow.WorkflowExecutor
 import com.ai.assistance.operit.core.workflow.WorkflowScheduler
@@ -70,14 +70,14 @@ class WorkflowRepository(private val context: Context) {
                     val content = file.readText()
                     json.decodeFromString<Workflow>(content)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to parse workflow file: ${file.name}", e)
+                    AppLogger.e(TAG, "Failed to parse workflow file: ${file.name}", e)
                     null
                 }
             }?.sortedByDescending { it.updatedAt } ?: emptyList()
             
             Result.success(workflows)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get all workflows", e)
+            AppLogger.e(TAG, "Failed to get all workflows", e)
             Result.failure(e)
         }
     }
@@ -96,7 +96,7 @@ class WorkflowRepository(private val context: Context) {
             val workflow = json.decodeFromString<Workflow>(content)
             Result.success(workflow)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get workflow by id: $id", e)
+            AppLogger.e(TAG, "Failed to get workflow by id: $id", e)
             Result.failure(e)
         }
     }
@@ -110,7 +110,7 @@ class WorkflowRepository(private val context: Context) {
             val content = json.encodeToString(workflow)
             file.writeText(content)
             
-            Log.d(TAG, "Workflow created: ${workflow.id}")
+            AppLogger.d(TAG, "Workflow created: ${workflow.id}")
             
             // Schedule if enabled and has schedule trigger
             if (workflow.enabled) {
@@ -119,7 +119,7 @@ class WorkflowRepository(private val context: Context) {
             
             Result.success(workflow)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create workflow", e)
+            AppLogger.e(TAG, "Failed to create workflow", e)
             Result.failure(e)
         }
     }
@@ -134,14 +134,14 @@ class WorkflowRepository(private val context: Context) {
             val content = json.encodeToString(updatedWorkflow)
             file.writeText(content)
             
-            Log.d(TAG, "Workflow updated: ${updatedWorkflow.id}")
+            AppLogger.d(TAG, "Workflow updated: ${updatedWorkflow.id}")
             
             // Reschedule workflow
             rescheduleWorkflow(updatedWorkflow.id)
             
             Result.success(updatedWorkflow)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update workflow", e)
+            AppLogger.e(TAG, "Failed to update workflow", e)
             Result.failure(e)
         }
     }
@@ -161,10 +161,10 @@ class WorkflowRepository(private val context: Context) {
                 false
             }
             
-            Log.d(TAG, "Workflow deleted: $id, success: $deleted")
+            AppLogger.d(TAG, "Workflow deleted: $id, success: $deleted")
             Result.success(deleted)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to delete workflow", e)
+            AppLogger.e(TAG, "Failed to delete workflow", e)
             Result.failure(e)
         }
     }
@@ -187,9 +187,9 @@ class WorkflowRepository(private val context: Context) {
                 return@withContext Result.failure(Exception("工作流已禁用: ${workflow.name}"))
             }
             
-            Log.d(TAG, "Triggering workflow: ${workflow.name} (${workflow.id})")
+            AppLogger.d(TAG, "Triggering workflow: ${workflow.name} (${workflow.id})")
             if (triggerNodeId != null) {
-                Log.d(TAG, "With specific trigger node: $triggerNodeId")
+                AppLogger.d(TAG, "With specific trigger node: $triggerNodeId")
             }
             
             // 更新为执行中状态
@@ -199,7 +199,7 @@ class WorkflowRepository(private val context: Context) {
             val executor = WorkflowExecutor(context)
             val result = executor.executeWorkflow(workflow, triggerNodeId) { nodeId, state ->
                 // 这里可以通过 Flow 或其他机制传递状态更新到 UI
-                Log.d(TAG, "Node $nodeId state: $state")
+                AppLogger.d(TAG, "Node $nodeId state: $state")
             }
             
             // 更新执行统计
@@ -212,7 +212,7 @@ class WorkflowRepository(private val context: Context) {
                 Result.failure(Exception(result.message))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to trigger workflow", e)
+            AppLogger.e(TAG, "Failed to trigger workflow", e)
             // 执行失败时也更新状态
             updateExecutionStatus(id, ExecutionStatus.FAILED, System.currentTimeMillis())
             Result.failure(e)
@@ -242,9 +242,9 @@ class WorkflowRepository(private val context: Context) {
                 return@withContext Result.failure(Exception("工作流已禁用: ${workflow.name}"))
             }
             
-            Log.d(TAG, "Triggering workflow with callback: ${workflow.name} (${workflow.id})")
+            AppLogger.d(TAG, "Triggering workflow with callback: ${workflow.name} (${workflow.id})")
             if (triggerNodeId != null) {
-                Log.d(TAG, "With specific trigger node: $triggerNodeId")
+                AppLogger.d(TAG, "With specific trigger node: $triggerNodeId")
             }
             
             // 更新为执行中状态
@@ -264,7 +264,7 @@ class WorkflowRepository(private val context: Context) {
                 Result.failure(Exception(result.message))
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to trigger workflow with callback", e)
+            AppLogger.e(TAG, "Failed to trigger workflow with callback", e)
             // 执行失败时也更新状态
             updateExecutionStatus(id, ExecutionStatus.FAILED, System.currentTimeMillis())
             Result.failure(e)
@@ -292,9 +292,9 @@ class WorkflowRepository(private val context: Context) {
             val content = json.encodeToString(updatedWorkflow)
             file.writeText(content)
             
-            Log.d(TAG, "Workflow execution status updated: $id -> $status")
+            AppLogger.d(TAG, "Workflow execution status updated: $id -> $status")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update execution status", e)
+            AppLogger.e(TAG, "Failed to update execution status", e)
         }
     }
     
@@ -325,9 +325,9 @@ class WorkflowRepository(private val context: Context) {
             val content = json.encodeToString(updatedWorkflow)
             file.writeText(content)
             
-            Log.d(TAG, "Workflow execution statistics updated: $id (total: ${updatedWorkflow.totalExecutions}, success: ${updatedWorkflow.successfulExecutions})")
+            AppLogger.d(TAG, "Workflow execution statistics updated: $id (total: ${updatedWorkflow.totalExecutions}, success: ${updatedWorkflow.successfulExecutions})")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update execution statistics", e)
+            AppLogger.e(TAG, "Failed to update execution statistics", e)
         }
     }
     
@@ -340,18 +340,18 @@ class WorkflowRepository(private val context: Context) {
             val workflow = workflowResult.getOrNull()
             
             if (workflow == null) {
-                Log.w(TAG, "Workflow not found for scheduling: $id")
+                AppLogger.w(TAG, "Workflow not found for scheduling: $id")
                 return false
             }
             
             if (!workflow.enabled) {
-                Log.d(TAG, "Workflow is disabled, not scheduling: $id")
+                AppLogger.d(TAG, "Workflow is disabled, not scheduling: $id")
                 return false
             }
             
             scheduler.scheduleWorkflow(workflow)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to schedule workflow: $id", e)
+            AppLogger.e(TAG, "Failed to schedule workflow: $id", e)
             false
         }
     }
@@ -362,9 +362,9 @@ class WorkflowRepository(private val context: Context) {
     fun unscheduleWorkflow(id: String) {
         try {
             scheduler.cancelWorkflow(id)
-            Log.d(TAG, "Workflow unscheduled: $id")
+            AppLogger.d(TAG, "Workflow unscheduled: $id")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to unschedule workflow: $id", e)
+            AppLogger.e(TAG, "Failed to unschedule workflow: $id", e)
         }
     }
     
@@ -383,7 +383,7 @@ class WorkflowRepository(private val context: Context) {
         return try {
             scheduler.isWorkflowScheduled(id)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to check schedule status: $id", e)
+            AppLogger.e(TAG, "Failed to check schedule status: $id", e)
             false
         }
     }
@@ -397,7 +397,7 @@ class WorkflowRepository(private val context: Context) {
             val workflow = workflowResult.getOrNull() ?: return@withContext null
             scheduler.getNextExecutionTime(workflow)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get next execution time: $id", e)
+            AppLogger.e(TAG, "Failed to get next execution time: $id", e)
             null
         }
     }
@@ -412,7 +412,7 @@ class WorkflowRepository(private val context: Context) {
     suspend fun triggerWorkflowsByTaskerEvent(params: List<String>?) = withContext(Dispatchers.IO) {
         if (params.isNullOrEmpty()) return@withContext
 
-        Log.d(TAG, "Checking for Tasker-triggered workflows with params: $params")
+        AppLogger.d(TAG, "Checking for Tasker-triggered workflows with params: $params")
         val workflows = getAllWorkflows().getOrNull() ?: return@withContext
 
         coroutineScope {
@@ -425,7 +425,7 @@ class WorkflowRepository(private val context: Context) {
                         // This will match if any of the params from Tasker is "start_meeting" (case-insensitive).
                         val command = node.triggerConfig["command"]
                         if (command != null && params.any { it.equals(command, ignoreCase = true) }) {
-                            Log.d(TAG, "Tasker trigger matched for workflow '${workflow.name}' on node '${node.name}'. Triggering.")
+                            AppLogger.d(TAG, "Tasker trigger matched for workflow '${workflow.name}' on node '${node.name}'. Triggering.")
                             launch {
                                 triggerWorkflow(workflow.id, node.id)
                             }
@@ -443,7 +443,7 @@ class WorkflowRepository(private val context: Context) {
      * @param intent The Intent received by the BroadcastReceiver.
      */
     suspend fun triggerWorkflowsByIntentEvent(intent: Intent) = withContext(Dispatchers.IO) {
-        Log.d(TAG, "Checking for Intent-triggered workflows for action: ${intent.action}")
+        AppLogger.d(TAG, "Checking for Intent-triggered workflows for action: ${intent.action}")
         val workflows = getAllWorkflows().getOrNull() ?: return@withContext
 
         coroutineScope {
@@ -454,7 +454,7 @@ class WorkflowRepository(private val context: Context) {
                         // Example config: `{"action": "com.example.MY_ACTION"}`.
                         val expectedAction = node.triggerConfig["action"]
                         if (expectedAction != null && expectedAction.equals(intent.action, ignoreCase = true)) {
-                            Log.d(TAG, "Intent trigger matched for workflow '${workflow.name}' on node '${node.name}'. Triggering.")
+                            AppLogger.d(TAG, "Intent trigger matched for workflow '${workflow.name}' on node '${node.name}'. Triggering.")
                             launch {
                                 triggerWorkflow(workflow.id, node.id)
                             }

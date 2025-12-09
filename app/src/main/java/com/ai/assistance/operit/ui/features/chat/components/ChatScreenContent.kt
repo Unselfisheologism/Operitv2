@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.features.chat.components
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -486,7 +486,7 @@ fun ChatScreenContent(
                                                 isMultiSelectMode = false
                                                 selectedMessageIndices = emptySet()
                                             } catch (e: Exception) {
-                                                Log.e("ChatScreenContent", "分享失败", e)
+                                                AppLogger.e("ChatScreenContent", "分享失败", e)
                                                 android.widget.Toast.makeText(
                                                     context,
                                                     context.getString(R.string.share_failed),
@@ -496,7 +496,7 @@ fun ChatScreenContent(
                                         },
                                         onError = { error ->
                                             isGeneratingImage = false
-                                            Log.e("ChatScreenContent", "生成图片失败: $error")
+                                            AppLogger.e("ChatScreenContent", "生成图片失败: $error")
                                             android.widget.Toast.makeText(
                                                 context,
                                                 error,
@@ -758,9 +758,9 @@ fun ChatScreenContent(
                             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             context.startActivity(intent)
                         } catch (e: ActivityNotFoundException) {
-                            Log.e("ChatScreenContent", "无法打开文件: $filePath", e)
+                            AppLogger.e("ChatScreenContent", "无法打开文件: $filePath", e)
                         } catch (e: Exception) {
-                            Log.e("ChatScreenContent", "文件操作错误: ${e.message}", e)
+                            AppLogger.e("ChatScreenContent", "文件操作错误: ${e.message}", e)
                         }
                     }
             )

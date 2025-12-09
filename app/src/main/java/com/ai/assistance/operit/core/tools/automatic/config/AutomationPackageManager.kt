@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.automatic.config
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.automatic.JsonUIEdge
 import com.ai.assistance.operit.core.tools.automatic.JsonUIFunction
 import com.ai.assistance.operit.core.tools.automatic.JsonUINode
@@ -56,7 +56,7 @@ class AutomationPackageManager private constructor(private val context: Context)
         val dir = File(context.getExternalFilesDir(null), CONFIG_DIR_NAME)
         if (!dir.exists()) {
             dir.mkdirs()
-            Log.d(TAG, "Created external configs directory at: ${dir.absolutePath}")
+            AppLogger.d(TAG, "Created external configs directory at: ${dir.absolutePath}")
         }
         dir
     }
@@ -67,11 +67,11 @@ class AutomationPackageManager private constructor(private val context: Context)
      * Loads all automation packages from both assets and external storage.
      */
     private fun loadAllPackages() {
-        Log.d(TAG, "Loading all automation packages...")
+        AppLogger.d(TAG, "Loading all automation packages...")
         availablePackageInfo.clear()
         loadPackagesFromAssets()
         loadPackagesFromExternalStorage()
-        Log.d(TAG, "Finished loading. Total packages available: ${availablePackageInfo.size}")
+        AppLogger.d(TAG, "Finished loading. Total packages available: ${availablePackageInfo.size}")
     }
 
     /**
@@ -95,13 +95,13 @@ class AutomationPackageManager private constructor(private val context: Context)
                         fileName = fileName
                     )
                     availablePackageInfo[info.name] = info
-                    Log.d(TAG, "Loaded built-in package: ${info.name}")
+                    AppLogger.d(TAG, "Loaded built-in package: ${info.name}")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to load or parse asset package: $fileName", e)
+                    AppLogger.e(TAG, "Failed to load or parse asset package: $fileName", e)
                 }
             }
         } catch (e: IOException) {
-            Log.e(TAG, "Error accessing assets directory for automation packages.", e)
+            AppLogger.e(TAG, "Error accessing assets directory for automation packages.", e)
         }
     }
 
@@ -124,9 +124,9 @@ class AutomationPackageManager private constructor(private val context: Context)
                 )
                 // User-imported packages can override built-in ones with the same name.
                 availablePackageInfo[info.name] = info
-                Log.d(TAG, "Loaded external package: ${info.name}")
+                AppLogger.d(TAG, "Loaded external package: ${info.name}")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load or parse external package: ${file.name}", e)
+                AppLogger.e(TAG, "Failed to load or parse external package: ${file.name}", e)
             }
         }
     }
@@ -155,7 +155,7 @@ class AutomationPackageManager private constructor(private val context: Context)
             .find { it.packageName == appPackageName }
 
         if (packageInfo == null) {
-            Log.w(TAG, "No automation config found for app package name: $appPackageName")
+            AppLogger.w(TAG, "No automation config found for app package name: $appPackageName")
             return null
         }
 
@@ -173,7 +173,7 @@ class AutomationPackageManager private constructor(private val context: Context)
     private fun loadConfig(appName: String): UIRouteConfig? {
         val packageInfo = availablePackageInfo[appName]
         if (packageInfo == null) {
-            Log.w(TAG, "Attempted to load a non-existent package by name: $appName")
+            AppLogger.w(TAG, "Attempted to load a non-existent package by name: $appName")
             return null
         }
 
@@ -186,7 +186,7 @@ class AutomationPackageManager private constructor(private val context: Context)
             }
             return UIRouteConfig.loadFromJson(jsonString)
         } catch (e: Exception) {
-            Log.e(TAG, "Error loading config for package: $appName", e)
+            AppLogger.e(TAG, "Error loading config for package: $appName", e)
             return null
         }
     }
@@ -217,7 +217,7 @@ class AutomationPackageManager private constructor(private val context: Context)
 
             val destFile = File(externalConfigsDir, fileName)
             if (destFile.exists()) {
-                Log.w(TAG, "Overwriting existing package: $fileName")
+                AppLogger.w(TAG, "Overwriting existing package: $fileName")
             }
 
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -226,13 +226,13 @@ class AutomationPackageManager private constructor(private val context: Context)
                 }
             } ?: throw IOException("Failed to open input stream for URI: $uriString")
 
-            Log.d(TAG, "Successfully imported package to: ${destFile.absolutePath}")
+            AppLogger.d(TAG, "Successfully imported package to: ${destFile.absolutePath}")
 
             // Reload packages to include the new one.
             loadAllPackages()
             return "Successfully imported package: $fileName"
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to import package from: $uriString", e)
+            AppLogger.e(TAG, "Failed to import package from: $uriString", e)
             return "Error: Failed to import package. ${e.message}"
         }
     }
@@ -270,10 +270,10 @@ class AutomationPackageManager private constructor(private val context: Context)
                 outputStream.write(jsonString.toByteArray())
             } ?: throw IOException("Failed to open output stream for URI: $uriString")
 
-            Log.d(TAG, "Successfully exported package to: $uriString")
+            AppLogger.d(TAG, "Successfully exported package to: $uriString")
             return "Successfully exported package to: $uriString"
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to export package: ${packageInfo.name}", e)
+            AppLogger.e(TAG, "Failed to export package: ${packageInfo.name}", e)
             return "Error: Failed to export package. ${e.message}"
         }
     }
@@ -287,26 +287,26 @@ class AutomationPackageManager private constructor(private val context: Context)
     fun deletePackage(packageName: String): Boolean {
         val packageInfo = availablePackageInfo[packageName]
         if (packageInfo == null) {
-            Log.w(TAG, "Cannot delete non-existent package: $packageName")
+            AppLogger.w(TAG, "Cannot delete non-existent package: $packageName")
             return false
         }
         if (packageInfo.isBuiltIn) {
-            Log.w(TAG, "Cannot delete a built-in package: $packageName")
+            AppLogger.w(TAG, "Cannot delete a built-in package: $packageName")
             return false
         }
 
         val fileToDelete = File(externalConfigsDir, packageInfo.fileName)
         return try {
             if (fileToDelete.delete()) {
-                Log.d(TAG, "Successfully deleted package: $packageName")
+                AppLogger.d(TAG, "Successfully deleted package: $packageName")
                 loadAllPackages() // Refresh the package list
                 true
             } else {
-                Log.e(TAG, "Failed to delete package file: ${fileToDelete.absolutePath}")
+                AppLogger.e(TAG, "Failed to delete package file: ${fileToDelete.absolutePath}")
                 false
             }
         } catch (e: SecurityException) {
-            Log.e(TAG, "Security error while deleting package: $packageName", e)
+            AppLogger.e(TAG, "Security error while deleting package: $packageName", e)
             false
         }
     }
@@ -329,10 +329,10 @@ class AutomationPackageManager private constructor(private val context: Context)
             // 重新加载所有包以更新缓存
             loadAllPackages()
             
-            Log.d(TAG, "Successfully saved config for: ${packageInfo.name}")
+            AppLogger.d(TAG, "Successfully saved config for: ${packageInfo.name}")
             return "配置保存成功"
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to save config for: ${packageInfo.name}", e)
+            AppLogger.e(TAG, "Failed to save config for: ${packageInfo.name}", e)
             return "保存失败: ${e.message}"
         }
     }

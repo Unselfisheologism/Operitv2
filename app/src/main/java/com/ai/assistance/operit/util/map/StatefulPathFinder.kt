@@ -2,7 +2,7 @@ package com.ai.assistance.operit.util.map
 
 import java.util.PriorityQueue
 import kotlin.system.measureTimeMillis
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 
 /**
  * 带状态的路径搜索器，支持节点状态变异和回退搜索
@@ -122,22 +122,22 @@ class StatefulPathFinder(private val graph: StatefulGraph) {
             depth: Int
         ): StatefulPath? {
             visitedNodes++
-            Log.d("PathFinder", "DFS visiting: ${currentState.nodeId} with vars ${currentState.variables}, depth: $depth")
+            AppLogger.d("PathFinder", "DFS visiting: ${currentState.nodeId} with vars ${currentState.variables}, depth: $depth")
             
             // 深度限制
             if (depth > 20) {
-                Log.d("PathFinder", "  -> Depth limit exceeded")
+                AppLogger.d("PathFinder", "  -> Depth limit exceeded")
                 return null
             }
             if (currentWeight > maxDistance) {
-                Log.d("PathFinder", "  -> Max distance exceeded")
+                AppLogger.d("PathFinder", "  -> Max distance exceeded")
                 return null
             }
             
             // 检查是否到达目标
             if (currentState.nodeId == targetNodeId && 
                 (targetStatePredicate == null || targetStatePredicate(currentState))) {
-                Log.d("PathFinder", "  -> Target found!")
+                AppLogger.d("PathFinder", "  -> Target found!")
                 return StatefulPath(currentPath, currentEdges, currentWeight)
             }
             
@@ -146,7 +146,7 @@ class StatefulPathFinder(private val graph: StatefulGraph) {
             // 检查是否访问过相同状态
             if (stateKey in visitedStates) {
                 backtrackCount++
-                Log.d("PathFinder", "  -> State already visited, backtracking")
+                AppLogger.d("PathFinder", "  -> State already visited, backtracking")
                 return null
             }
             
@@ -156,13 +156,13 @@ class StatefulPathFinder(private val graph: StatefulGraph) {
             val dynamicConditions = availableConditions + currentState.variables
                 .filterValues { it is Boolean && it }
                 .keys
-            Log.d("PathFinder", "  -> Dynamic conditions: $dynamicConditions")
+            AppLogger.d("PathFinder", "  -> Dynamic conditions: $dynamicConditions")
             val validEdges = graph.getValidOutgoingEdges(currentState, dynamicConditions)
             exploredEdges += validEdges.size
-            Log.d("PathFinder", "  -> Found ${validEdges.size} valid edges")
+            AppLogger.d("PathFinder", "  -> Found ${validEdges.size} valid edges")
             
             for (edge in validEdges.sortedBy { it.weight }) {
-                Log.d("PathFinder", "    - Trying edge: ${edge.action} to ${edge.to}")
+                AppLogger.d("PathFinder", "    - Trying edge: ${edge.action} to ${edge.to}")
                 val nextState = edge.applyTransform(currentState, dynamicConditions, runtimeContext)
                 if (nextState != null) {
                     val result = dfs(
@@ -231,12 +231,12 @@ class StatefulPathFinder(private val graph: StatefulGraph) {
             if (currentKey in visited) continue
             visited.add(currentKey)
             visitedNodes++
-            Log.d("PathFinder", "Dijkstra visiting: ${currentState.nodeId} with vars ${currentState.variables}")
+            AppLogger.d("PathFinder", "Dijkstra visiting: ${currentState.nodeId} with vars ${currentState.variables}")
             
             // 检查是否到达目标
             if (currentState.nodeId == targetNodeId &&
                 (targetStatePredicate == null || targetStatePredicate(currentState))) {
-                Log.d("PathFinder", "  -> Target found!")
+                AppLogger.d("PathFinder", "  -> Target found!")
                 // 重建路径
                 val path = reconstructStatefulPath(currentState, previous, previousEdge)
                 return StandardSearchResult(path, visitedNodes, exploredEdges)
@@ -248,13 +248,13 @@ class StatefulPathFinder(private val graph: StatefulGraph) {
             val dynamicConditions = availableConditions + currentState.variables
                 .filterValues { it is Boolean && it }
                 .keys
-            Log.d("PathFinder", "  -> Dynamic conditions: $dynamicConditions")
+            AppLogger.d("PathFinder", "  -> Dynamic conditions: $dynamicConditions")
             val validEdges = graph.getValidOutgoingEdges(currentState, dynamicConditions)
             exploredEdges += validEdges.size
-            Log.d("PathFinder", "  -> Found ${validEdges.size} valid edges")
+            AppLogger.d("PathFinder", "  -> Found ${validEdges.size} valid edges")
             
             for (edge in validEdges) {
-                Log.d("PathFinder", "    - Trying edge: ${edge.action} to ${edge.to}")
+                AppLogger.d("PathFinder", "    - Trying edge: ${edge.action} to ${edge.to}")
                 val nextState = edge.applyTransform(currentState, dynamicConditions, runtimeContext)
                 if (nextState != null) {
                     val nextKey = nextState.getStateKey()

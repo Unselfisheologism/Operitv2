@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.components
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -56,21 +56,21 @@ fun ManagedDragonBonesView(
 ) {
     Box(modifier = modifier) {
         val animationLogicKey = remember(model) { Any() }
-        Log.d(TAG, "Recomposition. Model: ${model.skeletonPath}, Key: $animationLogicKey")
+        AppLogger.d(TAG, "Recomposition. Model: ${model.skeletonPath}, Key: $animationLogicKey")
 
         // Setup base and random animations on their respective layers
         LaunchedEffect(animationLogicKey, controller.animationNames) {
             val animNames = controller.animationNames
-            Log.d(TAG, "Animation effect triggered. Key: $animationLogicKey, Names count: ${animNames.size}, Names: ${animNames.joinToString(",")}")
+            AppLogger.d(TAG, "Animation effect triggered. Key: $animationLogicKey, Names count: ${animNames.size}, Names: ${animNames.joinToString(",")}")
 
             if (animNames.isEmpty()) {
-                Log.d(TAG, "Animation effect: No animations available. Returning.")
+                AppLogger.d(TAG, "Animation effect: No animations available. Returning.")
                 return@LaunchedEffect
             }
 
             // Start the base idle animation on the base layer, infinitely looping.
             if (animNames.contains(IDLE_ANIMATION_NAME)) {
-                Log.d(TAG, "Animation effect: Playing '$IDLE_ANIMATION_NAME'.")
+                AppLogger.d(TAG, "Animation effect: Playing '$IDLE_ANIMATION_NAME'.")
                 controller.fadeInAnimation(
                     IDLE_ANIMATION_NAME,
                     layer = BASE_ANIMATION_LAYER,
@@ -84,7 +84,7 @@ fun ManagedDragonBonesView(
                 while (true) {
                     delay(Random.nextLong(2000, 8000))
                     val randomAnim = availableAnims.random()
-                    Log.d(TAG, "Animation effect: Playing random animation '$randomAnim'.")
+                    AppLogger.d(TAG, "Animation effect: Playing random animation '$randomAnim'.")
                     controller.fadeInAnimation(
                         randomAnim,
                         layer = RANDOM_ANIMATION_LAYER,

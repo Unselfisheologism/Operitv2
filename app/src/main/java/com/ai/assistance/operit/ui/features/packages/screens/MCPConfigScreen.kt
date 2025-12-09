@@ -50,7 +50,7 @@ import com.ai.assistance.operit.data.mcp.plugins.MCPBridge
 import com.ai.assistance.operit.data.mcp.plugins.MCPBridgeClient
 import com.ai.assistance.operit.data.mcp.plugins.ServiceInfo
 import com.google.gson.JsonParser
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.Toast
 import androidx.compose.ui.res.stringResource
 import com.ai.assistance.operit.R
@@ -121,7 +121,7 @@ fun MCPConfigScreen(
     LaunchedEffect(Unit) {
         // 仅在首次加载时执行一次
         if (!initialAutoStartPerformed.value) {
-            android.util.Log.d("MCPConfigScreen", "初始化 - 检查服务器状态")
+            com.ai.assistance.operit.util.AppLogger.d("MCPConfigScreen", "初始化 - 检查服务器状态")
 
             // 从桥接器同步最新的服务运行状态
             mcpRepository.syncBridgeStatus()
@@ -131,19 +131,19 @@ fun MCPConfigScreen(
             // 只记录服务器状态，不再重复启动服务器(已由 Application 中的 initAndAutoStartPlugins 控制)
             val anyServerRunning = serverStatus.values.any { it.active }
             if (anyServerRunning) {
-                android.util.Log.d("MCPConfigScreen", "MCP服务器已在运行")
+                com.ai.assistance.operit.util.AppLogger.d("MCPConfigScreen", "MCP服务器已在运行")
             } else {
-                android.util.Log.d("MCPConfigScreen", "MCP服务器未运行")
+                com.ai.assistance.operit.util.AppLogger.d("MCPConfigScreen", "MCP服务器未运行")
             }
 
             // 读取并记录已安装的MCP插件列表，但不执行任何操作
-            android.util.Log.d("MCPConfigScreen", "已安装的MCP插件列表:")
+            com.ai.assistance.operit.util.AppLogger.d("MCPConfigScreen", "已安装的MCP插件列表:")
             installedPlugins.forEach { pluginId ->
                 try {
                     val isEnabled = mcpLocalServer.isServerEnabled(pluginId) // 从配置读取
-                    android.util.Log.d("MCPConfigScreen", "插件ID: $pluginId, 已启用: $isEnabled")
+                    com.ai.assistance.operit.util.AppLogger.d("MCPConfigScreen", "插件ID: $pluginId, 已启用: $isEnabled")
                 } catch (e: Exception) {
-                    android.util.Log.e("MCPConfigScreen", "无法读取插件 $pluginId 的启用状态: ${e.message}")
+                    com.ai.assistance.operit.util.AppLogger.e("MCPConfigScreen", "无法读取插件 $pluginId 的启用状态: ${e.message}")
                 }
             }
 
@@ -221,7 +221,7 @@ fun MCPConfigScreen(
     LaunchedEffect(installedPlugins, toolRefreshTrigger) {
         // 只有在安装了插件后才运行
         if (installedPlugins.isEmpty()) {
-            Log.d("MCPConfigScreen", "No installed plugins, clearing tool list.")
+            AppLogger.d("MCPConfigScreen", "No installed plugins, clearing tool list.")
             pluginToolsMap = emptyMap()
             return@LaunchedEffect
         }
@@ -229,7 +229,7 @@ fun MCPConfigScreen(
         // Give services a moment to initialize after starting
         delay(1000)
 
-        Log.d("MCPConfigScreen", "Fetching tools for installed services...")
+        AppLogger.d("MCPConfigScreen", "Fetching tools for installed services...")
 
         val toolsMap = mutableMapOf<String, List<String>>()
 
@@ -242,12 +242,12 @@ fun MCPConfigScreen(
 
                     if (serviceInfo != null && serviceInfo.toolNames.isNotEmpty()) {
                         toolsMap[pluginId] = serviceInfo.toolNames
-                        Log.d("MCPConfigScreen", "Plugin $pluginId has ${serviceInfo.toolNames.size} tools: ${serviceInfo.toolNames.joinToString(", ")}")
+                        AppLogger.d("MCPConfigScreen", "Plugin $pluginId has ${serviceInfo.toolNames.size} tools: ${serviceInfo.toolNames.joinToString(", ")}")
                     } else {
-                        Log.d("MCPConfigScreen", "Plugin $pluginId: no cached tools found.")
+                        AppLogger.d("MCPConfigScreen", "Plugin $pluginId: no cached tools found.")
                     }
                 } catch (e: Exception) {
-                    Log.e("MCPConfigScreen", "Error getting tools for plugin $pluginId: ${e.message}")
+                    AppLogger.e("MCPConfigScreen", "Error getting tools for plugin $pluginId: ${e.message}")
                 }
             }
 
@@ -257,12 +257,12 @@ fun MCPConfigScreen(
             if (toolsMap.isNotEmpty()) {
                 val totalTools = toolsMap.values.sumOf { it.size }
                 Toast.makeText(context, context.getString(R.string.tools_loaded, totalTools), Toast.LENGTH_SHORT).show()
-                Log.i("MCPConfigScreen", "Loaded $totalTools tools from ${toolsMap.size} plugins")
+                AppLogger.i("MCPConfigScreen", "Loaded $totalTools tools from ${toolsMap.size} plugins")
             } else {
-                Log.i("MCPConfigScreen", "No tools found for any installed plugins.")
+                AppLogger.i("MCPConfigScreen", "No tools found for any installed plugins.")
             }
         } catch (e: Exception) {
-            Log.e("MCPConfigScreen", "Error fetching tools", e)
+            AppLogger.e("MCPConfigScreen", "Error fetching tools", e)
             Toast.makeText(context, context.getString(R.string.tools_load_error, e.message), Toast.LENGTH_SHORT).show()
         }
     }
@@ -729,21 +729,21 @@ fun MCPConfigScreen(
                             if (configJsonInput.isNotBlank()) {
                                 isImporting = true
                                 scope.launch {
-                                    Log.d("MCPConfigScreen", "开始导入配置，内容长度: ${configJsonInput.length}")
+                                    AppLogger.d("MCPConfigScreen", "开始导入配置，内容长度: ${configJsonInput.length}")
                                     try {
                                         val result = mcpLocalServer.mergeConfigFromJson(configJsonInput)
                                         result.onSuccess { count ->
-                                            Log.i("MCPConfigScreen", "配置导入成功，合并了 $count 个服务器")
+                                            AppLogger.i("MCPConfigScreen", "配置导入成功，合并了 $count 个服务器")
                                             Toast.makeText(context, "已合并 $count 个服务器配置", Toast.LENGTH_SHORT).show()
                                             mcpRepository.refreshPluginList()
                                             configJsonInput = ""
                                             showImportDialog = false
                                         }.onFailure { error ->
-                                            Log.e("MCPConfigScreen", "配置导入失败: ${error.message}", error)
+                                            AppLogger.e("MCPConfigScreen", "配置导入失败: ${error.message}", error)
                                             Toast.makeText(context, "✗ 合并失败: ${error.message}", Toast.LENGTH_LONG).show()
                                         }
                                     } catch (e: Exception) {
-                                        Log.e("MCPConfigScreen", "配置导入异常", e)
+                                        AppLogger.e("MCPConfigScreen", "配置导入异常", e)
                                         Toast.makeText(context, "✗ 导入异常: ${e.message}", Toast.LENGTH_LONG).show()
                                     } finally {
                                         isImporting = false

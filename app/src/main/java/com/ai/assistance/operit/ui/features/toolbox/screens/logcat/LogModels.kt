@@ -26,20 +26,3 @@ enum class LogLevel(val displayName: String, val symbol: String, val color: Colo
     SILENT("静默", "S", Color(0xFF607D8B)),
     UNKNOWN("未知", "?", Color(0xFF9E9E9E))
 }
-
-/** 预设过滤分类 */
-enum class FilterCategory(val displayName: String) {
-    LEVEL("日志级别"),
-    SYSTEM("系统过滤"),
-    APP("应用过滤"),
-    CUSTOM("自定义过滤")
-}
-
-/** 预设过滤器 */
-data class PresetFilter(
-        val name: String,
-        val filter: String,
-        val description: String,
-        val category: FilterCategory,
-        val icon: ImageVector
-) 

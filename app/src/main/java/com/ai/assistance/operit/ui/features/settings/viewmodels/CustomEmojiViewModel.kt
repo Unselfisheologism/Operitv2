@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.features.settings.viewmodels
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ai.assistance.operit.data.model.CustomEmoji
@@ -84,7 +84,9 @@ class CustomEmojiViewModel(context: Context) : ViewModel() {
                     successCount++
                 } else {
                     failCount++
-                    Log.e(TAG, "Failed to add emoji from URI: $uri", result.exceptionOrNull())
+                    result.exceptionOrNull()?.let { ex ->
+                        AppLogger.e(TAG, "Failed to add emoji from URI: $uri", ex)
+                    } ?: AppLogger.e(TAG, "Failed to add emoji from URI: $uri")
                 }
             }
 
@@ -116,7 +118,9 @@ class CustomEmojiViewModel(context: Context) : ViewModel() {
             if (result.isSuccess) {
                 _successMessage.value = "表情已删除"
             } else {
-                Log.e(TAG, "Failed to delete emoji: $emojiId", result.exceptionOrNull())
+                result.exceptionOrNull()?.let { ex ->
+                    AppLogger.e(TAG, "Failed to delete emoji: $emojiId", ex)
+                } ?: AppLogger.e(TAG, "Failed to delete emoji: $emojiId")
                 _errorMessage.value = "删除失败，详情请看日志"
             }
         }
@@ -141,7 +145,9 @@ class CustomEmojiViewModel(context: Context) : ViewModel() {
                 // 切换到第一个内置类别
                 _selectedCategory.value = CustomEmojiPreferences.BUILTIN_EMOTIONS.first()
             } else {
-                Log.e(TAG, "Failed to delete category: $category", result.exceptionOrNull())
+                result.exceptionOrNull()?.let { ex ->
+                    AppLogger.e(TAG, "Failed to delete category: $category", ex)
+                } ?: AppLogger.e(TAG, "Failed to delete category: $category")
                 _errorMessage.value = "删除失败，详情请看日志"
             }
         }
@@ -217,7 +223,7 @@ class CustomEmojiViewModel(context: Context) : ViewModel() {
                 _selectedCategory.value = CustomEmojiPreferences.BUILTIN_EMOTIONS.first()
             } catch (e: Exception) {
                 _isLoading.value = false
-                Log.e(TAG, "Failed to reset emojis", e)
+                AppLogger.e(TAG, "Failed to reset emojis", e)
                 _errorMessage.value = "重置失败: ${e.message}"
             }
         }

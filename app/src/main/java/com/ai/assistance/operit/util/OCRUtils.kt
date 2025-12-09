@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.annotation.WorkerThread
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
@@ -108,11 +108,11 @@ object OCRUtils {
                         newWidth > maxDimension ||
                         newHeight > maxDimension
         ) {
-            Log.d(TAG, "Bitmap already large enough, not upscaling for OCR.")
+            AppLogger.d(TAG, "Bitmap already large enough, not upscaling for OCR.")
             return bitmap
         }
 
-        Log.d(
+        AppLogger.d(
                 TAG,
                 "Upscaling bitmap from ${bitmap.width}x${bitmap.height} to ${newWidth}x${newHeight} for OCR."
         )
@@ -152,7 +152,7 @@ object OCRUtils {
             val result = processImage(image, language)
             OCRResult.Success(result)
         } catch (e: Exception) {
-            Log.e(TAG, "Error recognizing text from bitmap: ${e.message}", e)
+            AppLogger.e(TAG, "Error recognizing text from bitmap: ${e.message}", e)
             OCRResult.Error(e.message ?: "Unknown error")
         } finally {
             // 如果创建了新的Bitmap，则回收它
@@ -185,10 +185,10 @@ object OCRUtils {
                 val result = processImage(image, language)
                 OCRResult.Success(result)
             } catch (e: IOException) {
-                Log.e(TAG, "Error reading image: ${e.message}", e)
+                AppLogger.e(TAG, "Error reading image: ${e.message}", e)
                 OCRResult.Error("无法读取图像文件: ${e.message}")
             } catch (e: Exception) {
-                Log.e(TAG, "Error recognizing text from uri: ${e.message}", e)
+                AppLogger.e(TAG, "Error recognizing text from uri: ${e.message}", e)
                 OCRResult.Error(e.message ?: "Unknown error")
             }
         }
@@ -208,7 +208,7 @@ object OCRUtils {
                 }
                         ?: OCRResult.Error("无法打开URI的输入流")
             } catch (e: Exception) {
-                Log.e(TAG, "Error recognizing text from uri (high quality): ${e.message}", e)
+                AppLogger.e(TAG, "Error recognizing text from uri (high quality): ${e.message}", e)
                 OCRResult.Error(e.message ?: "Unknown error on high quality path")
             }
         }
@@ -222,7 +222,7 @@ object OCRUtils {
                         .process(image)
                         .addOnSuccessListener { text -> continuation.resume(text) }
                         .addOnFailureListener { e ->
-                            Log.e(TAG, "Text recognition failed: ${e.message}", e)
+                            AppLogger.e(TAG, "Text recognition failed: ${e.message}", e)
                             continuation.resumeWithException(e)
                         }
             }
@@ -279,7 +279,7 @@ object OCRUtils {
         return when (result) {
             is OCRResult.Success -> result.getFullText()
             is OCRResult.Error -> {
-                Log.e(TAG, "Text recognition failed: ${result.message}")
+                AppLogger.e(TAG, "Text recognition failed: ${result.message}")
                 ""
             }
         }
@@ -360,7 +360,7 @@ object OCRUtils {
                     }
                     return@withContext tempFile
                 } catch (e: IOException) {
-                    Log.e(TAG, "Failed to save bitmap to temp file", e)
+                    AppLogger.e(TAG, "Failed to save bitmap to temp file", e)
                     return@withContext null
                 }
             }

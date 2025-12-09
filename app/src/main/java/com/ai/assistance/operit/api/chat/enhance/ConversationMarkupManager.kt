@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.api.chat.enhance
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.model.ToolResult
 
 /**

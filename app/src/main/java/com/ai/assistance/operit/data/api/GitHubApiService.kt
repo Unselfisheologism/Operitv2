@@ -197,20 +197,20 @@ class GitHubApiService(private val context: Context) {
             
             if (response.isSuccessful && responseBody != null) {
                 try {
-                    android.util.Log.d("GitHubApiService", "Token response: $responseBody")
+                    com.ai.assistance.operit.util.AppLogger.d("GitHubApiService", "Token response: $responseBody")
                     val tokenResponse = json.decodeFromString<GitHubAccessTokenResponse>(responseBody)
                     Result.success(tokenResponse)
                 } catch (e: Exception) {
-                    android.util.Log.e("GitHubApiService", "Failed to parse token response: $responseBody", e)
+                    com.ai.assistance.operit.util.AppLogger.e("GitHubApiService", "Failed to parse token response: $responseBody", e)
                     Result.failure(Exception("Failed to parse token response: ${e.message}. Response: $responseBody"))
                 }
             } else {
                 val errorMsg = "HTTP ${response.code}: ${response.message}. Response: $responseBody"
-                android.util.Log.e("GitHubApiService", errorMsg)
+                com.ai.assistance.operit.util.AppLogger.e("GitHubApiService", errorMsg)
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
-            android.util.Log.e("GitHubApiService", "Exception in getAccessToken", e)
+            com.ai.assistance.operit.util.AppLogger.e("GitHubApiService", "Exception in getAccessToken", e)
             Result.failure(e)
         }
     }

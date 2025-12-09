@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.system.action
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import com.ai.assistance.operit.data.preferences.androidPermissionPreferences
 
@@ -40,7 +40,7 @@ class ActionListenerFactory {
             // 缓存监听器
             listeners[permissionLevel] = listener
 
-            Log.d(TAG, "Created action listener for permission level: $permissionLevel")
+            AppLogger.d(TAG, "Created action listener for permission level: $permissionLevel")
             return listener
         }
 
@@ -67,13 +67,13 @@ class ActionListenerFactory {
                 val permStatus = listener.hasPermission()
 
                 if (listener.isAvailable() && permStatus.granted) {
-                    Log.d(TAG, "Found highest available action listener: ${listener.getPermissionLevel()}")
+                    AppLogger.d(TAG, "Found highest available action listener: ${listener.getPermissionLevel()}")
                     return Pair(listener, permStatus)
                 }
             }
 
             // 如果没有找到可用的监听器，返回标准监听器（至少能监听基本操作）
-            Log.d(TAG, "No available action listener found, falling back to STANDARD")
+            AppLogger.d(TAG, "No available action listener found, falling back to STANDARD")
             val standardListener = getListener(context, AndroidPermissionLevel.STANDARD)
             return Pair(standardListener, standardListener.hasPermission())
         }
@@ -90,7 +90,7 @@ class ActionListenerFactory {
                 val actualLevel = preferredLevel ?: AndroidPermissionLevel.STANDARD
                 return getListener(context, actualLevel)
             } catch (e: Exception) {
-                Log.e(TAG, "Error getting preferred permission level, falling back to STANDARD", e)
+                AppLogger.e(TAG, "Error getting preferred permission level, falling back to STANDARD", e)
                 return getListener(context, AndroidPermissionLevel.STANDARD)
             }
         }
@@ -112,10 +112,10 @@ class ActionListenerFactory {
         fun clearCache(permissionLevel: AndroidPermissionLevel? = null) {
             if (permissionLevel != null) {
                 listeners.remove(permissionLevel)
-                Log.d(TAG, "Cleared action listener cache for level: $permissionLevel")
+                AppLogger.d(TAG, "Cleared action listener cache for level: $permissionLevel")
             } else {
                 listeners.clear()
-                Log.d(TAG, "Cleared all action listener caches")
+                AppLogger.d(TAG, "Cleared all action listener caches")
             }
         }
 
@@ -150,11 +150,11 @@ class ActionListenerFactory {
                     val stopped = listener.stopListening()
                     if (!stopped) {
                         allStopped = false
-                        Log.w(TAG, "Failed to stop listener: ${listener.getPermissionLevel()}")
+                        AppLogger.w(TAG, "Failed to stop listener: ${listener.getPermissionLevel()}")
                     }
                 }
             }
-            Log.d(TAG, "All listeners stop result: $allStopped")
+            AppLogger.d(TAG, "All listeners stop result: $allStopped")
             return allStopped
         }
     }

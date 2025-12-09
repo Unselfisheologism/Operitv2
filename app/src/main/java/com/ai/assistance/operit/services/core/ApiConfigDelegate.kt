@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.services.core
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.EnhancedAIService
 import com.ai.assistance.operit.data.model.ApiProviderType
 import com.ai.assistance.operit.data.model.FunctionType
@@ -136,7 +136,7 @@ class ApiConfigDelegate(
                     _activeConfigId.value = chatConfigId
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "初始化功能配置映射时出错", e)
+                AppLogger.e(TAG, "初始化功能配置映射时出错", e)
             }
         }
 
@@ -153,7 +153,7 @@ class ApiConfigDelegate(
                             _isInitialized.value = true
                         }
             } catch (e: Exception) {
-                Log.e(TAG, "收集模型配置时出错", e)
+                AppLogger.e(TAG, "收集模型配置时出错", e)
                 _isInitialized.value = true
             }
         }
@@ -163,9 +163,9 @@ class ApiConfigDelegate(
 
         // 异步创建AI服务实例，避免在主线程上执行阻塞操作
         coroutineScope.launch(Dispatchers.IO) {
-            Log.d(TAG, "开始在后台线程创建EnhancedAIService")
+            AppLogger.d(TAG, "开始在后台线程创建EnhancedAIService")
             val enhancedAiService = EnhancedAIService.getInstance(context)
-            Log.d(TAG, "EnhancedAIService创建完成")
+            AppLogger.d(TAG, "EnhancedAIService创建完成")
             withContext(Dispatchers.Main) {
                 onConfigChanged(enhancedAiService)
             }
@@ -251,7 +251,7 @@ class ApiConfigDelegate(
     fun useDefaultConfig(): Boolean {
         // 异步创建服务，避免阻塞
         coroutineScope.launch(Dispatchers.IO) {
-            Log.d(TAG, "使用默认配置初始化服务")
+            AppLogger.d(TAG, "使用默认配置初始化服务")
             val enhancedAiService = EnhancedAIService.getInstance(context)
             withContext(Dispatchers.Main) {
                 // 通知ViewModel配置已更改
@@ -296,7 +296,7 @@ class ApiConfigDelegate(
                         _apiProviderType.value
                 )
 
-                Log.d(TAG, "API配置已保存到ModelConfigManager")
+                AppLogger.d(TAG, "API配置已保存到ModelConfigManager")
 
                 // 在IO线程上创建服务，避免阻塞
                 val enhancedAiService = withContext(Dispatchers.IO) {
@@ -309,7 +309,7 @@ class ApiConfigDelegate(
                 // 更新已配置状态
                 _isConfigured.value = true
             } catch (e: Exception) {
-                Log.e(TAG, "保存API密钥失败: ${e.message}", e)
+                AppLogger.e(TAG, "保存API密钥失败: ${e.message}", e)
             }
         }
     }

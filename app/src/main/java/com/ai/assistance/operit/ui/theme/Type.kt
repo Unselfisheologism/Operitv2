@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.theme
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -64,7 +64,7 @@ fun loadCustomFontFamily(context: Context, fontPath: String): FontFamily? {
         }
         
         if (!file.exists()) {
-            Log.e("TypeKt", "Font file does not exist: $fontPath")
+            AppLogger.e("TypeKt", "Font file does not exist: $fontPath")
             return null
         }
         
@@ -72,7 +72,7 @@ fun loadCustomFontFamily(context: Context, fontPath: String): FontFamily? {
             Font(file)
         )
     } catch (e: Exception) {
-        Log.e("TypeKt", "Error loading custom font from $fontPath", e)
+        AppLogger.e("TypeKt", "Error loading custom font from $fontPath", e)
         null
     }
 }

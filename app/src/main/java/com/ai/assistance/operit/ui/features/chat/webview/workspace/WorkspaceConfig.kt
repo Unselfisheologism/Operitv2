@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.chat.webview.workspace
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -68,7 +68,7 @@ object WorkspaceConfigReader {
         val configFile = File(workspacePath, ".operit/config.json")
         
         if (!configFile.exists()) {
-            Log.d(TAG, "Config file not found at ${configFile.absolutePath}, using default")
+            AppLogger.d(TAG, "Config file not found at ${configFile.absolutePath}, using default")
             return getDefaultWebConfig()
         }
 
@@ -76,7 +76,7 @@ object WorkspaceConfigReader {
             val content = configFile.readText()
             json.decodeFromString<WorkspaceConfig>(content)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse config file: ${e.message}", e)
+            AppLogger.e(TAG, "Failed to parse config file: ${e.message}", e)
             getDefaultWebConfig()
         }
     }

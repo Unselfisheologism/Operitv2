@@ -4,7 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
@@ -58,7 +58,7 @@ object DocumentConversionUtil {
             document.close()
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to convert text to PDF", e)
+            AppLogger.e(TAG, "Failed to convert text to PDF", e)
             false
         }
     }
@@ -79,7 +79,7 @@ object DocumentConversionUtil {
                     try {
                         document.setAllSecurityToBeRemoved(true)
                     } catch (e: Exception) {
-                        Log.e(TAG, "Failed to decrypt PDF, text extraction may fail.", e)
+                        AppLogger.e(TAG, "Failed to decrypt PDF, text extraction may fail.", e)
                     }
                 }
                 PDFTextStripper().getText(document)
@@ -92,16 +92,16 @@ object DocumentConversionUtil {
                 return true
             } else {
                 // Fallback to OCR
-                Log.d(TAG, "Direct text extraction yielded little or no text. Falling back to OCR.")
+                AppLogger.d(TAG, "Direct text extraction yielded little or no text. Falling back to OCR.")
                 return runBlocking {
                     convertPdfToTextWithOcr(context, sourceFile, targetFile)
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error during PDF text extraction process", e)
+            AppLogger.e(TAG, "Error during PDF text extraction process", e)
             // If even the initial loading fails, try OCR as a last resort
             return runBlocking {
-                Log.d(TAG, "Initial PDF load failed. Attempting OCR as last resort.")
+                AppLogger.d(TAG, "Initial PDF load failed. Attempting OCR as last resort.")
                 convertPdfToTextWithOcr(context, sourceFile, targetFile)
             }
         }
@@ -121,7 +121,7 @@ object DocumentConversionUtil {
             
             val pageCount = pdfRenderer.pageCount
             if (pageCount == 0) {
-                Log.w(TAG, "PDF has no pages, OCR cannot proceed.")
+                AppLogger.w(TAG, "PDF has no pages, OCR cannot proceed.")
                 return false
             }
 
@@ -148,14 +148,14 @@ object DocumentConversionUtil {
             }
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Error during OCR PDF conversion", e)
+            AppLogger.e(TAG, "Error during OCR PDF conversion", e)
             return false
         } finally {
             try {
                 pdfRenderer?.close()
                 fileDescriptor?.close()
             } catch (e: IOException) {
-                Log.e(TAG, "Error closing PDF resources in OCR fallback", e)
+                AppLogger.e(TAG, "Error closing PDF resources in OCR fallback", e)
             }
         }
     }
@@ -213,11 +213,11 @@ object DocumentConversionUtil {
 
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting PDF to image using Android PdfRenderer", e)
+            AppLogger.e(TAG, "Error converting PDF to image using Android PdfRenderer", e)
 
             // Simple fallback to create a text file with the image extension
             try {
-                Log.w(TAG, "PDF to image conversion failed, creating simple placeholder image")
+                AppLogger.w(TAG, "PDF to image conversion failed, creating simple placeholder image")
                 // Create a simple placeholder text file with the image extension
                 FileOutputStream(targetFile).bufferedWriter().use { writer ->
                     writer.write("PDF Preview not available - this is a placeholder file.\n")
@@ -226,7 +226,7 @@ object DocumentConversionUtil {
                 }
                 return true
             } catch (e2: Exception) {
-                Log.e(TAG, "Fallback approach also failed", e2)
+                AppLogger.e(TAG, "Fallback approach also failed", e2)
                 return false
             }
         }
@@ -244,7 +244,7 @@ object DocumentConversionUtil {
             when {
                 // Convert DOC to DOCX
                 sourceExt == "doc" && targetExt == "docx" -> {
-                    Log.d(TAG, "Converting DOC to DOCX")
+                    AppLogger.d(TAG, "Converting DOC to DOCX")
                     FileInputStream(sourceFile).use { fis ->
                         // Load the DOC file
                         val doc = HWPFDocument(fis)
@@ -305,7 +305,7 @@ object DocumentConversionUtil {
 
                 // Convert DOCX to DOC (improved conversion)
                 sourceExt == "docx" && targetExt == "doc" -> {
-                    Log.d(TAG, "Converting DOCX to DOC (enhanced conversion)")
+                    AppLogger.d(TAG, "Converting DOCX to DOC (enhanced conversion)")
                     FileInputStream(sourceFile).use { fis ->
                         // Load the DOCX file
                         val docx = XWPFDocument(fis)
@@ -338,7 +338,7 @@ object DocumentConversionUtil {
                             tempDocxFile.delete()
                             return true
                         } catch (e: Exception) {
-                            Log.e(TAG, "Error during DOCX to DOC final conversion", e)
+                            AppLogger.e(TAG, "Error during DOCX to DOC final conversion", e)
                             return false
                         }
                     }
@@ -346,7 +346,7 @@ object DocumentConversionUtil {
                 else -> return false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting between DOC formats", e)
+            AppLogger.e(TAG, "Error converting between DOC formats", e)
             return false
         }
     }
@@ -387,7 +387,7 @@ object DocumentConversionUtil {
                         tempFile.delete()
                         return true
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error during HTML to DOC conversion", e)
+                        AppLogger.e(TAG, "Error during HTML to DOC conversion", e)
                         tempFile.delete()
                         return false
                     }
@@ -435,12 +435,12 @@ object DocumentConversionUtil {
                     return true
                 }
                 else -> {
-                    Log.w(TAG, "Conversion from HTML to $targetExt not implemented")
+                    AppLogger.w(TAG, "Conversion from HTML to $targetExt not implemented")
                     return false
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting from HTML", e)
+            AppLogger.e(TAG, "Error converting from HTML", e)
             return false
         }
     }
@@ -626,12 +626,12 @@ object DocumentConversionUtil {
                     return false
                 }
                 else -> {
-                    Log.w(TAG, "HTML conversion not implemented for $sourceExt")
+                    AppLogger.w(TAG, "HTML conversion not implemented for $sourceExt")
                     return false
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting to HTML", e)
+            AppLogger.e(TAG, "Error converting to HTML", e)
             return false
         }
     }
@@ -643,7 +643,7 @@ object DocumentConversionUtil {
             sourceFile.copyTo(targetFile, overwrite = true)
             return true
         } catch (e: Exception) {
-            Log.e(TAG, "Error copying text file", e)
+            AppLogger.e(TAG, "Error copying text file", e)
             return false
         }
     }
@@ -666,7 +666,7 @@ object DocumentConversionUtil {
             }
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Error extracting text from DOC file", e)
+            AppLogger.e(TAG, "Error extracting text from DOC file", e)
             false
         }
     }
@@ -689,7 +689,7 @@ object DocumentConversionUtil {
             }
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Error extracting text from DOCX file", e)
+            AppLogger.e(TAG, "Error extracting text from DOCX file", e)
             false
         }
     }
@@ -735,7 +735,7 @@ object DocumentConversionUtil {
     /** Convert PDF to DOCX */
     fun convertPdfToDocx(context: Context, sourceFile: File, targetFile: File): Boolean {
         return try {
-            Log.d(TAG, "Starting PDF to DOCX conversion for ${sourceFile.name}")
+            AppLogger.d(TAG, "Starting PDF to DOCX conversion for ${sourceFile.name}")
 
             // Step 1: Extract text from PDF.
             // We create a temporary text file to store the extracted content.
@@ -743,7 +743,7 @@ object DocumentConversionUtil {
             val textExtractionSuccess = extractTextFromPdf(context, sourceFile, tempTextFile)
 
             if (!textExtractionSuccess) {
-                Log.e(TAG, "Failed to extract text from PDF, aborting DOCX conversion.")
+                AppLogger.e(TAG, "Failed to extract text from PDF, aborting DOCX conversion.")
                 tempTextFile.delete()
                 return false
             }
@@ -772,10 +772,10 @@ object DocumentConversionUtil {
                 }
             }
             
-            Log.d(TAG, "Successfully converted PDF to DOCX: ${targetFile.name}")
+            AppLogger.d(TAG, "Successfully converted PDF to DOCX: ${targetFile.name}")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting PDF to DOCX", e)
+            AppLogger.e(TAG, "Error converting PDF to DOCX", e)
             false
         }
     }
@@ -783,14 +783,14 @@ object DocumentConversionUtil {
     /** Convert Word (DOC/DOCX) to PDF */
     fun convertWordToPdf(context: Context, sourceFile: File, targetFile: File, sourceExt: String): Boolean {
         return try {
-            Log.d(TAG, "Starting Word to PDF conversion for ${sourceFile.name}")
+            AppLogger.d(TAG, "Starting Word to PDF conversion for ${sourceFile.name}")
 
             // Step 1: Extract text from the Word document into a temporary file.
             val tempTextFile = File(context.cacheDir, "temp_word_to_pdf_${System.currentTimeMillis()}.txt")
             val textExtractionSuccess = extractTextFromWord(sourceFile, tempTextFile, sourceExt)
 
             if (!textExtractionSuccess) {
-                Log.e(TAG, "Failed to extract text from Word file, aborting PDF conversion.")
+                AppLogger.e(TAG, "Failed to extract text from Word file, aborting PDF conversion.")
                 tempTextFile.delete()
                 return false
             }
@@ -802,14 +802,14 @@ object DocumentConversionUtil {
             tempTextFile.delete()
 
             if (pdfConversionSuccess) {
-                Log.d(TAG, "Successfully converted Word to PDF: ${targetFile.name}")
+                AppLogger.d(TAG, "Successfully converted Word to PDF: ${targetFile.name}")
                 true
             } else {
-                Log.e(TAG, "Failed to convert extracted text to PDF.")
+                AppLogger.e(TAG, "Failed to convert extracted text to PDF.")
                 false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting Word to PDF", e)
+            AppLogger.e(TAG, "Error converting Word to PDF", e)
             false
         }
     }

@@ -199,7 +199,7 @@ fun UserMessageComposable(message: ChatMessage, backgroundColor: Color, textColo
                                                 .value = true
                                         }
                                     } catch (e: Exception) {
-                                        android.util.Log.e(
+                                        com.ai.assistance.operit.util.AppLogger.e(
                                             "UserMessageComposable",
                                             "Error reading attachment file",
                                             e
@@ -463,7 +463,7 @@ private fun parseMessageContent(content: String): MessageParseResult {
                     val bytes = Base64.decode(imageData.base64, Base64.DEFAULT)
                     BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                 } catch (e: Exception) {
-                    android.util.Log.e("UserMessageComposable", "Failed to decode image: $id", e)
+                    com.ai.assistance.operit.util.AppLogger.e("UserMessageComposable", "Failed to decode image: $id", e)
                     null
                 }
                 imageLinks.add(ImageLinkData(id, bitmap))
@@ -648,7 +648,7 @@ private fun parseMessageContent(content: String): MessageParseResult {
         )
     } catch (e: Exception) {
         // 如果解析失败，返回原始内容
-        android.util.Log.e("UserMessageComposable", "Failed to parse message content", e)
+        com.ai.assistance.operit.util.AppLogger.e("UserMessageComposable", "Failed to parse message content", e)
         return MessageParseResult(cleanedContent, workspaceAttachments, replyInfo, imageLinks)
     }
 }

@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.Toast
 import java.io.File
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -153,7 +153,7 @@ fun ChatHistorySettingsScreen() {
                 
                 unboundWorkspaces = result
             } catch (e: Exception) {
-                Log.e("ChatHistorySettings", "获取无绑定工作区失败", e)
+                AppLogger.e("ChatHistorySettings", "获取无绑定工作区失败", e)
                 unboundWorkspaces = emptyList()
             }
         }
@@ -287,7 +287,7 @@ fun ChatHistorySettingsScreen() {
                                 // 刷新列表
                                 unboundWorkspaces = unboundWorkspaces.filter { it.fullPath !in selectedWorkspacePaths }
                             } catch (e: Exception) {
-                                Log.e("ChatHistorySettings", "删除工作区失败", e)
+                                AppLogger.e("ChatHistorySettings", "删除工作区失败", e)
                                 Toast.makeText(context, context.getString(R.string.delete_failed, e.localizedMessage ?: ""), Toast.LENGTH_LONG).show()
                             }
                         }

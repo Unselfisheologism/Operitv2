@@ -5,7 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.service.voice.VoiceInteractionSession
 import android.service.voice.VoiceInteractionSessionService
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.View
 import android.widget.FrameLayout
 import com.ai.assistance.operit.services.FloatingChatService
@@ -23,7 +23,7 @@ class OperitVoiceInteractionSessionService : VoiceInteractionSessionService() {
     }
     
     override fun onNewSession(args: Bundle?): VoiceInteractionSession {
-        Log.d(TAG, "Creating new voice interaction session")
+        AppLogger.d(TAG, "Creating new voice interaction session")
         return OperitVoiceInteractionSession(this)
     }
     
@@ -38,7 +38,7 @@ class OperitVoiceInteractionSessionService : VoiceInteractionSessionService() {
         
         override fun onShow(args: Bundle?, showFlags: Int) {
             super.onShow(args, showFlags)
-            Log.d(TAG, "Session show requested with flags: $showFlags")
+            AppLogger.d(TAG, "Session show requested with flags: $showFlags")
             
             // 启动悬浮窗服务来提供 AI 助手功能
             startFloatingChatService()
@@ -49,12 +49,12 @@ class OperitVoiceInteractionSessionService : VoiceInteractionSessionService() {
         
         override fun onHide() {
             super.onHide()
-            Log.d(TAG, "Session hide requested")
+            AppLogger.d(TAG, "Session hide requested")
             finish()
         }
         
         override fun onDestroy() {
-            Log.d(TAG, "Session destroyed")
+            AppLogger.d(TAG, "Session destroyed")
             super.onDestroy()
         }
         
@@ -68,9 +68,9 @@ class OperitVoiceInteractionSessionService : VoiceInteractionSessionService() {
                     putExtra("auto_start_voice", true)
                 }
                 context.startService(intent)
-                Log.d(TAG, "Floating chat service started")
+                AppLogger.d(TAG, "Floating chat service started")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to start floating chat service", e)
+                AppLogger.e(TAG, "Failed to start floating chat service", e)
             }
         }
     }

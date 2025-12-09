@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.toolbox.screens
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -75,7 +75,7 @@ fun StreamMarkdownDemoScreen(onBackClick: () -> Unit = {}) {
     // 为渲染器创建通道和流，使用key确保重置时能重新创建
     val (channel, markdownStream) =
             remember(streamKey) {
-                Log.d(TAG, "创建新的Channel和Stream实例 (key=$streamKey)")
+                AppLogger.d(TAG, "创建新的Channel和Stream实例 (key=$streamKey)")
                 val ch = Channel<Char>(Channel.UNLIMITED)
                 val stream = ch.consumeAsFlow().asStream()
                 ch to stream
@@ -88,7 +88,7 @@ fun StreamMarkdownDemoScreen(onBackClick: () -> Unit = {}) {
     // 在Composable销毁或streamKey改变时关闭通道以防泄漏
     DisposableEffect(streamKey) {
         onDispose {
-            Log.d(TAG, "关闭Channel (key=$streamKey)")
+            AppLogger.d(TAG, "关闭Channel (key=$streamKey)")
             channel.close()
         }
     }
@@ -119,12 +119,12 @@ fun StreamMarkdownDemoScreen(onBackClick: () -> Unit = {}) {
                     delay(delayMillis)
                 }
             } catch (e: CancellationException) {
-                Log.d(TAG, "流传输被取消")
+                AppLogger.d(TAG, "流传输被取消")
             } catch (e: Exception) {
-                Log.e(TAG, "流传输异常", e)
+                AppLogger.e(TAG, "流传输异常", e)
             } finally {
                 if (!channel.isClosedForSend) {
-                    Log.d(TAG, "流传输完成，关闭Channel")
+                    AppLogger.d(TAG, "流传输完成，关闭Channel")
                     channel.close()
                 }
                 isStreaming = false

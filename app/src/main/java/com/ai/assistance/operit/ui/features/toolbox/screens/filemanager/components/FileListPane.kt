@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.components
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -71,7 +71,7 @@ fun FileListPane(
                     error = result.error ?: "Unknown error"
                 }
             } catch (e: Exception) {
-                Log.e("FileListPane", "Error loading directory", e)
+                AppLogger.e("FileListPane", "Error loading directory", e)
                 error = "Error: ${e.message}"
             } finally {
                 isLoading = false

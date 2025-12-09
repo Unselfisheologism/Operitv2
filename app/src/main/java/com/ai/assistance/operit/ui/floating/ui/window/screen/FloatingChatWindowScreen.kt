@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.floating.ui.window.screen
 
 import android.annotation.SuppressLint
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.animation.core.*
 import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
@@ -305,7 +305,7 @@ private fun TitleBar(
                                 context.startActivity(intent)
                             }
                         } catch (e: Exception) {
-                            Log.e("FloatingChatWindow", "启动 MainActivity 失败", e)
+                            AppLogger.e("FloatingChatWindow", "启动 MainActivity 失败", e)
                         }
                         // 然后关闭悬浮窗
                         floatContext.onClose()
@@ -475,7 +475,7 @@ private fun ChatMessagesView(
                         viewModel.incrementStreamUpdateTrigger()
                     }
                 } catch (e: Exception) {
-                    Log.e("FloatingChatWindow", "Stream collection error", e)
+                    AppLogger.e("FloatingChatWindow", "Stream collection error", e)
                 }
             }
         }
@@ -662,7 +662,7 @@ private fun ColumnScope.InputTextField(
                 try {
                     focusRequester.requestFocus()
                 } catch (e: Exception) {
-                    Log.e("FloatingChatWindow", "Failed to request focus", e)
+                    AppLogger.e("FloatingChatWindow", "Failed to request focus", e)
                 }
             }
         }

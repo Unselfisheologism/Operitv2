@@ -3,7 +3,7 @@ package com.ai.assistance.operit.ui.permissions
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.material3.ColorScheme
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -140,7 +140,7 @@ class ToolPermissionSystem private constructor(private val context: Context) {
         // 不需要在这里预先注册工具的危险操作检查和描述生成器
         // 所有工具相关的信息都应该在AIToolHandler中通过统一的registerTool方法完成
         // 这个方法保留为空，以便在必要时进行一些全局初始化操作
-        Log.d(TAG, "工具权限系统已初始化 - 所有工具定义现在都在AIToolHandler中")
+        AppLogger.d(TAG, "工具权限系统已初始化 - 所有工具定义现在都在AIToolHandler中")
     }
     
     /**
@@ -202,7 +202,7 @@ class ToolPermissionSystem private constructor(private val context: Context) {
      * Check if a tool is allowed to execute
      */
     suspend fun checkToolPermission(tool: AITool): Boolean {
-        Log.d(TAG, "Starting permission check: ${tool.name}")
+        AppLogger.d(TAG, "Starting permission check: ${tool.name}")
         
         // Check global permission switch
         val masterSwitch = masterSwitchFlow.first()
@@ -238,7 +238,7 @@ class ToolPermissionSystem private constructor(private val context: Context) {
         // Get operation description
         val operationDescription = getOperationDescription(tool)
         
-        Log.d(TAG, "Requesting permission: ${tool.name}")
+        AppLogger.d(TAG, "Requesting permission: ${tool.name}")
         
         // Clear existing request
         currentPermissionCallback = null
@@ -250,13 +250,13 @@ class ToolPermissionSystem private constructor(private val context: Context) {
         permissionRequestInfo = requestInfo
         _permissionRequestState.value = requestInfo
         
-        Log.d(TAG, "Permission request state updated: ${tool.name}")
+        AppLogger.d(TAG, "Permission request state updated: ${tool.name}")
         
         return withTimeoutOrNull(PERMISSION_REQUEST_TIMEOUT_MS) {
             suspendCancellableCoroutine { continuation ->
                 // Set callback
                 currentPermissionCallback = { result ->
-                    Log.d(TAG, "Permission result received: $result for ${tool.name}")
+                    AppLogger.d(TAG, "Permission result received: $result for ${tool.name}")
                     // Clean up state
                     currentPermissionCallback = null
                     permissionRequestInfo = null
@@ -283,7 +283,7 @@ class ToolPermissionSystem private constructor(private val context: Context) {
                 mainHandler.post {
                     // Use overlay to show permission request
                     if (!permissionRequestOverlay.hasOverlayPermission()) {
-                        Log.w(TAG, "No overlay permission, requesting...")
+                        AppLogger.w(TAG, "No overlay permission, requesting...")
                         permissionRequestOverlay.requestOverlayPermission()
                         currentPermissionCallback?.invoke(PermissionRequestResult.DENY)
                     } else {
@@ -295,7 +295,7 @@ class ToolPermissionSystem private constructor(private val context: Context) {
             }
         } ?: run {
             // Timeout handling
-            Log.d(TAG, "Permission request timed out: ${tool.name}")
+            AppLogger.d(TAG, "Permission request timed out: ${tool.name}")
             currentPermissionCallback = null
             permissionRequestInfo = null
             _permissionRequestState.value = null

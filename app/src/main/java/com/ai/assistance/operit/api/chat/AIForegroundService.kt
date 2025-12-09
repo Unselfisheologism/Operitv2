@@ -12,7 +12,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.ai.assistance.operit.R
@@ -50,11 +50,11 @@ class AIForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning.set(true)
-        Log.d(TAG, "AI 前台服务创建。")
+        AppLogger.d(TAG, "AI 前台服务创建。")
         createNotificationChannel()
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
-        Log.d(TAG, "AI 前台服务已启动。")
+        AppLogger.d(TAG, "AI 前台服务已启动。")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -63,7 +63,7 @@ class AIForegroundService : Service() {
             characterName = it.getStringExtra(EXTRA_CHARACTER_NAME)
             replyContent = it.getStringExtra(EXTRA_REPLY_CONTENT)
             avatarUri = it.getStringExtra(EXTRA_AVATAR_URI)
-            Log.d(TAG, "收到通知数据 - 角色: $characterName, 内容长度: ${replyContent?.length}, 头像: $avatarUri")
+            AppLogger.d(TAG, "收到通知数据 - 角色: $characterName, 内容长度: ${replyContent?.length}, 头像: $avatarUri")
         }
         
         // 返回 START_NOT_STICKY 表示如果服务被杀死，系统不需要尝试重启它。
@@ -74,7 +74,7 @@ class AIForegroundService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         isRunning.set(false)
-        Log.d(TAG, "AI 前台服务已销毁。")
+        AppLogger.d(TAG, "AI 前台服务已销毁。")
         
         // 检查是否需要发送回复完成通知
         sendReplyNotificationIfEnabled()
@@ -118,12 +118,12 @@ class AIForegroundService : Service() {
      */
     private fun sendReplyNotificationIfEnabled() {
         try {
-            Log.d(TAG, "检查是否需要发送回复通知...")
+            AppLogger.d(TAG, "检查是否需要发送回复通知...")
             
             // 检查应用是否在前台
             val isAppInForeground = ActivityLifecycleManager.getCurrentActivity() != null
             if (isAppInForeground) {
-                Log.d(TAG, "应用在前台，无需发送通知")
+                AppLogger.d(TAG, "应用在前台，无需发送通知")
                 return
             }
             
@@ -134,11 +134,11 @@ class AIForegroundService : Service() {
             }
             
             if (!enableReplyNotification) {
-                Log.d(TAG, "回复通知已禁用，跳过发送")
+                AppLogger.d(TAG, "回复通知已禁用，跳过发送")
                 return
             }
             
-            Log.d(TAG, "准备发送AI回复通知...")
+            AppLogger.d(TAG, "准备发送AI回复通知...")
             
             // 清理回复内容，移除思考内容等
             val cleanedReplyContent = replyContent?.let { 
@@ -184,10 +184,10 @@ class AIForegroundService : Service() {
                     val bitmap = loadBitmapFromUri(avatarUriString)
                     if (bitmap != null) {
                         notificationBuilder.setLargeIcon(bitmap)
-                        Log.d(TAG, "成功加载头像到通知")
+                        AppLogger.d(TAG, "成功加载头像到通知")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "加载头像失败: ${e.message}", e)
+                    AppLogger.e(TAG, "加载头像失败: ${e.message}", e)
                 }
             }
             
@@ -196,9 +196,9 @@ class AIForegroundService : Service() {
             // 发送通知
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.notify(REPLY_NOTIFICATION_ID, notification)
-            Log.d(TAG, "AI回复通知已发送 (ID: $REPLY_NOTIFICATION_ID)")
+            AppLogger.d(TAG, "AI回复通知已发送 (ID: $REPLY_NOTIFICATION_ID)")
         } catch (e: Exception) {
-            Log.e(TAG, "发送AI回复通知失败: ${e.message}", e)
+            AppLogger.e(TAG, "发送AI回复通知失败: ${e.message}", e)
         }
     }
     
@@ -213,7 +213,7 @@ class AIForegroundService : Service() {
                 BitmapFactory.decodeStream(stream)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "从URI加载Bitmap失败: ${e.message}", e)
+            AppLogger.e(TAG, "从URI加载Bitmap失败: ${e.message}", e)
             null
         }
     }

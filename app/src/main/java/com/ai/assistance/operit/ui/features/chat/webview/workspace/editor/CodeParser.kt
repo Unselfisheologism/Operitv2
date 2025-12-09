@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.chat.webview.workspace.editor
 
 import android.graphics.Color
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.ui.features.chat.webview.workspace.editor.language.LanguageFactory
 import com.ai.assistance.operit.ui.features.chat.webview.workspace.editor.language.LanguageSupport
 import java.util.concurrent.ExecutorService
@@ -71,7 +71,7 @@ class CodeParser(private val codeText: ColorsText) : Runnable {
         
         // 如果没有找到语言支持，使用默认的JavaScript
         if (languageSupport == null) {
-            Log.w(TAG, "未找到语言支持: $language，使用默认的JavaScript")
+            AppLogger.w(TAG, "未找到语言支持: $language，使用默认的JavaScript")
             this.language = "javascript"
             languageSupport = LanguageFactory.getLanguageSupport("javascript")
         }
@@ -108,7 +108,7 @@ class CodeParser(private val codeText: ColorsText) : Runnable {
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "解析代码时出错", e)
+            AppLogger.e(TAG, "解析代码时出错", e)
         }
         
         running = false

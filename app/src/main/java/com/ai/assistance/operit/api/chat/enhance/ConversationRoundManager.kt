@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.api.chat.enhance
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -28,7 +28,7 @@ class ConversationRoundManager {
     fun initializeNewConversation() {
         currentResponseRound.set(0)
         roundContents.clear()
-        Log.d(TAG, "New conversation initialized")
+        AppLogger.d(TAG, "New conversation initialized")
     }
 
     /**
@@ -41,7 +41,7 @@ class ConversationRoundManager {
         // Simply update the content for the current round
         val currentRound = currentResponseRound.get()
         roundContents[currentRound] = content
-        // Log.d(TAG, "Updated content for round $currentRound")
+        // AppLogger.d(TAG, "Updated content for round $currentRound")
 
         return getDisplayContent()
     }
@@ -54,7 +54,7 @@ class ConversationRoundManager {
     fun startNewRound(): Int {
         val newRound = currentResponseRound.incrementAndGet()
         roundContents[newRound] = "" // Initialize empty content for the new round
-        Log.d(TAG, "Starting new round: $newRound")
+        AppLogger.d(TAG, "Starting new round: $newRound")
         return newRound
     }
 
@@ -137,6 +137,6 @@ class ConversationRoundManager {
     /** Clears all content. */
     fun clearContent() {
         roundContents.clear()
-        Log.d(TAG, "Content cleared")
+        AppLogger.d(TAG, "Content cleared")
     }
 }

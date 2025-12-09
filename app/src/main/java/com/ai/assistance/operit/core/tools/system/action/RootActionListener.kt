@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.system.action
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import com.ai.assistance.operit.core.tools.system.shell.ShellExecutorFactory
 import kotlinx.coroutines.CoroutineScope
@@ -42,10 +42,10 @@ class RootActionListener(private val context: Context) : ActionListener {
             val hasRoot = shellExecutor.isAvailable()
             rootAvailable = hasRoot
             
-            Log.d(TAG, "Root权限检查: $hasRoot")
+            AppLogger.d(TAG, "Root权限检查: $hasRoot")
             return hasRoot
         } catch (e: Exception) {
-            Log.e(TAG, "检查Root权限时出错", e)
+            AppLogger.e(TAG, "检查Root权限时出错", e)
             rootAvailable = false
             return false
         }
@@ -60,7 +60,7 @@ class RootActionListener(private val context: Context) : ActionListener {
                 ActionListener.PermissionStatus.denied("设备上没有Root权限")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "检查Root权限状态时出错", e)
+            AppLogger.e(TAG, "检查Root权限状态时出错", e)
             return ActionListener.PermissionStatus.denied("检查Root权限出错: ${e.message}")
         }
     }
@@ -72,10 +72,10 @@ class RootActionListener(private val context: Context) : ActionListener {
             onResult(hasRoot)
 
             if (!hasRoot) {
-                Log.d(TAG, "无法以编程方式请求Root权限")
+                AppLogger.d(TAG, "无法以编程方式请求Root权限")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "请求Root权限时出错", e)
+            AppLogger.e(TAG, "请求Root权限时出错", e)
             onResult(false)
         }
     }
@@ -101,14 +101,14 @@ class RootActionListener(private val context: Context) : ActionListener {
                 actionCallback = onAction
                 isListening.set(true)
 
-                Log.d(TAG, "开始Root权限级别的UI操作监听")
+                AppLogger.d(TAG, "开始Root权限级别的UI操作监听")
 
                 // 启动底层系统事件监控
                 startRootLevelMonitoring()
 
                 return@withContext ActionListener.ListeningResult.success("Root UI操作监听已启动")
             } catch (e: Exception) {
-                Log.e(TAG, "启动Root UI操作监听失败", e)
+                AppLogger.e(TAG, "启动Root UI操作监听失败", e)
                 isListening.set(false)
                 return@withContext ActionListener.ListeningResult.failure("启动失败: ${e.message}")
             }
@@ -129,10 +129,10 @@ class RootActionListener(private val context: Context) : ActionListener {
             
             stopRootLevelMonitoring()
 
-            Log.d(TAG, "Root UI操作监听已停止")
+            AppLogger.d(TAG, "Root UI操作监听已停止")
             return@withContext true
         } catch (e: Exception) {
-            Log.e(TAG, "停止Root UI操作监听失败", e)
+            AppLogger.e(TAG, "停止Root UI操作监听失败", e)
             return@withContext false
         }
     }
@@ -142,7 +142,7 @@ class RootActionListener(private val context: Context) : ActionListener {
      * 可以监听最底层的输入设备事件、内核事件等
      */
     private fun startRootLevelMonitoring() {
-        Log.d(TAG, "开始Root级别系统监控 - 直接监听内核输入设备和系统事件")
+        AppLogger.d(TAG, "开始Root级别系统监控 - 直接监听内核输入设备和系统事件")
         
         monitoringJob = CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -153,17 +153,17 @@ class RootActionListener(private val context: Context) : ActionListener {
                 }?.launchIn(this)
                 
                 process?.stderr?.onEach { line ->
-                    Log.w(TAG, "getevent stderr: $line")
+                    AppLogger.w(TAG, "getevent stderr: $line")
                 }?.launchIn(this)
                 
                 val exitCode = process?.waitFor()
-                Log.d(TAG, "getevent process exited with code $exitCode")
+                AppLogger.d(TAG, "getevent process exited with code $exitCode")
 
             } catch (e: Exception) {
-                Log.e(TAG, "Root级别监控任务出错", e)
+                AppLogger.e(TAG, "Root级别监控任务出错", e)
             } finally {
                 if (isActive) {
-                    Log.d(TAG, "Restarting root monitoring process...")
+                    AppLogger.d(TAG, "Restarting root monitoring process...")
                     startRootLevelMonitoring()
                 }
             }
@@ -174,7 +174,7 @@ class RootActionListener(private val context: Context) : ActionListener {
      * 停止Root级别的系统监控
      */
     private fun stopRootLevelMonitoring() {
-        Log.d(TAG, "停止Root级别系统监控")
+        AppLogger.d(TAG, "停止Root级别系统监控")
         monitoringJob?.cancel()
         process?.destroy()
         process = null
@@ -183,7 +183,7 @@ class RootActionListener(private val context: Context) : ActionListener {
     private fun parseTouchEvent(line: String) {
         // A simple parser for `getevent -l` output.
         // This is a placeholder and needs to be implemented properly.
-        Log.v(TAG, "Input event: $line")
+        AppLogger.v(TAG, "Input event: $line")
         if (line.contains("ABS_MT_POSITION_X")) {
             // Handle X coordinate
         } else if (line.contains("ABS_MT_POSITION_Y")) {
@@ -221,7 +221,7 @@ class RootActionListener(private val context: Context) : ActionListener {
             // }
             
         } catch (e: Exception) {
-            Log.e(TAG, "监听原始输入事件失败", e)
+            AppLogger.e(TAG, "监听原始输入事件失败", e)
         }
     }
 
@@ -237,7 +237,7 @@ class RootActionListener(private val context: Context) : ActionListener {
                 parseKernelEvents(result.stdout)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "监听内核事件失败", e)
+            AppLogger.e(TAG, "监听内核事件失败", e)
         }
     }
 
@@ -253,7 +253,7 @@ class RootActionListener(private val context: Context) : ActionListener {
                 parseProcessEvents(result.stdout)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "监听进程事件失败", e)
+            AppLogger.e(TAG, "监听进程事件失败", e)
         }
     }
 
@@ -263,7 +263,7 @@ class RootActionListener(private val context: Context) : ActionListener {
      */
     private fun parseInputDeviceInfo(deviceInfo: String) {
         // 解析输入设备信息，识别触摸屏等设备
-        Log.v(TAG, "解析输入设备信息: $deviceInfo")
+        AppLogger.v(TAG, "解析输入设备信息: $deviceInfo")
     }
 
     /**
@@ -273,7 +273,7 @@ class RootActionListener(private val context: Context) : ActionListener {
     private fun parseTouchEvents(eventData: String) {
         // 解析getevent输出的二进制触摸事件数据
         // 转换为ActionEvent并回调
-        Log.v(TAG, "解析触摸事件: $eventData")
+        AppLogger.v(TAG, "解析触摸事件: $eventData")
     }
 
     /**
@@ -283,7 +283,7 @@ class RootActionListener(private val context: Context) : ActionListener {
     private fun parseKernelEvents(kernelLog: String) {
         // 解析内核日志中的相关事件
         if (kernelLog.contains("input") || kernelLog.contains("touch")) {
-            Log.v(TAG, "检测到输入相关内核事件")
+            AppLogger.v(TAG, "检测到输入相关内核事件")
             
             actionCallback?.let { callback ->
                 val event = ActionListener.ActionEvent(
@@ -305,7 +305,7 @@ class RootActionListener(private val context: Context) : ActionListener {
      */
     private fun parseProcessEvents(processInfo: String) {
         // 解析进程状态变化，检测应用启动/关闭
-        Log.v(TAG, "解析进程事件: ${processInfo.take(100)}...")
+        AppLogger.v(TAG, "解析进程事件: ${processInfo.take(100)}...")
     }
 
     /**

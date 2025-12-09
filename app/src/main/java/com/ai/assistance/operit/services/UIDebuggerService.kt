@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
@@ -76,7 +76,7 @@ class UIDebuggerService : Service(), ViewModelStoreOwner {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "UI Debugger service started")
+        AppLogger.d(TAG, "UI Debugger service started")
         val notification = createNotification()
         startForeground(NOTIFICATION_ID, notification)
         lifecycleOwner.handleLifecycleEvent(androidx.lifecycle.Lifecycle.Event.ON_START)
@@ -87,7 +87,7 @@ class UIDebuggerService : Service(), ViewModelStoreOwner {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "UI Debugger service stopped")
+        AppLogger.d(TAG, "UI Debugger service stopped")
         lifecycleOwner.handleLifecycleEvent(androidx.lifecycle.Lifecycle.Event.ON_DESTROY)
         isServiceRunning.value = false
         windowManager.remove()

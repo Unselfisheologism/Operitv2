@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.api.chat.llmprovider
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.model.ApiProviderType
 import com.ai.assistance.operit.data.model.ModelOption
 import com.ai.assistance.operit.data.model.ModelParameter
@@ -81,9 +81,9 @@ class GeminiProvider(
         activeResponse?.let {
             try {
                 it.close()
-                Log.d(TAG, "已强制关闭Response流")
+                AppLogger.d(TAG, "已强制关闭Response流")
             } catch (e: Exception) {
-                Log.w(TAG, "关闭Response时出错: ${e.message}")
+                AppLogger.w(TAG, "关闭Response时出错: ${e.message}")
             }
         }
         activeResponse = null
@@ -92,12 +92,12 @@ class GeminiProvider(
         activeCall?.let {
             if (!it.isCanceled()) {
                 it.cancel()
-                Log.d(TAG, "已取消当前流式传输，Call已中断")
+                AppLogger.d(TAG, "已取消当前流式传输，Call已中断")
             }
         }
         activeCall = null
 
-        Log.d(TAG, "取消标志已设置，流读取将立即被中断")
+        AppLogger.d(TAG, "取消标志已设置，流读取将立即被中断")
     }
 
     // 重置Token计数
@@ -209,7 +209,7 @@ class GeminiProvider(
             put("args", args)
         }
         
-        Log.d(TAG, "XML→GeminiFunctionCall: $toolName")
+        AppLogger.d(TAG, "XML→GeminiFunctionCall: $toolName")
         
         // 从文本内容中移除tool标签
         val textContent = content.replace(match.value, "").trim()
@@ -254,7 +254,7 @@ class GeminiProvider(
             }
             
             functionResponses.add(functionResponse)
-            Log.d(TAG, "解析Gemini functionResponse: $toolName, content length=${resultContent.length}")
+            AppLogger.d(TAG, "解析Gemini functionResponse: $toolName, content length=${resultContent.length}")
             
             textContent = textContent.replace(match.value, "").trim()
         }
@@ -506,26 +506,26 @@ class GeminiProvider(
                 val chunkMessage = message.substring(start, end)
 
                 // 打印带有编号的日志
-                Log.d(tag, "$prefix Part ${i+1}/$chunkCount: $chunkMessage")
+                AppLogger.d(tag, "$prefix Part ${i+1}/$chunkCount: $chunkMessage")
             }
         } else {
             // 消息长度在限制之内，直接打印
-            Log.d(tag, "$prefix$message")
+            AppLogger.d(tag, "$prefix$message")
         }
     }
 
     // 日志辅助方法
     private fun logDebug(message: String) {
         if (DEBUG) {
-            Log.d(TAG, message)
+            AppLogger.d(TAG, message)
         }
     }
 
     private fun logError(message: String, throwable: Throwable? = null) {
         if (throwable != null) {
-            Log.e(TAG, message, throwable)
+            AppLogger.e(TAG, message, throwable)
         } else {
-            Log.e(TAG, message)
+            AppLogger.e(TAG, message)
         }
     }
 
@@ -552,7 +552,7 @@ class GeminiProvider(
                 tokenCacheManager.outputTokenCount
         )
 
-        Log.d(TAG, "发送消息到Gemini API, 模型: $modelName")
+        AppLogger.d(TAG, "发送消息到Gemini API, 模型: $modelName")
 
         val maxRetries = 3
         var retryCount = 0
@@ -585,7 +585,7 @@ class GeminiProvider(
                 val currentHistory: List<Pair<String, String>>
 
                 if (retryCount > 0 && receivedContent.isNotEmpty()) {
-                    Log.d(TAG, "【Gemini 重试】准备续写请求，已接收内容长度: ${receivedContent.length}")
+                    AppLogger.d(TAG, "【Gemini 重试】准备续写请求，已接收内容长度: ${receivedContent.length}")
                     currentMessage = message + "\n\n[SYSTEM NOTE] The previous response was cut off by a network error. You MUST continue from the exact point of interruption. Do not repeat any content. If you were in the middle of a code block or XML tag, complete it. Just output the text that would have come next."
                     val resumeHistory = chatHistory.toMutableList()
                     resumeHistory.add("model" to receivedContent.toString()) // Gemini uses 'model' role for assistant
@@ -614,7 +614,7 @@ class GeminiProvider(
                     activeResponse = response
                     try {
                         val duration = System.currentTimeMillis() - startTime
-                        Log.d(TAG, "收到初始响应, 耗时: ${duration}ms, 状态码: ${response.code}")
+                        AppLogger.d(TAG, "收到初始响应, 耗时: ${duration}ms, 状态码: ${response.code}")
 
                         emitConnectionStatus("连接成功，处理响应...")
 
@@ -639,7 +639,7 @@ class GeminiProvider(
                         }
                     } finally {
                         response.close()
-                        Log.d(TAG, "关闭响应连接")
+                        AppLogger.d(TAG, "关闭响应连接")
                     }
                 }
 
@@ -844,7 +844,7 @@ class GeminiProvider(
         val method = if (isStreaming) "streamGenerateContent" else "generateContent"
         val requestUrl = "$baseUrl/v1beta/models/$modelName:$method"
 
-        Log.d(TAG, "请求URL: $requestUrl")
+        AppLogger.d(TAG, "请求URL: $requestUrl")
 
         // 创建Request Builder
         val builder = Request.Builder()
@@ -892,7 +892,7 @@ class GeminiProvider(
             onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
             receivedContent: StringBuilder
     ) {
-        Log.d(TAG, "开始处理响应流")
+        AppLogger.d(TAG, "开始处理响应流")
         val responseBody = response.body ?: throw IOException("响应为空")
         val reader = responseBody.charStream().buffered()
 
@@ -1047,13 +1047,13 @@ class GeminiProvider(
                 }
             }
 
-            Log.d(TAG, "响应处理完成: 共${lineCount}行, ${jsonCount}个JSON块, 提取${contentCount}个内容块")
+            AppLogger.d(TAG, "响应处理完成: 共${lineCount}行, ${jsonCount}个JSON块, 提取${contentCount}个内容块")
 
             // 检查是否还有未解析完的JSON
             if (isCollectingJson && completeJsonBuilder.isNotEmpty()) {
                 try {
                     val finalJson = completeJsonBuilder.toString()
-                    Log.d(TAG, "处理最终收集的JSON，长度: ${finalJson.length}")
+                    AppLogger.d(TAG, "处理最终收集的JSON，长度: ${finalJson.length}")
 
                     val jsonContent =
                             if (jsonStartSymbol == '[') {
@@ -1120,7 +1120,7 @@ class GeminiProvider(
             onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
             receivedContent: StringBuilder
     ) {
-        Log.d(TAG, "开始处理非流式响应")
+        AppLogger.d(TAG, "开始处理非流式响应")
         val responseBody = response.body ?: throw IOException("响应为空")
         
         try {

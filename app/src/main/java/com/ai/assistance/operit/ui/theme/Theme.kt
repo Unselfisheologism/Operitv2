@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.net.Uri
 import android.os.Build
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.compose.foundation.Image
@@ -286,7 +286,7 @@ fun OperitTheme(content: @Composable () -> Unit) {
                                     setMediaItem(mediaItem)
                                     prepare()
                                 } catch (e: Exception) {
-                                    Log.e(
+                                    AppLogger.e(
                                             "OperitTheme",
                                             "Error loading video background: ${e.message}",
                                             e
@@ -312,7 +312,7 @@ fun OperitTheme(content: @Composable () -> Unit) {
                 exoPlayer?.clearMediaItems()
                 exoPlayer?.release() 
             } catch (e: Exception) {
-                Log.e("OperitTheme", "ExoPlayer释放错误", e)
+                AppLogger.e("OperitTheme", "ExoPlayer释放错误", e)
             }
         } 
     }
@@ -373,7 +373,7 @@ fun OperitTheme(content: @Composable () -> Unit) {
                     // 监听图片加载失败时的逻辑
                     LaunchedEffect(painter) {
                         if (painter.state is AsyncImagePainter.State.Error) {
-                            Log.e(
+                            AppLogger.e(
                                     "OperitTheme",
                                     "Error loading background image from URI: $backgroundImageUri"
                             )
@@ -382,12 +382,12 @@ fun OperitTheme(content: @Composable () -> Unit) {
                             if (uri.scheme == "file") {
                                 val file = uri.path?.let { File(it) }
                                 if (file == null || !file.exists()) {
-                                    Log.e(
+                                    AppLogger.e(
                                             "OperitTheme",
                                             "Internal file doesn't exist: ${file?.absolutePath}"
                                     )
                                 } else {
-                                    Log.e(
+                                    AppLogger.e(
                                             "OperitTheme",
                                             "File exists but couldn't be loaded: ${file.absolutePath}, size: ${file.length()}"
                                     )

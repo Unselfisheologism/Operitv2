@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.data.updates
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.ai.assistance.operit.R
@@ -35,7 +35,7 @@ class UpdateManager private constructor(private val context: Context) {
     val updateStatus: LiveData<UpdateStatus> = _updateStatus
 
     init {
-        Log.d(TAG, "UpdateManager initialized")
+        AppLogger.d(TAG, "UpdateManager initialized")
     }
 
     companion object {
@@ -90,7 +90,7 @@ class UpdateManager private constructor(private val context: Context) {
             val result = checkForUpdatesInternal(currentVersion)
             _updateStatus.postValue(result)
         } catch (e: Exception) {
-            Log.e(TAG, "Update check failed", e)
+            AppLogger.e(TAG, "Update check failed", e)
             _updateStatus.postValue(UpdateStatus.Error("更新检查失败: ${e.message}"))
         }
     }
@@ -132,7 +132,7 @@ class UpdateManager private constructor(private val context: Context) {
                     UpdateStatus.Error("无法获取更新信息。")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error checking for updates", e)
+                AppLogger.e(TAG, "Error checking for updates", e)
                 return@withContext UpdateStatus.Error("更新检查失败: ${e.message}")
             }
         }

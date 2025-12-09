@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.common.displays
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.util.LruCache
 import ru.noties.jlatexmath.JLatexMathDrawable
 
@@ -66,12 +66,12 @@ object LatexCache {
 
             // Store in cache
             cache.put(cacheKey, drawable)
-            Log.d(
+            AppLogger.d(
                     "LatexCache",
                     "Cache miss for formula: ${formula.take(20)}${if (formula.length > 20) "..." else ""}"
             )
         } else {
-            Log.d(
+            AppLogger.d(
                     "LatexCache",
                     "Cache hit for formula: ${formula.take(20)}${if (formula.length > 20) "..." else ""}"
             )
@@ -95,7 +95,7 @@ object LatexCache {
         var bitmap = bitmapCache.get(cacheKey)
 
         if (bitmap == null) {
-            Log.d(
+            AppLogger.d(
                     "LatexCache",
                     "Bitmap cache miss, rendering: ${formula.take(20)}${if (formula.length > 20) "..." else ""}"
             )
@@ -109,7 +109,7 @@ object LatexCache {
             // Store in bitmap cache
             bitmapCache.put(cacheKey, bitmap)
         } else {
-            Log.d(
+            AppLogger.d(
                     "LatexCache",
                     "Bitmap cache hit: ${formula.take(20)}${if (formula.length > 20) "..." else ""}"
             )
@@ -151,7 +151,7 @@ object LatexCache {
         val bitmapCount = bitmapCache.size()
         bitmapCache.evictAll()
 
-        Log.d("LatexCache", "All caches cleared. Freed ${bitmapCount} bitmaps")
+        AppLogger.d("LatexCache", "All caches cleared. Freed ${bitmapCount} bitmaps")
     }
 
     /** Build a cache key that uniquely identifies a formula with its styling parameters */
@@ -197,7 +197,7 @@ object LatexCache {
                     // 字段不存在，忽略
                 } catch (e: Exception) {
                     // 其他异常，使用日志但继续执行
-                    Log.d("LatexCache", "Error accessing $fieldName: ${e.message}")
+                    AppLogger.d("LatexCache", "Error accessing $fieldName: ${e.message}")
                 }
             }
             
@@ -209,7 +209,7 @@ object LatexCache {
             safeGetField("background")
             
         } catch (e: Exception) {
-            Log.w("LatexCache", "Error accessing builder properties: ${e.message}")
+            AppLogger.w("LatexCache", "Error accessing builder properties: ${e.message}")
             // Fallback to formula-only key if reflection fails
             return formula
         }

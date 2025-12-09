@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collect
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.content.SharedPreferences
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -240,12 +240,12 @@ class MCPMarketViewModel(
                         } else {
                             _errorMessage.value = "加载MCP市场数据失败: $errorMessage"
                         }
-                        Log.e(TAG, "Failed to load MCP market data", error)
+                        AppLogger.e(TAG, "Failed to load MCP market data", error)
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
-                Log.e(TAG, "Network error while loading MCP market data", e)
+                AppLogger.e(TAG, "Network error while loading MCP market data", e)
             } finally {
                 _isLoading.value = false
             }
@@ -260,7 +260,7 @@ class MCPMarketViewModel(
             try {
                 // 解析Issue中的安装信息
                 val installInfo = parseInstallationInfo(issue)
-                Log.d(TAG, "Parsed installation info: $installInfo")
+                AppLogger.d(TAG, "Parsed installation info: $installInfo")
                 
                 if (installInfo != null) {
                     val pluginInfo = MCPPluginParser.parsePluginInfo(issue)
@@ -276,7 +276,7 @@ class MCPMarketViewModel(
                         
                         if (!needsInstallation) {
                             // 不需要物理安装，直接合并配置
-                            Log.d(TAG, "Using config merge installation for plugin $pluginId (no physical installation needed)")
+                            AppLogger.d(TAG, "Using config merge installation for plugin $pluginId (no physical installation needed)")
                             val mcpLocalServer = MCPLocalServer.getInstance(context)
                             val mergeResult = mcpLocalServer.mergeConfigFromJson(installInfo.installConfig)
                             
@@ -295,11 +295,11 @@ class MCPMarketViewModel(
                                     "配置导入失败: ${error.message}",
                                     Toast.LENGTH_LONG
                                 ).show()
-                                Log.e(TAG, "Config merge failed for plugin $pluginId", error)
+                                AppLogger.e(TAG, "Config merge failed for plugin $pluginId", error)
                             }
                             return@launch
                         } else {
-                            Log.d(TAG, "Config contains commands that need physical installation, proceeding with normal installation flow")
+                            AppLogger.d(TAG, "Config contains commands that need physical installation, proceeding with normal installation flow")
                             // 继续执行下面的物理安装流程
                         }
                     }
@@ -340,17 +340,17 @@ class MCPMarketViewModel(
                                 "成功安装 ${issue.title}",
                                 Toast.LENGTH_SHORT
                             ).show()
-                            Log.i(TAG, "Successfully installed MCP: ${issue.title}")
+                            AppLogger.i(TAG, "Successfully installed MCP: ${issue.title}")
                         }
                         is com.ai.assistance.operit.data.mcp.InstallResult.Error -> {
                             _errorMessage.value = "安装失败: ${result.message}"
-                            Log.e(TAG, "Failed to install MCP ${issue.title}: ${result.message}")
+                            AppLogger.e(TAG, "Failed to install MCP ${issue.title}: ${result.message}")
                         }
                     }
                 } else {
                     _errorMessage.value = "无法解析安装信息，请查看Issue详情手动安装"
-                    Log.w(TAG, "Could not parse installation info from issue #${issue.number} ('${issue.title}'). URL: ${issue.html_url}")
-                    Log.d(TAG, "Issue body that failed to parse:\n${issue.body}")
+                    AppLogger.w(TAG, "Could not parse installation info from issue #${issue.number} ('${issue.title}'). URL: ${issue.html_url}")
+                    AppLogger.d(TAG, "Issue body that failed to parse:\n${issue.body}")
                 }
             } catch (e: Exception) {
                 // 确保清除安装状态
@@ -359,7 +359,7 @@ class MCPMarketViewModel(
                 _installProgress.value = _installProgress.value - pluginId
                 
                 _errorMessage.value = "安装失败: ${e.message}"
-                Log.e(TAG, "Failed to install MCP from issue #${issue.number}", e)
+                AppLogger.e(TAG, "Failed to install MCP from issue #${issue.number}", e)
             }
         }
     }
@@ -396,7 +396,7 @@ class MCPMarketViewModel(
 
                 result.fold(
                     onSuccess = { issue ->
-                        Log.d(TAG, "Successfully created issue #${issue.number}")
+                        AppLogger.d(TAG, "Successfully created issue #${issue.number}")
                         Toast.makeText(
                             context,
                             "MCP插件发布成功！",
@@ -412,13 +412,13 @@ class MCPMarketViewModel(
                         context.startActivity(intent)
                     },
                     onFailure = { error ->
-                        Log.e(TAG, "Failed to create issue", error)
+                        AppLogger.e(TAG, "Failed to create issue", error)
                         _errorMessage.value = "发布失败: ${error.message}"
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "发布失败: ${e.message}"
-                Log.e(TAG, "Failed to publish MCP", e)
+                AppLogger.e(TAG, "Failed to publish MCP", e)
             } finally {
                 _isLoading.value = false
             }
@@ -436,7 +436,7 @@ class MCPMarketViewModel(
             context.startActivity(intent)
         } catch (e: Exception) {
             _errorMessage.value = "启动登录失败: ${e.message}"
-            Log.e(TAG, "Failed to initiate GitHub login", e)
+            AppLogger.e(TAG, "Failed to initiate GitHub login", e)
         }
     }
 
@@ -447,21 +447,21 @@ class MCPMarketViewModel(
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-                Log.d(TAG, "Handling GitHub callback with code: $code")
+                AppLogger.d(TAG, "Handling GitHub callback with code: $code")
 
                 // 获取访问令牌
                 val tokenResult = githubApiService.getAccessToken(code)
                 
                 tokenResult.fold(
                     onSuccess = { tokenResponse ->
-                        Log.d(TAG, "Successfully obtained access token.")
+                        AppLogger.d(TAG, "Successfully obtained access token.")
                         // 获取用户信息
                         githubAuth.updateAccessToken(tokenResponse.access_token, tokenResponse.token_type)
                         
                         val userResult = githubApiService.getCurrentUser()
                         userResult.fold(
                             onSuccess = { user ->
-                                Log.d(TAG, "Successfully fetched user info for ${user.login}")
+                                AppLogger.d(TAG, "Successfully fetched user info for ${user.login}")
                                 githubAuth.saveAuthInfo(
                                     accessToken = tokenResponse.access_token,
                                     tokenType = tokenResponse.token_type,
@@ -475,18 +475,18 @@ class MCPMarketViewModel(
                                 ).show()
                             },
                             onFailure = { error ->
-                                Log.e(TAG, "Failed to get user info", error)
+                                AppLogger.e(TAG, "Failed to get user info", error)
                                 _errorMessage.value = "获取用户信息失败: ${error.message}"
                             }
                         )
                     },
                     onFailure = { error ->
-                        Log.e(TAG, "Failed to get access token", error)
+                        AppLogger.e(TAG, "Failed to get access token", error)
                         _errorMessage.value = "登录失败: ${error.message}"
                     }
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Exception during GitHub callback handling", e)
+                AppLogger.e(TAG, "Exception during GitHub callback handling", e)
                 _errorMessage.value = "登录过程中发生错误: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -504,7 +504,7 @@ class MCPMarketViewModel(
                 Toast.makeText(context, "已退出登录", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 _errorMessage.value = "退出登录失败: ${e.message}"
-                Log.e(TAG, "Failed to logout from GitHub", e)
+                AppLogger.e(TAG, "Failed to logout from GitHub", e)
             }
         }
     }
@@ -551,12 +551,12 @@ class MCPMarketViewModel(
                     },
                     onFailure = { error ->
                         _errorMessage.value = "加载已发布插件失败: ${error.message}"
-                        Log.e(TAG, "Failed to load user published plugins", error)
+                        AppLogger.e(TAG, "Failed to load user published plugins", error)
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "网络错误: ${e.message}"
-                Log.e(TAG, "Network error while loading user published plugins", e)
+                AppLogger.e(TAG, "Network error while loading user published plugins", e)
             } finally {
                 _isLoading.value = false
             }
@@ -605,7 +605,7 @@ class MCPMarketViewModel(
 
                 result.fold(
                     onSuccess = { updatedIssue ->
-                        Log.d(TAG, "Successfully updated issue #${issueNumber}")
+                        AppLogger.d(TAG, "Successfully updated issue #${issueNumber}")
                         Toast.makeText(
                             context,
                             "插件信息更新成功！",
@@ -616,13 +616,13 @@ class MCPMarketViewModel(
                         loadUserPublishedPlugins()
                     },
                     onFailure = { error ->
-                        Log.e(TAG, "Failed to update issue #${issueNumber}", error)
+                        AppLogger.e(TAG, "Failed to update issue #${issueNumber}", error)
                         _errorMessage.value = "更新失败: ${error.message}"
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "更新失败: ${e.message}"
-                Log.e(TAG, "Failed to update published plugin", e)
+                AppLogger.e(TAG, "Failed to update published plugin", e)
             } finally {
                 _isLoading.value = false
             }
@@ -652,7 +652,7 @@ class MCPMarketViewModel(
 
                 result.fold(
                     onSuccess = { _ ->
-                        Log.d(TAG, "Successfully closed issue #${issueNumber}")
+                        AppLogger.d(TAG, "Successfully closed issue #${issueNumber}")
                         Toast.makeText(
                             context,
                             "插件 \"$title\" 已从市场移除",
@@ -668,13 +668,13 @@ class MCPMarketViewModel(
                         }
                     },
                     onFailure = { error ->
-                        Log.e(TAG, "Failed to close issue #${issueNumber}", error)
+                        AppLogger.e(TAG, "Failed to close issue #${issueNumber}", error)
                         _errorMessage.value = "删除失败: ${error.message}"
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "删除失败: ${e.message}"
-                Log.e(TAG, "Failed to delete published plugin", e)
+                AppLogger.e(TAG, "Failed to delete published plugin", e)
             } finally {
                 _isLoading.value = false
             }
@@ -704,7 +704,7 @@ class MCPMarketViewModel(
 
                 result.fold(
                     onSuccess = { _ ->
-                        Log.d(TAG, "Successfully reopened issue #${issueNumber}")
+                        AppLogger.d(TAG, "Successfully reopened issue #${issueNumber}")
                         Toast.makeText(
                             context,
                             "插件 \"$title\" 已重新发布到市场",
@@ -720,13 +720,13 @@ class MCPMarketViewModel(
                         }
                     },
                     onFailure = { error ->
-                        Log.e(TAG, "Failed to reopen issue #${issueNumber}", error)
+                        AppLogger.e(TAG, "Failed to reopen issue #${issueNumber}", error)
                         _errorMessage.value = "重新发布失败: ${error.message}"
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "重新发布失败: ${e.message}"
-                Log.e(TAG, "Failed to reopen published plugin", e)
+                AppLogger.e(TAG, "Failed to reopen published plugin", e)
             } finally {
                 _isLoading.value = false
             }
@@ -755,7 +755,7 @@ class MCPMarketViewModel(
         }
         
         // 如果JSON不存在，说明是格式错误或非常旧的Issue，直接返回一个基础的草稿用于编辑
-        Log.w(TAG, "Could not parse plugin info from issue #${issue.number}. No valid JSON metadata found.")
+        AppLogger.w(TAG, "Could not parse plugin info from issue #${issue.number}. No valid JSON metadata found.")
         return PublishDraft(title = issue.title, description = "无法解析插件描述，请手动填写。")
     }
 
@@ -820,7 +820,7 @@ class MCPMarketViewModel(
             
             result.isSuccess
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to publish MCP", e)
+            AppLogger.e(TAG, "Failed to publish MCP", e)
             false
         }
     }
@@ -850,7 +850,7 @@ class MCPMarketViewModel(
                 val metadataJson = json.encodeToString(metadata)
                 appendLine("<!-- operit-mcp-json: $metadataJson -->")
             } catch(e: Exception) {
-                Log.e(TAG, "Failed to serialize MCP metadata", e)
+                AppLogger.e(TAG, "Failed to serialize MCP metadata", e)
             }
 
             // 软件解析版本号标记
@@ -927,19 +927,19 @@ class MCPMarketViewModel(
             val installConfigValid = metadata.installConfig.isNotBlank() && metadata.installConfig.trim().startsWith("{")
 
             if (repoUrlValid || installConfigValid) {
-                Log.d(TAG, "Parsed installation info from JSON for issue #${issue.number}")
+                AppLogger.d(TAG, "Parsed installation info from JSON for issue #${issue.number}")
                 return InstallationInfo(
                     repoUrl = if (repoUrlValid) metadata.repositoryUrl else null,
                     installConfig = if (installConfigValid) metadata.installConfig else null,
                     installationType = if (repoUrlValid) "github" else "config"
                 )
             } else {
-                Log.w(TAG, "Found JSON metadata in issue #${issue.number}, but both repositoryUrl ('${metadata.repositoryUrl}') and installConfig ('${metadata.installConfig}') are invalid.")
+                AppLogger.w(TAG, "Found JSON metadata in issue #${issue.number}, but both repositoryUrl ('${metadata.repositoryUrl}') and installConfig ('${metadata.installConfig}') are invalid.")
                 return null
             }
         }
         
-        Log.w(TAG, "Could not parse installation info from issue #${issue.number}. No valid JSON metadata found in body.")
+        AppLogger.w(TAG, "Could not parse installation info from issue #${issue.number}. No valid JSON metadata found in body.")
         return null
     }
 
@@ -956,7 +956,7 @@ class MCPMarketViewModel(
                 val json = Json { ignoreUnknownKeys = true }
                 json.decodeFromString<MCPMetadata>(jsonString)
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to parse MCP metadata JSON from issue body.", e)
+                AppLogger.e(TAG, "Failed to parse MCP metadata JSON from issue body.", e)
                 null
             }
         }
@@ -1031,16 +1031,16 @@ class MCPMarketViewModel(
                         val currentComments = _issueComments.value.toMutableMap()
                         currentComments[issueNumber] = comments
                         _issueComments.value = currentComments
-                        Log.d(TAG, "Successfully loaded ${comments.size} comments for issue #$issueNumber")
+                        AppLogger.d(TAG, "Successfully loaded ${comments.size} comments for issue #$issueNumber")
                     },
                     onFailure = { error ->
                         _errorMessage.value = "加载评论失败: ${error.message}"
-                        Log.e(TAG, "Failed to load comments for issue #$issueNumber", error)
+                        AppLogger.e(TAG, "Failed to load comments for issue #$issueNumber", error)
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "加载评论时发生错误: ${e.message}"
-                Log.e(TAG, "Exception while loading comments for issue #$issueNumber", e)
+                AppLogger.e(TAG, "Exception while loading comments for issue #$issueNumber", e)
             } finally {
                 _isLoadingComments.value = _isLoadingComments.value - issueNumber
             }
@@ -1085,16 +1085,16 @@ class MCPMarketViewModel(
                             "评论发布成功！",
                             Toast.LENGTH_SHORT
                         ).show()
-                        Log.d(TAG, "Successfully posted comment to issue #$issueNumber")
+                        AppLogger.d(TAG, "Successfully posted comment to issue #$issueNumber")
                     },
                     onFailure = { error ->
                         _errorMessage.value = "发布评论失败: ${error.message}"
-                        Log.e(TAG, "Failed to post comment to issue #$issueNumber", error)
+                        AppLogger.e(TAG, "Failed to post comment to issue #$issueNumber", error)
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "发布评论时发生错误: ${e.message}"
-                Log.e(TAG, "Exception while posting comment to issue #$issueNumber", e)
+                AppLogger.e(TAG, "Exception while posting comment to issue #$issueNumber", e)
             } finally {
                 _isPostingComment.value = _isPostingComment.value - issueNumber
             }
@@ -1140,7 +1140,7 @@ class MCPMarketViewModel(
             
             if (cachedAvatars.isNotEmpty()) {
                 _userAvatarCache.value = cachedAvatars
-                Log.d(TAG, "Loaded ${cachedAvatars.size} avatar URLs from persistent cache")
+                AppLogger.d(TAG, "Loaded ${cachedAvatars.size} avatar URLs from persistent cache")
             }
             
             // 如果缓存过大（超过500个），清理一半
@@ -1148,7 +1148,7 @@ class MCPMarketViewModel(
                 cleanupAvatarCache()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load avatar cache from preferences", e)
+            AppLogger.e(TAG, "Failed to load avatar cache from preferences", e)
         }
     }
     
@@ -1165,10 +1165,10 @@ class MCPMarketViewModel(
                     editor.remove(key)
                 }
                 editor.apply()
-                Log.d(TAG, "Cleaned up avatar cache, removed ${allEntries.size / 2} entries")
+                AppLogger.d(TAG, "Cleaned up avatar cache, removed ${allEntries.size / 2} entries")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to cleanup avatar cache", e)
+            AppLogger.e(TAG, "Failed to cleanup avatar cache", e)
         }
     }
     
@@ -1179,7 +1179,7 @@ class MCPMarketViewModel(
         try {
             avatarCachePrefs.edit().putString(username, avatarUrl).apply()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to save avatar to preferences", e)
+            AppLogger.e(TAG, "Failed to save avatar to preferences", e)
         }
     }
     
@@ -1202,15 +1202,15 @@ class MCPMarketViewModel(
                         
                         // 持久化保存
                         saveAvatarToPrefs(username, user.avatarUrl)
-                        Log.d(TAG, "Cached and persisted avatar for user: $username")
+                        AppLogger.d(TAG, "Cached and persisted avatar for user: $username")
                     },
                     onFailure = { error ->
-                        Log.w(TAG, "Failed to fetch avatar for user $username: ${error.message}")
+                        AppLogger.w(TAG, "Failed to fetch avatar for user $username: ${error.message}")
                         // 可以设置一个默认头像URL或者不做任何操作
                     }
                 )
             } catch (e: Exception) {
-                Log.w(TAG, "Exception while fetching avatar for user $username", e)
+                AppLogger.w(TAG, "Exception while fetching avatar for user $username", e)
             }
         }
     }
@@ -1225,7 +1225,7 @@ class MCPMarketViewModel(
         
         // 如果不是强制刷新，并且缓存中已有数据，则直接返回
         if (!force && _issueReactions.value.containsKey(issueNumber)) {
-            Log.d(TAG, "Reactions for issue #$issueNumber already in cache.")
+            AppLogger.d(TAG, "Reactions for issue #$issueNumber already in cache.")
             return
         }
 
@@ -1244,14 +1244,14 @@ class MCPMarketViewModel(
                         val currentReactions = _issueReactions.value.toMutableMap()
                         currentReactions[issueNumber] = reactions
                         _issueReactions.value = currentReactions
-                        Log.d(TAG, "Successfully loaded reactions for issue #$issueNumber")
+                        AppLogger.d(TAG, "Successfully loaded reactions for issue #$issueNumber")
                     },
                     onFailure = { error ->
-                        Log.e(TAG, "Failed to load reactions for issue #$issueNumber", error)
+                        AppLogger.e(TAG, "Failed to load reactions for issue #$issueNumber", error)
                     }
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "Exception while loading reactions for issue #$issueNumber", e)
+                AppLogger.e(TAG, "Exception while loading reactions for issue #$issueNumber", e)
             } finally {
                 _isLoadingReactions.value = _isLoadingReactions.value - issueNumber
             }
@@ -1290,16 +1290,16 @@ class MCPMarketViewModel(
                             "点赞成功！",
                             Toast.LENGTH_SHORT
                         ).show()
-                        Log.d(TAG, "Successfully added reaction to issue #$issueNumber")
+                        AppLogger.d(TAG, "Successfully added reaction to issue #$issueNumber")
                     },
                     onFailure = { error ->
                         _errorMessage.value = "点赞失败: ${error.message}"
-                        Log.e(TAG, "Failed to add reaction to issue #$issueNumber", error)
+                        AppLogger.e(TAG, "Failed to add reaction to issue #$issueNumber", error)
                     }
                 )
             } catch (e: Exception) {
                 _errorMessage.value = "点赞时发生错误: ${e.message}"
-                Log.e(TAG, "Exception while adding reaction to issue #$issueNumber", e)
+                AppLogger.e(TAG, "Exception while adding reaction to issue #$issueNumber", e)
             } finally {
                 _isReacting.value = _isReacting.value - issueNumber
             }
@@ -1318,7 +1318,7 @@ class MCPMarketViewModel(
         val repoPath = repositoryUrl.removePrefix("https://github.com/")
         val parts = repoPath.split("/")
         if (parts.size < 2) {
-            Log.w(TAG, "Invalid repository URL: $repositoryUrl")
+            AppLogger.w(TAG, "Invalid repository URL: $repositoryUrl")
             return
         }
 
@@ -1333,14 +1333,14 @@ class MCPMarketViewModel(
                         val currentCache = _repositoryCache.value.toMutableMap()
                         currentCache[repositoryUrl] = repository
                         _repositoryCache.value = currentCache
-                        Log.d(TAG, "Successfully fetched repository info for $repositoryUrl")
+                        AppLogger.d(TAG, "Successfully fetched repository info for $repositoryUrl")
                     },
                     onFailure = { error ->
-                        Log.w(TAG, "Failed to fetch repository info for $repositoryUrl: ${error.message}")
+                        AppLogger.w(TAG, "Failed to fetch repository info for $repositoryUrl: ${error.message}")
                     }
                 )
             } catch (e: Exception) {
-                Log.w(TAG, "Exception while fetching repository info for $repositoryUrl", e)
+                AppLogger.w(TAG, "Exception while fetching repository info for $repositoryUrl", e)
             }
         }
     }

@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.automatic
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.UIPageResultData
 import com.ai.assistance.operit.data.model.AITool
@@ -36,36 +36,36 @@ class UIRouter(
      */
     fun loadConfig(config: UIRouteConfig, merge: Boolean = false) {
         if (!merge || this.routeConfig == null) {
-            Log.d(TAG, "Loading new config. Merge is false or current config is null.")
+            AppLogger.d(TAG, "Loading new config. Merge is false or current config is null.")
             this.routeConfig = config
         } else {
-            Log.d(TAG, "Merging new config into existing config.")
+            AppLogger.d(TAG, "Merging new config into existing config.")
             val currentConfig = this.routeConfig!!
-            Log.d(TAG, "Before merge: ${currentConfig.functionDefinitions.size} functions. Merging ${config.functionDefinitions.size} new functions.")
+            AppLogger.d(TAG, "Before merge: ${currentConfig.functionDefinitions.size} functions. Merging ${config.functionDefinitions.size} new functions.")
 
             // 合并配置
             config.nodeDefinitions.forEach { (name, node) ->
                 if (!currentConfig.nodeDefinitions.containsKey(name)) {
                     currentConfig.defineNode(node)
-                    Log.d(TAG, "Merged node: $name")
+                    AppLogger.d(TAG, "Merged node: $name")
                 }
             }
             config.edgeDefinitions.forEach { (from, edges) ->
                 edges.forEach { edge ->
                     // 在合并时也需要考虑多操作
                     currentConfig.defineEdge(from, edge.toNodeName, edge.operations, edge.validation, edge.conditions, edge.weight)
-                    Log.d(TAG, "Merged edge: from $from to ${edge.toNodeName}")
+                    AppLogger.d(TAG, "Merged edge: from $from to ${edge.toNodeName}")
                 }
             }
             config.functionDefinitions.forEach { (name, function) ->
                 currentConfig.defineFunction(function)
-                Log.d(TAG, "Merged function: $name")
+                AppLogger.d(TAG, "Merged function: $name")
             }
-            Log.d(TAG, "After merge: ${currentConfig.functionDefinitions.size} functions. Keys: ${currentConfig.functionDefinitions.keys.joinToString()}")
+            AppLogger.d(TAG, "After merge: ${currentConfig.functionDefinitions.size} functions. Keys: ${currentConfig.functionDefinitions.keys.joinToString()}")
         }
 
         // 重新构建图
-        Log.d(TAG, "Rebuilding stateful graph from config.")
+        AppLogger.d(TAG, "Rebuilding stateful graph from config.")
         val builder = StatefulGraphBuilder.create()
         this.routeConfig!!.nodeDefinitions.values.forEach { builder.addNode(it.name, it.name) }
         this.routeConfig!!.edgeDefinitions.forEach { (from, edges) ->
@@ -88,12 +88,12 @@ class UIRouter(
         }
         graph = builder.build()
         pathFinder = StatefulPathFinder(graph)
-        Log.d(TAG, "Graph rebuilt. Contains ${graph.getAllNodes().size} nodes.")
+        AppLogger.d(TAG, "Graph rebuilt. Contains ${graph.getAllNodes().size} nodes.")
     }
 
     fun getAvailableFunctions(): List<UIFunction> {
         val functions = routeConfig?.functionDefinitions?.values?.toList() ?: emptyList()
-        Log.d(TAG, "Getting available functions. Found ${functions.size} functions: ${functions.joinToString { it.name }}")
+        AppLogger.d(TAG, "Getting available functions. Found ${functions.size} functions: ${functions.joinToString { it.name }}")
         return functions
     }
 
@@ -108,10 +108,10 @@ class UIRouter(
         functionName: String,
         initialParams: Map<String, Any> = emptyMap()
     ): RoutePlan? {
-        Log.d(TAG, "Planning function '$functionName' with initial params: $initialParams")
+        AppLogger.d(TAG, "Planning function '$functionName' with initial params: $initialParams")
         val function = routeConfig?.functionDefinitions?.get(functionName)
         if (function == null) {
-            Log.e(TAG, "Function '$functionName' not found in route config.")
+            AppLogger.e(TAG, "Function '$functionName' not found in route config.")
             return null
         }
 
@@ -119,15 +119,15 @@ class UIRouter(
             // 1. 获取当前UI状态作为起点
             val startState = getCurrentUIState()
             if (startState == null) {
-                Log.e(TAG, "Planning failed: Could not get current UI state.")
+                AppLogger.e(TAG, "Planning failed: Could not get current UI state.")
                 return null
             }
-            Log.d(TAG, "Current UI state determined as: ${startState.nodeId} (${startState.packageName})")
+            AppLogger.d(TAG, "Current UI state determined as: ${startState.nodeId} (${startState.packageName})")
 
             val targetNodeName = function.targetNodeName
             val targetNode = routeConfig?.nodeDefinitions?.get(targetNodeName)
             if (targetNode == null) {
-                Log.e(TAG, "Target node '$targetNodeName' not found in route config.")
+                AppLogger.e(TAG, "Target node '$targetNodeName' not found in route config.")
                 return null
             }
             val targetPackageName = targetNode.packageName
@@ -138,14 +138,14 @@ class UIRouter(
 
             // 2. 检查是否需要切换应用
             if (startState.packageName != targetPackageName) {
-                Log.i(TAG, "Cross-application plan required. From '${startState.packageName}' to '$targetPackageName'.")
+                AppLogger.i(TAG, "Cross-application plan required. From '${startState.packageName}' to '$targetPackageName'.")
                 
                 val targetAppHomeNodeName = routeConfig?.nodeDefinitions?.values?.find {
                     it.packageName == targetPackageName && it.nodeType == UINodeType.APP_HOME
                 }?.name
 
                 if (targetAppHomeNodeName == null) {
-                    Log.e(TAG, "Cannot find APP_HOME node for package '$targetPackageName'. Cannot plan cross-app.")
+                    AppLogger.e(TAG, "Cannot find APP_HOME node for package '$targetPackageName'. Cannot plan cross-app.")
                     return null
                 }
 
@@ -159,9 +159,9 @@ class UIRouter(
                 launchOperations.add(launchEdge)
 
                 pathStartState = NodeState(targetAppHomeNodeName).withVariables(initialParams)
-                Log.d(TAG, "Planning path within target app, from '$targetAppHomeNodeName' to '$targetNodeName'")
+                AppLogger.d(TAG, "Planning path within target app, from '$targetAppHomeNodeName' to '$targetNodeName'")
             } else {
-                Log.d(TAG, "Same-application plan. Finding path from '${startState.nodeId}' to '$targetNodeName'")
+                AppLogger.d(TAG, "Same-application plan. Finding path from '${startState.nodeId}' to '$targetNodeName'")
             }
 
             // 3. 搜索导航路径
@@ -172,11 +172,11 @@ class UIRouter(
             )
 
             if (!navResult.success || navResult.path == null) {
-                Log.w(TAG, "Path finding failed from ${pathStartState.nodeId} to $targetNodeName. Result: ${navResult.message}")
+                AppLogger.w(TAG, "Path finding failed from ${pathStartState.nodeId} to $targetNodeName. Result: ${navResult.message}")
                 return null
             }
             navPath = navResult.path
-            Log.d(TAG, "Path found with ${navPath.edges.size} edges. Total weight: ${navPath.totalWeight}")
+            AppLogger.d(TAG, "Path found with ${navPath.edges.size} edges. Total weight: ${navPath.totalWeight}")
             
             val fullPath = if (launchOperations.isNotEmpty()) {
                 // 如果有启动操作，我们需要构建一个全新的路径
@@ -191,7 +191,7 @@ class UIRouter(
             }
 
             // 5. 将导航路径和功能操作合并成一个完整的路径
-            Log.d(TAG, "Appending final function operation: ${function.operation.description}")
+            AppLogger.d(TAG, "Appending final function operation: ${function.operation.description}")
             val finalEdge = StatefulEdge(
                 from = fullPath.endState.nodeId,
                 to = function.targetNodeName, // or a new 'end' node if needed
@@ -200,7 +200,7 @@ class UIRouter(
             )
             val finalState = function.operation.apply(fullPath.endState, initialParams)
             if (finalState == null) {
-                Log.e(TAG, "Failed to apply final function operation. Path planning failed.")
+                AppLogger.e(TAG, "Failed to apply final function operation. Path planning failed.")
                 return null
             }
             
@@ -210,11 +210,11 @@ class UIRouter(
                 totalWeight = fullPath.totalWeight + finalEdge.weight
             )
 
-            Log.d(TAG, "Full path created with ${completePath.edges.size} total steps.")
+            AppLogger.d(TAG, "Full path created with ${completePath.edges.size} total steps.")
 
             // 6. 从完整路径中分析并提取所有需要的参数
             val allRequiredParams = analyzeParametersFromPath(completePath)
-            Log.d(TAG, "Analyzed parameters from path. Required params: ${allRequiredParams.joinToString { it.key }}")
+            AppLogger.d(TAG, "Analyzed parameters from path. Required params: ${allRequiredParams.joinToString { it.key }}")
 
             // 7. 创建并返回执行计划
             val plan = RoutePlan(
@@ -222,10 +222,10 @@ class UIRouter(
                 requiredParameters = allRequiredParams,
                 executor = operationExecutor
             )
-            Log.d(TAG, "RoutePlan created successfully for '$functionName'.")
+            AppLogger.d(TAG, "RoutePlan created successfully for '$functionName'.")
             return plan
         } catch (e: Exception) {
-            Log.e(TAG, "Exception during function planning for '$functionName'.", e)
+            AppLogger.e(TAG, "Exception during function planning for '$functionName'.", e)
             return null
         }
     }
@@ -301,7 +301,7 @@ class UIRouter(
         var retryCount = 0
         while (retryCount < MAX_PAGE_INFO_RETRY) {
             try {
-                Log.d(TAG, "正在获取当前页面信息 (尝试 ${retryCount + 1}/$MAX_PAGE_INFO_RETRY)")
+                AppLogger.d(TAG, "正在获取当前页面信息 (尝试 ${retryCount + 1}/$MAX_PAGE_INFO_RETRY)")
                 
                 // 调用get_page_info工具, 请求详细信息
                 val pageInfoTool = AITool(
@@ -317,10 +317,10 @@ class UIRouter(
                 if (result.success && result.result != null) {
                     return parseUIStateFromPageInfo(result.result)
                 } else {
-                    Log.w(TAG, "获取页面信息失败: ${result.error}")
+                    AppLogger.w(TAG, "获取页面信息失败: ${result.error}")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "获取页面信息时发生异常 (尝试 ${retryCount + 1})", e)
+                AppLogger.e(TAG, "获取页面信息时发生异常 (尝试 ${retryCount + 1})", e)
             }
             
             retryCount++
@@ -329,7 +329,7 @@ class UIRouter(
             }
         }
         
-        Log.e(TAG, "多次尝试后仍无法获取页面信息，返回默认状态")
+        AppLogger.e(TAG, "多次尝试后仍无法获取页面信息，返回默认状态")
         // 如果所有尝试都失败，返回一个默认的系统主页状态
         return UIState(
             nodeId = "system_home",
@@ -348,7 +348,7 @@ class UIRouter(
                     val packageName = pageInfoResult.packageName
                     val activityName = pageInfoResult.activityName
                     
-                    Log.d(TAG, "解析页面信息: packageName=$packageName, activityName=$activityName")
+                    AppLogger.d(TAG, "解析页面信息: packageName=$packageName, activityName=$activityName")
                     
                     val nodeId = findNodeIdForState(packageName, activityName, pageInfoResult) ?: "unknown_page"
                     
@@ -367,7 +367,7 @@ class UIRouter(
                     val packageName = jsonObject.optString("packageName", "unknown")
                     val activityName = jsonObject.optString("activityName", "unknown")
                     
-                    Log.d(TAG, "从JSON解析页面信息: packageName=$packageName, activityName=$activityName")
+                    AppLogger.d(TAG, "从JSON解析页面信息: packageName=$packageName, activityName=$activityName")
                     
                     // 注意: 从纯JSON字符串可能无法重建完整的uiElements树, 除非JSON结构与UIPageResultData完全一致
                     // 这里的特征匹配可能会受限
@@ -380,12 +380,12 @@ class UIRouter(
                     )
                 }
                 else -> {
-                    Log.w(TAG, "未知的页面信息结果类型: ${pageInfoResult::class.java}")
+                    AppLogger.w(TAG, "未知的页面信息结果类型: ${pageInfoResult::class.java}")
                     return null
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "解析页面信息时发生错误", e)
+            AppLogger.e(TAG, "解析页面信息时发生错误", e)
             return null
         }
     }
@@ -412,7 +412,7 @@ class UIRouter(
                 }
             }
             if (matchedNode != null) {
-                Log.d(TAG, "通过特征匹配找到节点: ${matchedNode.name}")
+                AppLogger.d(TAG, "通过特征匹配找到节点: ${matchedNode.name}")
                 return matchedNode.name
             }
         }
@@ -432,9 +432,9 @@ class UIRouter(
         }
 
         if (matchedNode != null) {
-            Log.d(TAG, "通过Activity/Package名匹配找到节点: ${matchedNode.name}")
+            AppLogger.d(TAG, "通过Activity/Package名匹配找到节点: ${matchedNode.name}")
         } else {
-            Log.w(TAG, "无法为状态 $packageName/$activityName 找到匹配的节点")
+            AppLogger.w(TAG, "无法为状态 $packageName/$activityName 找到匹配的节点")
         }
         
         return matchedNode?.name

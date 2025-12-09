@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.api.chat.plan
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import java.util.*
@@ -20,13 +20,13 @@ object PlanParser {
     fun parseExecutionGraph(jsonString: String): ExecutionGraph? {
         return try {
             val cleanedJson = extractJsonFromResponse(jsonString)
-            Log.d(TAG, "解析执行图: $cleanedJson")
+            AppLogger.d(TAG, "解析执行图: $cleanedJson")
             gson.fromJson(cleanedJson, ExecutionGraph::class.java)
         } catch (e: JsonSyntaxException) {
-            Log.e(TAG, "解析执行图失败: JSON 语法错误", e)
+            AppLogger.e(TAG, "解析执行图失败: JSON 语法错误", e)
             null
         } catch (e: Exception) {
-            Log.e(TAG, "解析执行图失败: 未知错误", e)
+            AppLogger.e(TAG, "解析执行图失败: 未知错误", e)
             null
         }
     }
@@ -72,7 +72,7 @@ object PlanParser {
                     adjList[depId]?.add(task.id)
                     inDegree[task.id] = inDegree[task.id]!! + 1
                 } else {
-                    Log.w(TAG, "任务 ${task.id} 依赖的任务 $depId 不存在")
+                    AppLogger.w(TAG, "任务 ${task.id} 依赖的任务 $depId 不存在")
                 }
             }
         }
@@ -106,11 +106,11 @@ object PlanParser {
         
         // 检查是否存在循环依赖
         if (result.size != tasks.size) {
-            Log.e(TAG, "存在循环依赖，无法进行拓扑排序")
+            AppLogger.e(TAG, "存在循环依赖，无法进行拓扑排序")
             return emptyList()
         }
         
-        Log.d(TAG, "拓扑排序完成，执行顺序: ${result.map { it.id }}")
+        AppLogger.d(TAG, "拓扑排序完成，执行顺序: ${result.map { it.id }}")
         return result
     }
     

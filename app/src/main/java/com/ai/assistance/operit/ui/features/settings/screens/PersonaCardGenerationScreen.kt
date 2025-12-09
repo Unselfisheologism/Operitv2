@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.settings.screens
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.*
@@ -363,12 +363,12 @@ fun PersonaCardGenerationScreen(
             val invList = LocalCharacterToolExecutor.extractInvocations(rawContent)
             if (invList.isEmpty()) return
 
-            Log.d(TAG, "Found ${invList.size} tool invocation(s).")
+            AppLogger.d(TAG, "Found ${invList.size} tool invocation(s).")
             invList.forEach { (name, params) ->
-                Log.d(TAG, "Tool invocation: name='$name', params=$params")
+                AppLogger.d(TAG, "Tool invocation: name='$name', params=$params")
 
                 if (name != LocalCharacterToolExecutor.TOOL_NAME) {
-                    Log.w(TAG, "Skipping unknown tool: '$name'")
+                    AppLogger.w(TAG, "Skipping unknown tool: '$name'")
                     return@forEach
                 }
                 val field = params["field"].orEmpty().trim()
@@ -376,15 +376,15 @@ fun PersonaCardGenerationScreen(
                 val cardId = activeCardId
 
                 if (field.isBlank() || content.isBlank()) {
-                    Log.w(TAG, "Skipping tool call with blank field or content.")
+                    AppLogger.w(TAG, "Skipping tool call with blank field or content.")
                     return@forEach
                 }
 
                 val result = LocalCharacterToolExecutor.executeSaveCharacterInfo(context, cardId, field, content)
                 if (result.success) {
-                    Log.d(TAG, "Tool '$name' executed successfully for field '$field'.")
+                    AppLogger.d(TAG, "Tool '$name' executed successfully for field '$field'.")
                 } else {
-                    Log.e(TAG, "Tool '$name' execution failed for field '$field': ${result.error}")
+                    AppLogger.e(TAG, "Tool '$name' execution failed for field '$field': ${result.error}")
                 }
 
                 // 刷新数据
@@ -393,7 +393,7 @@ fun PersonaCardGenerationScreen(
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Local tool processing failed: ${e.message}", e)
+            AppLogger.e(TAG, "Local tool processing failed: ${e.message}", e)
         }
     }
 

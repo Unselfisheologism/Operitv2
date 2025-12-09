@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.standard
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.core.tools.WorkflowDetailResultData
 import com.ai.assistance.operit.core.tools.WorkflowListResultData
@@ -79,7 +79,7 @@ class StandardWorkflowTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get all workflows", e)
+            AppLogger.e(TAG, "Failed to get all workflows", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -163,7 +163,7 @@ class StandardWorkflowTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to create workflow", e)
+            AppLogger.e(TAG, "Failed to create workflow", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -229,7 +229,7 @@ class StandardWorkflowTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get workflow", e)
+            AppLogger.e(TAG, "Failed to get workflow", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -329,7 +329,7 @@ class StandardWorkflowTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to update workflow", e)
+            AppLogger.e(TAG, "Failed to update workflow", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -381,7 +381,7 @@ class StandardWorkflowTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to delete workflow", e)
+            AppLogger.e(TAG, "Failed to delete workflow", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -423,7 +423,7 @@ class StandardWorkflowTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to trigger workflow", e)
+            AppLogger.e(TAG, "Failed to trigger workflow", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -451,7 +451,7 @@ class StandardWorkflowTools(private val context: Context) {
 
             nodes
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse nodes JSON", e)
+            AppLogger.e(TAG, "Failed to parse nodes JSON", e)
             throw IllegalArgumentException("节点JSON格式错误: ${e.message}")
         }
     }
@@ -517,12 +517,12 @@ class StandardWorkflowTools(private val context: Context) {
                     )
                 }
                 else -> {
-                    Log.w(TAG, "Unknown node type: $type")
+                    AppLogger.w(TAG, "Unknown node type: $type")
                     null
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse node", e)
+            AppLogger.e(TAG, "Failed to parse node", e)
             null
         }
     }
@@ -545,7 +545,7 @@ class StandardWorkflowTools(private val context: Context) {
 
             connections
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse connections JSON", e)
+            AppLogger.e(TAG, "Failed to parse connections JSON", e)
             throw IllegalArgumentException("连接JSON格式错误: ${e.message}")
         }
     }
@@ -561,7 +561,7 @@ class StandardWorkflowTools(private val context: Context) {
             val condition = connObj.optString("condition", null)
 
             if (sourceNodeId.isBlank() || targetNodeId.isBlank()) {
-                Log.w(TAG, "Connection missing source or target node ID")
+                AppLogger.w(TAG, "Connection missing source or target node ID")
                 return null
             }
 
@@ -572,7 +572,7 @@ class StandardWorkflowTools(private val context: Context) {
                 condition = condition
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to parse connection", e)
+            AppLogger.e(TAG, "Failed to parse connection", e)
             null
         }
     }

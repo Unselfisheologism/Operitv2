@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.data.preferences
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -153,7 +153,7 @@ class ApiPreferences private constructor(private val context: Context) {
                 android.util.Base64.decode(encodedKey, android.util.Base64.NO_WRAP)
                     .toString(Charsets.UTF_8)
             } catch (e: Exception) {
-                android.util.Log.e("ApiPreferences", "Failed to decode API key", e)
+                com.ai.assistance.operit.util.AppLogger.e("ApiPreferences", "Failed to decode API key", e)
                 ""
             }
         }

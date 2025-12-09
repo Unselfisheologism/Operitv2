@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.startup.screens
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
@@ -687,7 +687,7 @@ class PluginLoadingState {
 
                     if (installedPluginsSet.isEmpty()) {
                         // 没有安装的插件，直接进入主界面
-                        Log.d("PluginLoadingState", "没有检测到已安装的插件，直接进入主界面")
+                        AppLogger.d("PluginLoadingState", "没有检测到已安装的插件，直接进入主界面")
                         updateMessage(context.getString(R.string.plugin_no_plugins))
                         updateProgress(1.0f)
 
@@ -739,7 +739,7 @@ class PluginLoadingState {
                     mcpStarter.startAllDeployedPlugins(progressListener)
                 } catch (e: Exception) {
                     // 处理插件加载过程中的异常
-                    Log.e("PluginLoadingState", "加载插件过程中出错", e)
+                    AppLogger.e("PluginLoadingState", "加载插件过程中出错", e)
                     updateMessage(e.message ?: context.getString(R.string.plugin_loading_failed))
                     updateProgress(1.0f)
 
@@ -752,7 +752,7 @@ class PluginLoadingState {
                     }
                 }
             } catch (e: Exception) {
-                Log.e("PluginLoadingState", "启动MCP服务器和插件时出错", e)
+                AppLogger.e("PluginLoadingState", "启动MCP服务器和插件时出错", e)
                 updateMessage(e.message ?: context.getString(R.string.plugin_other_error))
                 updateProgress(1.0f)
 

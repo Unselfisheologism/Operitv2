@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.data.mcp.plugins
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.mcp.MCPManager
 import com.ai.assistance.operit.core.tools.mcp.MCPServerConfig
 import com.ai.assistance.operit.data.mcp.MCPLocalServer
@@ -80,7 +80,7 @@ class MCPStarter(private val context: Context) {
             pnpmInstalled = installed
             return installed
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking pnpm installation: ${e.message}")
+            AppLogger.e(TAG, "Error checking pnpm installation: ${e.message}")
             pnpmInstalled = false
             return false
         }
@@ -98,36 +98,36 @@ class MCPStarter(private val context: Context) {
         val bridge = MCPBridge.getInstance(context)
         val listResult = bridge.listMcpServices()
         if (listResult != null && listResult.optBoolean("success", false)) {
-            Log.d(TAG, "Bridge is already running.")
+            AppLogger.d(TAG, "Bridge is already running.")
             bridgeInitialized = true
             return true
         }
 
         // Bridge 未运行，需要启动
-        Log.d(TAG, "Bridge is not running, starting fresh...")
+        AppLogger.d(TAG, "Bridge is not running, starting fresh...")
 
         // Check if terminal service is available
         if (!isTerminalServiceConnected()) {
-            Log.e(TAG, "Terminal service is not connected. Please start it first.")
+            AppLogger.e(TAG, "Terminal service is not connected. Please start it first.")
             return false
         }
 
         // Check if pnpm is installed
         if (!isPnpmInstalled()) {
-            Log.e(TAG, "pnpm is not installed in terminal. Please install pnpm first.")
+            AppLogger.e(TAG, "pnpm is not installed in terminal. Please install pnpm first.")
             return false
         }
 
         // Get shared session for deployment and starting
         val sessionId = getOrCreateSharedSession()
         if (sessionId == null) {
-            Log.e(TAG, "Failed to get shared session for bridge initialization")
+            AppLogger.e(TAG, "Failed to get shared session for bridge initialization")
             return false
         }
 
         // Deploy bridge to terminal
         if (!MCPBridge.deployBridge(context, sessionId)) {
-            Log.e(TAG, "Failed to deploy bridge")
+            AppLogger.e(TAG, "Failed to deploy bridge")
             return false
         }
 
@@ -137,7 +137,7 @@ class MCPStarter(private val context: Context) {
                 sessionId = null // Use a dedicated session for the bridge server
             )
         ) {
-            Log.e(TAG, "Failed to start bridge")
+            AppLogger.e(TAG, "Failed to start bridge")
             return false
         }
 
@@ -182,7 +182,7 @@ class MCPStarter(private val context: Context) {
                 if (!isDeployed) {
                     // 自动部署未部署的插件
                     statusCallback(StartStatus.InProgress("插件未部署，开始自动部署: $pluginId"))
-                    Log.d(TAG, "插件 $pluginId 未部署，开始自动部署")
+                    AppLogger.d(TAG, "插件 $pluginId 未部署，开始自动部署")
 
                     val pluginPath = mcpRepository.installedPluginIds.first()
                         .find { it == pluginId }
@@ -264,7 +264,7 @@ class MCPStarter(private val context: Context) {
                 val bearerToken = pluginInfo.bearerToken
                 val headers = pluginInfo.headers
 
-                Log.d(TAG, "启动远程服务 $pluginId: endpoint=$endpoint, bearerToken=${bearerToken?.take(10)}..., headers=${headers?.keys}")
+                AppLogger.d(TAG, "启动远程服务 $pluginId: endpoint=$endpoint, bearerToken=${bearerToken?.take(10)}..., headers=${headers?.keys}")
 
                 if (endpoint == null) {
                     statusCallback(StartStatus.Error("Remote service is missing endpoint: $pluginId"))
@@ -382,7 +382,7 @@ class MCPStarter(private val context: Context) {
                 return false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error starting plugin", e)
+            AppLogger.e(TAG, "Error starting plugin", e)
             statusCallback(StartStatus.Error("Start error: ${e.message}"))
             return false
         }
@@ -396,7 +396,7 @@ class MCPStarter(private val context: Context) {
             try {
                 // Check if terminal service is available
                 if (!isTerminalServiceConnected()) {
-                    Log.e(TAG, "Terminal service is not connected. Please start it first.")
+                    AppLogger.e(TAG, "Terminal service is not connected. Please start it first.")
                     progressListener.onAllPluginsStarted(
                         0,
                         0,
@@ -454,11 +454,11 @@ class MCPStarter(private val context: Context) {
 
                                 // If the service is in the registered list, unregister it
                                 if (registeredServiceNames.contains(serviceNameToUnregister)) {
-                                    Log.d(TAG, "Unregistering disabled plugin '$pluginId' with service name '$serviceNameToUnregister'")
+                                    AppLogger.d(TAG, "Unregistering disabled plugin '$pluginId' with service name '$serviceNameToUnregister'")
                                     bridge.unregisterMcpService(serviceNameToUnregister)
                                 }
                             } catch (e: Exception) {
-                                Log.e(TAG, "Failed to unregister disabled plugin '$pluginId'", e)
+                                AppLogger.e(TAG, "Failed to unregister disabled plugin '$pluginId'", e)
                             }
                         }
                     }
@@ -492,7 +492,7 @@ class MCPStarter(private val context: Context) {
                 val servicesToSpawn = registrationResults.values.toList()
 
                 if (servicesToSpawn.isEmpty()) {
-                    Log.w(TAG, "No plugins were successfully registered.")
+                    AppLogger.w(TAG, "No plugins were successfully registered.")
                     progressListener.onAllPluginsStarted(
                         0,
                         pluginsToStart.size,
@@ -509,7 +509,7 @@ class MCPStarter(private val context: Context) {
                 val totalPluginsToProcess = pluginsToStart.size
 
                 for ((chunkIndex, chunk) in serviceChunks.withIndex()) {
-                    Log.d(TAG, "Processing plugin chunk ${chunkIndex + 1}/${serviceChunks.size}...")
+                    AppLogger.d(TAG, "Processing plugin chunk ${chunkIndex + 1}/${serviceChunks.size}...")
 
                     // 统一处理每个插件
                     val chunkResults = chunk.map { (pluginId, serviceName) ->
@@ -519,7 +519,7 @@ class MCPStarter(private val context: Context) {
                     }.awaitAll()
 
                     allVerificationResults.addAll(chunkResults)
-                    Log.d(TAG, "Chunk ${chunkIndex + 1} processed.")
+                    AppLogger.d(TAG, "Chunk ${chunkIndex + 1} processed.")
 
                     // 立即报告进度
                     for (result in chunkResults) {
@@ -543,7 +543,7 @@ class MCPStarter(private val context: Context) {
                 
                 // --- Final UI Update and Notification ---
                 val successCount = successfulResults.size
-                Log.i(TAG, "All plugin batches processed. Total successful: $successCount")
+                AppLogger.i(TAG, "All plugin batches processed. Total successful: $successCount")
 
                 // --- FINAL: Notify completion ---
                 progressListener.onAllPluginsStarted(
@@ -553,7 +553,7 @@ class MCPStarter(private val context: Context) {
                 )
 
             } catch (e: Exception) {
-                Log.e(TAG, "Error starting plugins", e)
+                AppLogger.e(TAG, "Error starting plugins", e)
                 progressListener.onAllPluginsStarted(0, 0, PluginInitStatus.OTHER_ERROR)
             }
         }
@@ -572,7 +572,7 @@ class MCPStarter(private val context: Context) {
 
         if (needsSpawning) {
             // 需要启动的插件流程
-            Log.d(TAG, "Spawning plugin for processing: $pluginId")
+            AppLogger.d(TAG, "Spawning plugin for processing: $pluginId")
             val client = MCPBridgeClient(context, serviceName)
             if (client.spawn()) {
                 delay(200) // 等待服务初始化
@@ -598,7 +598,7 @@ class MCPStarter(private val context: Context) {
             }
         } else {
             // 使用缓存的插件流程
-            Log.d(TAG, "Processing cached plugin: $pluginId")
+            AppLogger.d(TAG, "Processing cached plugin: $pluginId")
             sendCachedToolsToBridge(pluginId, serviceName)
             return VerificationResult(pluginId, serviceName, true, 0, "Using cached tools")
         }
@@ -694,7 +694,7 @@ class MCPStarter(private val context: Context) {
 
             return if (registerResult?.optBoolean("success", false) == true) actualServiceName else null
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to register plugin $pluginId", e)
+            AppLogger.e(TAG, "Failed to register plugin $pluginId", e)
             return null
         }
     }
@@ -714,7 +714,7 @@ class MCPStarter(private val context: Context) {
 
                 progressListener.onAllPluginsVerified(results)
             } catch (e: Exception) {
-                Log.e(TAG, "Error verifying plugins", e)
+                AppLogger.e(TAG, "Error verifying plugins", e)
                 progressListener.onAllPluginsVerified(emptyList())
             }
         }
@@ -729,11 +729,11 @@ class MCPStarter(private val context: Context) {
             
             // 检查是否已有有效缓存
             if (mcpLocalServer.hasValidToolCache(pluginId)) {
-                Log.d(TAG, "插件 $pluginId 已有工具缓存，跳过")
+                AppLogger.d(TAG, "插件 $pluginId 已有工具缓存，跳过")
                 return
             }
 
-            Log.d(TAG, "开始为插件 $pluginId 缓存工具列表")
+            AppLogger.d(TAG, "开始为插件 $pluginId 缓存工具列表")
             val client = MCPBridgeClient(context, serviceName)
             val tools = client.getTools()
 
@@ -752,12 +752,12 @@ class MCPStarter(private val context: Context) {
                 }
                 
                 mcpLocalServer.cacheServerTools(pluginId, cachedTools)
-                Log.i(TAG, "成功缓存插件 $pluginId 的 ${cachedTools.size} 个工具")
+                AppLogger.i(TAG, "成功缓存插件 $pluginId 的 ${cachedTools.size} 个工具")
             } else {
-                Log.w(TAG, "插件 $pluginId 没有返回任何工具")
+                AppLogger.w(TAG, "插件 $pluginId 没有返回任何工具")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "缓存插件 $pluginId 的工具列表时出错", e)
+            AppLogger.e(TAG, "缓存插件 $pluginId 的工具列表时出错", e)
         }
     }
 
@@ -771,11 +771,11 @@ class MCPStarter(private val context: Context) {
             val cachedTools = mcpLocalServer.getCachedTools(pluginId)
 
             if (cachedTools == null || cachedTools.isEmpty()) {
-                Log.w(TAG, "插件 $pluginId 没有缓存的工具，跳过发送")
+                AppLogger.w(TAG, "插件 $pluginId 没有缓存的工具，跳过发送")
                 return
             }
 
-            Log.d(TAG, "将插件 $pluginId 的 ${cachedTools.size} 个缓存工具发送到bridge")
+            AppLogger.d(TAG, "将插件 $pluginId 的 ${cachedTools.size} 个缓存工具发送到bridge")
 
             // 将CachedToolInfo转换为JSONObject格式
             val toolJsonList = cachedTools.map { cachedTool: MCPLocalServer.CachedToolInfo ->
@@ -791,13 +791,13 @@ class MCPStarter(private val context: Context) {
             val result = bridge.cacheTools(serviceName, toolJsonList)
 
             if (result?.optBoolean("success", false) == true) {
-                Log.i(TAG, "成功将插件 $pluginId 的工具缓存发送到bridge")
+                AppLogger.i(TAG, "成功将插件 $pluginId 的工具缓存发送到bridge")
             } else {
                 val error = result?.optJSONObject("error")?.optString("message") ?: "Unknown error"
-                Log.w(TAG, "发送工具缓存到bridge失败: $error")
+                AppLogger.w(TAG, "发送工具缓存到bridge失败: $error")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "发送插件 $pluginId 的缓存工具到bridge时出错", e)
+            AppLogger.e(TAG, "发送插件 $pluginId 的缓存工具到bridge时出错", e)
         }
     }
 
@@ -813,17 +813,17 @@ class MCPStarter(private val context: Context) {
                 .map { it.pluginId }
 
             if (successfulPluginIds.isNotEmpty()) {
-                Log.d(
+                AppLogger.d(
                     TAG,
                     "开始为 ${successfulPluginIds.size} 个验证成功的插件注册工具: $successfulPluginIds"
                 )
                 mcpRepository.registerToolsForLoadedPlugins(successfulPluginIds)
-                Log.d(TAG, "工具注册流程已完成")
+                AppLogger.d(TAG, "工具注册流程已完成")
             } else {
-                Log.d(TAG, "没有验证成功的插件，跳过工具注册")
+                AppLogger.d(TAG, "没有验证成功的插件，跳过工具注册")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "注册验证成功插件的工具时出错", e)
+            AppLogger.e(TAG, "注册验证成功插件的工具时出错", e)
         }
     }
 
@@ -845,7 +845,7 @@ class MCPStarter(private val context: Context) {
 
                     // 检查描述是否为空
                     if (pluginInfo != null && pluginInfo.description.isBlank()) {
-                        Log.d(TAG, "为插件 ${result.pluginId} 生成描述，当前描述为空")
+                        AppLogger.d(TAG, "为插件 ${result.pluginId} 生成描述，当前描述为空")
 
                         // 获取工具描述
                         val client = MCPBridgeClient(context, result.serviceName)
@@ -865,23 +865,23 @@ class MCPStarter(private val context: Context) {
                                 val updatedMetadata =
                                     pluginInfo.copy(description = generatedDescription)
                                 mcpLocalServer.addOrUpdatePluginMetadata(updatedMetadata)
-                                Log.i(
+                                AppLogger.i(
                                     TAG,
                                     "已为插件 ${result.pluginId} 生成描述: $generatedDescription"
                                 )
                             } else {
-                                Log.w(TAG, "插件 ${result.pluginId} 的描述生成失败，保持原有空描述")
+                                AppLogger.w(TAG, "插件 ${result.pluginId} 的描述生成失败，保持原有空描述")
                             }
                         } else {
-                            Log.w(TAG, "插件 ${result.pluginId} 没有可用的工具描述")
+                            AppLogger.w(TAG, "插件 ${result.pluginId} 没有可用的工具描述")
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "为插件 ${result.pluginId} 生成描述时出错: ${e.message}", e)
+                    AppLogger.e(TAG, "为插件 ${result.pluginId} 生成描述时出错: ${e.message}", e)
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "生成缺失描述时出错", e)
+            AppLogger.e(TAG, "生成缺失描述时出错", e)
         }
     }
 
@@ -965,7 +965,7 @@ class MCPStarter(private val context: Context) {
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error verifying plugins", e)
+            AppLogger.e(TAG, "Error verifying plugins", e)
         }
 
         return results
@@ -980,7 +980,7 @@ class MCPStarter(private val context: Context) {
             val mcpServers = jsonObject.getAsJsonObject("mcpServers")
             return mcpServers?.keySet()?.firstOrNull()
         } catch (e: Exception) {
-            Log.e(TAG, "解析配置JSON失败", e)
+            AppLogger.e(TAG, "解析配置JSON失败", e)
             return null
         }
     }
@@ -992,7 +992,7 @@ class MCPStarter(private val context: Context) {
         try {
             return Gson().fromJson(configJson, MCPLocalServer.MCPConfig::class.java)
         } catch (e: Exception) {
-            Log.e(TAG, "解析配置JSON失败", e)
+            AppLogger.e(TAG, "解析配置JSON失败", e)
             return null
         }
     }
@@ -1023,7 +1023,7 @@ class MCPStarter(private val context: Context) {
 
             mcpManager.registerServer(serverName, mcpServerConfig)
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to register server", e)
+            AppLogger.e(TAG, "Failed to register server", e)
         }
     }
 

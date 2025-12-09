@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.api.chat.library
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.llmprovider.AIService
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.data.model.Memory
@@ -50,10 +50,10 @@ object ProblemLibrary {
     fun initialize(context: Context) {
         synchronized(ProblemLibrary::class.java) {
             if (isInitialized) return
-            Log.d(TAG, "正在初始化 ProblemLibrary")
+            AppLogger.d(TAG, "正在初始化 ProblemLibrary")
             apiPreferences = ApiPreferences.getInstance(context.applicationContext)
             isInitialized = true
-            Log.d(TAG, "ProblemLibrary 初始化完成")
+            AppLogger.d(TAG, "ProblemLibrary 初始化完成")
         }
     }
 
@@ -68,7 +68,7 @@ object ProblemLibrary {
             try {
                 autoCategorizeMemories(context, aiService)
             } catch (e: Exception) {
-                Log.e(TAG, "自动分类记忆失败", e)
+                AppLogger.e(TAG, "自动分类记忆失败", e)
             }
         }
     }
@@ -92,7 +92,7 @@ object ProblemLibrary {
                     aiService
                 )
             } catch (e: Exception) {
-                Log.e(TAG, "保存问题记录失败", e)
+                AppLogger.e(TAG, "保存问题记录失败", e)
             }
         }
     }
@@ -118,11 +118,11 @@ object ProblemLibrary {
             }
             
             if (uncategorizedMemories.isEmpty()) {
-                Log.d(TAG, "没有未分类的记忆，跳过自动分类")
+                AppLogger.d(TAG, "没有未分类的记忆，跳过自动分类")
                 return@withLock
             }
             
-            Log.d(TAG, "找到 ${uncategorizedMemories.size} 条未分类记忆，开始批量分类...")
+            AppLogger.d(TAG, "找到 ${uncategorizedMemories.size} 条未分类记忆，开始批量分类...")
             
             // 获取现有文件夹列表
             val existingFolders = memoryRepository.getAllFolderPaths()
@@ -131,14 +131,14 @@ object ProblemLibrary {
             val batches = uncategorizedMemories.chunked(10)
             batches.forEachIndexed { batchIndex: Int, batch: List<Memory> ->
                 try {
-                    Log.d(TAG, "处理第 ${batchIndex + 1} 批记忆（共 ${batch.size} 条）...")
+                    AppLogger.d(TAG, "处理第 ${batchIndex + 1} 批记忆（共 ${batch.size} 条）...")
                     categorizeBatch(batch, existingFolders, memoryRepository, aiService)
                 } catch (e: Exception) {
-                    Log.e(TAG, "处理第 ${batchIndex + 1} 批记忆失败", e)
+                    AppLogger.e(TAG, "处理第 ${batchIndex + 1} 批记忆失败", e)
                 }
             }
             
-            Log.d(TAG, "自动分类完成")
+            AppLogger.d(TAG, "自动分类完成")
         }
     }
 
@@ -214,7 +214,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
             memories.forEach { memory ->
                 val newFolder = titleToFolderMap[memory.title]
                 if (newFolder != null) {
-                    Log.d(TAG, "更新记忆 '${memory.title}' 的分类为: $newFolder")
+                    AppLogger.d(TAG, "更新记忆 '${memory.title}' 的分类为: $newFolder")
                     
                     // 直接调用 updateMemory，它会自动重新生成 embedding
                     repository.updateMemory(
@@ -226,7 +226,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "解析分类结果失败: $jsonString", e)
+            AppLogger.e(TAG, "解析分类结果失败: $jsonString", e)
         }
     }
 
@@ -260,13 +260,13 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                 }
 
             if (processedHistory.isEmpty()) {
-                Log.w(TAG, "处理后的会話历史为空，跳过保存问题记录")
+                AppLogger.w(TAG, "处理后的会話历史为空，跳过保存问题记录")
                 return@withLock
             }
 
             val query = processedHistory.lastOrNull { it.first == "user" }?.second ?: ""
             if (query.isEmpty()) {
-                Log.w(TAG, "未找到用户查询消息，跳过保存")
+                AppLogger.w(TAG, "未找到用户查询消息，跳过保存")
                 return@withLock
             }
 
@@ -275,7 +275,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
 
             // If analysis is empty (trivial conversation), abort early.
             if (analysis.mainProblem == null && analysis.extractedEntities.isEmpty() && analysis.updatedEntities.isEmpty() && analysis.mergedEntities.isEmpty()) {
-                Log.d(TAG, "分析结果为空，判断为无需记忆的对话，跳过保存。")
+                AppLogger.d(TAG, "分析结果为空，判断为无需记忆的对话，跳过保存。")
                 return@withLock
             }
 
@@ -284,9 +284,9 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
 
             // First, apply any merges to existing memories
             if (analysis.mergedEntities.isNotEmpty()) {
-                Log.d(TAG, "开始合并 ${analysis.mergedEntities.size} 组记忆...")
+                AppLogger.d(TAG, "开始合并 ${analysis.mergedEntities.size} 组记忆...")
                 analysis.mergedEntities.forEach { merge ->
-                    Log.d(TAG, "正在合并: ${merge.sourceTitles.joinToString(", ")} -> '${merge.newTitle}'. 原因: ${merge.reason}")
+                    AppLogger.d(TAG, "正在合并: ${merge.sourceTitles.joinToString(", ")} -> '${merge.newTitle}'. 原因: ${merge.reason}")
                     val mergedMemory = memoryRepository.mergeMemories(
                         sourceTitles = merge.sourceTitles,
                         newTitle = merge.newTitle,
@@ -302,11 +302,11 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
 
             // Second, apply any updates to existing memories
             if (analysis.updatedEntities.isNotEmpty()) {
-                Log.d(TAG, "开始更新 ${analysis.updatedEntities.size} 个现有记忆...")
+                AppLogger.d(TAG, "开始更新 ${analysis.updatedEntities.size} 个现有记忆...")
                 analysis.updatedEntities.forEach { update ->
                     val memoryToUpdate = memoryRepository.findMemoryByTitle(update.titleToUpdate)
                     if (memoryToUpdate != null) {
-                        Log.d(TAG, "正在更新记忆: '${update.titleToUpdate}'. 原因: ${update.reason}")
+                        AppLogger.d(TAG, "正在更新记忆: '${update.titleToUpdate}'. 原因: ${update.reason}")
                         val updatedMemory = memoryRepository.updateMemory(
                                 memory = memoryToUpdate,
                                 newTitle = memoryToUpdate.title, // For now, let's not change the title
@@ -318,7 +318,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                             createdMemories[updatedMemory.title] = updatedMemory
                         }
                     } else {
-                        Log.w(TAG, "想要更新的记忆未找到: '${update.titleToUpdate}'")
+                        AppLogger.w(TAG, "想要更新的记忆未找到: '${update.titleToUpdate}'")
                     }
                 }
             }
@@ -328,21 +328,21 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                 try {
                     withContext(Dispatchers.IO) {
                         updateUserPreferencesFromAnalysis(analysis.userPreferences)
-                        Log.d(TAG, "用户偏好已更新")
+                        AppLogger.d(TAG, "用户偏好已更新")
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "更新用户偏好失败", e)
+                    AppLogger.e(TAG, "更新用户偏好失败", e)
                 }
             }
 
             // Save the graph structure to the MemoryRepository
             if (analysis.mainProblem == null) {
-                Log.w(TAG, "分析结果中缺少main_problem，跳过保存记忆图谱")
+                AppLogger.w(TAG, "分析结果中缺少main_problem，跳过保存记忆图谱")
                 return@withLock
             }
 
-            Log.d(TAG, "开始构建记忆图谱...")
-            Log.d(TAG, "AI分析结果 - 主要问题: '${analysis.mainProblem.title}', 实体: ${analysis.extractedEntities.size}, 链接: ${analysis.links.size}, 文件夹: '${analysis.mainProblem.folderPath}'")
+            AppLogger.d(TAG, "开始构建记忆图谱...")
+            AppLogger.d(TAG, "AI分析结果 - 主要问题: '${analysis.mainProblem.title}', 实体: ${analysis.extractedEntities.size}, 链接: ${analysis.links.size}, 文件夹: '${analysis.mainProblem.folderPath}'")
 
 
             try {
@@ -350,12 +350,12 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                 val mainProblemMemory = analysis.mainProblem?.let { mainProblem ->
                     val existingMemory = memoryRepository.findMemoryByTitle(mainProblem.title)
                     if (existingMemory != null) {
-                        Log.d(TAG, "1. 发现同名核心记忆，更新内容: '${mainProblem.title}'")
+                        AppLogger.d(TAG, "1. 发现同名核心记忆，更新内容: '${mainProblem.title}'")
                         existingMemory.content = mainProblem.content
                         memoryRepository.saveMemory(existingMemory)
                         existingMemory
                     } else {
-                        Log.d(TAG, "1. 创建主要问题记忆节点: '${mainProblem.title}'")
+                        AppLogger.d(TAG, "1. 创建主要问题记忆节点: '${mainProblem.title}'")
                         val memory = Memory(
                             title = mainProblem.title,
                             content = mainProblem.content,
@@ -376,21 +376,21 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
 
                 // 2. Process entities with new LLM-driven deduplication logic
                 analysis.extractedEntities.forEach { entity ->
-                    Log.d(TAG, "2. 处理实体: '${entity.title}'")
+                    AppLogger.d(TAG, "2. 处理实体: '${entity.title}'")
                     var memory: Memory? = null
 
                     if (!entity.aliasFor.isNullOrBlank()) {
                         // This entity is an alias for an existing one, as determined by the LLM.
-                        Log.d(TAG, "   -> LLM 识别此实体为 '${entity.aliasFor}' 的别名。")
+                        AppLogger.d(TAG, "   -> LLM 识别此实体为 '${entity.aliasFor}' 的别名。")
                         // Try to find the canonical memory, first in the ones we just created, then in the DB.
                         memory = createdMemories[entity.aliasFor] ?: memoryRepository.findMemoryByTitle(entity.aliasFor)
 
                         if (memory != null) {
-                            Log.d(TAG, "   -> 复用已存在的记忆节点 (ID: ${memory.id}).")
+                            AppLogger.d(TAG, "   -> 复用已存在的记忆节点 (ID: ${memory.id}).")
                         } else {
                             // This is an edge case: LLM said it's an alias, but we can't find the original.
                             // We will treat it as a new entity.
-                            Log.w(TAG, "   -> 无法找到别名 '${entity.aliasFor}' 的原始记忆。将其作为新实体处理。")
+                            AppLogger.w(TAG, "   -> 无法找到别名 '${entity.aliasFor}' 的原始记忆。将其作为新实体处理。")
                         }
                     }
 
@@ -402,11 +402,11 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
 
                         if (bestMatch != null) {
                             // If a very similar memory is found locally, treat it as an alias and reuse it.
-                            Log.d(TAG, "   -> 本地查重：发现与 '${bestMatch.title}' 高度相似的记忆。复用现有记忆节点。")
+                            AppLogger.d(TAG, "   -> 本地查重：发现与 '${bestMatch.title}' 高度相似的记忆。复用现有记忆节点。")
                             memory = bestMatch
                         } else {
                             // Only create a new memory if no close match is found.
-                            Log.d(TAG, "   -> 本地查重未发现相似项。创建新的记忆节点。")
+                            AppLogger.d(TAG, "   -> 本地查重未发现相似项。创建新的记忆节点。")
                             memory = Memory(
                                 title = entity.title,
                                 content = entity.content,
@@ -426,7 +426,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                 }
 
                 // 3. Create links between the memories
-                Log.d(TAG, "3. 开始创建记忆链接...")
+                AppLogger.d(TAG, "3. 开始创建记忆链接...")
                 analysis.links.forEach { link ->
                     // Try to find source: first in newly created/updated memories, then in existing DB
                     val source = createdMemories[link.sourceTitle] 
@@ -437,19 +437,19 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                         ?: memoryRepository.findMemoryByTitle(link.targetTitle)
                     
                     if (source != null && target != null) {
-                        Log.d(TAG, "   -> 正在链接: '${link.sourceTitle}' --(${link.type}, weight=${link.weight})--> '${link.targetTitle}'")
+                        AppLogger.d(TAG, "   -> 正在链接: '${link.sourceTitle}' --(${link.type}, weight=${link.weight})--> '${link.targetTitle}'")
                         memoryRepository.linkMemories(source, target, link.type, weight = link.weight, description = link.description)
                     } else {
-                        Log.w(TAG, "   -> 无法创建链接，源或目标实体未找到: ${link.sourceTitle} -> ${link.targetTitle}")
-                        if (source == null) Log.w(TAG, "      源节点 '${link.sourceTitle}' 未找到")
-                        if (target == null) Log.w(TAG, "      目标节点 '${link.targetTitle}' 未找到")
+                        AppLogger.w(TAG, "   -> 无法创建链接，源或目标实体未找到: ${link.sourceTitle} -> ${link.targetTitle}")
+                        if (source == null) AppLogger.w(TAG, "      源节点 '${link.sourceTitle}' 未找到")
+                        if (target == null) AppLogger.w(TAG, "      目标节点 '${link.targetTitle}' 未找到")
                     }
                 }
 
-                Log.d(TAG, "成功从对话中提取并保存了记忆图谱")
+                AppLogger.d(TAG, "成功从对话中提取并保存了记忆图谱")
 
             } catch (e: Exception) {
-                Log.e(TAG, "保存记忆图谱失败", e)
+                AppLogger.e(TAG, "保存记忆图谱失败", e)
             }
         }
     }
@@ -606,7 +606,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
 
             return parseAnalysisResult(ChatUtils.removeThinkingContent(result.toString()))
         } catch (e: Exception) {
-            Log.e(TAG, "生成分析失败", e)
+            AppLogger.e(TAG, "生成分析失败", e)
             return ParsedAnalysis(null)
         }
     }
@@ -670,7 +670,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
             val json = JSONObject(cleanJson)
             
             // 【新增】输出 AI 返回的完整 JSON 指令
-            Log.d(TAG, "AI 返回的完整 JSON 指令:\n${json.toString(2)}")
+            AppLogger.d(TAG, "AI 返回的完整 JSON 指令:\n${json.toString(2)}")
 
             // Parse main_problem from "main" array
             val mainProblem = json.optJSONArray("main")?.let {
@@ -764,7 +764,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                 userPreferences = userPreferences
             )
         } catch (e: Exception) {
-            Log.e(TAG, "解析分析结果失败: $jsonString", e)
+            AppLogger.e(TAG, "解析分析结果失败: $jsonString", e)
             ParsedAnalysis(null)
         }
     }
@@ -827,7 +827,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                 val date = dateFormat.parse(birthDateMatch.groupValues[2])
                 if (date != null) birthDateTimestamp = date.time
             } catch (e: Exception) {
-                Log.e(TAG, "解析出生日期失败: ${e.message}")
+                AppLogger.e(TAG, "解析出生日期失败: ${e.message}")
             }
         } else if (birthYearMatch != null) {
             try {
@@ -837,7 +837,7 @@ ${memories.joinToString("\n") { "- 标题: ${it.title}, 内容: ${it.content.tak
                 calendar.set(java.util.Calendar.MILLISECOND, 0)
                 birthDateTimestamp = calendar.timeInMillis
             } catch (e: Exception) {
-                Log.e(TAG, "解析出生年份失败: ${e.message}")
+                AppLogger.e(TAG, "解析出生年份失败: ${e.message}")
             }
         }
 

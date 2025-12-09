@@ -2,7 +2,7 @@ package com.ai.assistance.operit.api.chat.llmprovider
 
 import android.content.Context
 import android.os.Environment
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.mnn.MNNLlmSession
 import com.ai.assistance.operit.data.model.ApiProviderType
 import com.ai.assistance.operit.data.model.ModelOption
@@ -81,7 +81,7 @@ class MNNProvider(
         // 调用底层 native 取消方法，立即中断推理
         llmSession?.cancel()
         
-        Log.d(TAG, "已取消MNN推理（已通知底层中断）")
+        AppLogger.d(TAG, "已取消MNN推理（已通知底层中断）")
     }
 
     /**
@@ -90,11 +90,11 @@ class MNNProvider(
     private suspend fun initModel(): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             if (llmSession == null) {
-                Log.d(TAG, "初始化MNN LLM模型: $modelName")
+                AppLogger.d(TAG, "初始化MNN LLM模型: $modelName")
                 
                 // 获取模型目录
                 val modelDir = getModelDir(context, modelName)
-                Log.d(TAG, "模型目录: $modelDir")
+                AppLogger.d(TAG, "模型目录: $modelDir")
                 
                 // 检查目录是否存在
                 val modelDirFile = File(modelDir)
@@ -120,12 +120,12 @@ class MNNProvider(
                     6 -> "opengl"
                     7 -> "vulkan"
                     else -> {
-                        Log.w(TAG, "未知的 forwardType: $forwardType，使用默认 CPU")
+                        AppLogger.w(TAG, "未知的 forwardType: $forwardType，使用默认 CPU")
                         "cpu"
                     }
                 }
                 
-                Log.d(TAG, "创建MNN LLM会话，后端: $backendType, 线程数: $threadCount")
+                AppLogger.d(TAG, "创建MNN LLM会话，后端: $backendType, 线程数: $threadCount")
                 
                 // Vulkan/OpenCL 后端需要 normal 内存模式以避免 Clone error
                 // CPU 后端可以使用 low 内存模式
@@ -135,16 +135,16 @@ class MNNProvider(
                     "low"
                 }
                 
-                Log.d(TAG, "内存模式: $memoryMode (后端: $backendType)")
+                AppLogger.d(TAG, "内存模式: $memoryMode (后端: $backendType)")
                 
                 // 创建缓存目录（用于存放 mnn_cachefile.bin 等临时文件）
                 val cacheDir = File(context.cacheDir, "mnn_cache")
                 if (!cacheDir.exists()) {
                     val created = cacheDir.mkdirs()
-                    Log.d(TAG, "创建MNN缓存目录: $created")
+                    AppLogger.d(TAG, "创建MNN缓存目录: $created")
                 }
-                Log.d(TAG, "MNN缓存目录: ${cacheDir.absolutePath}")
-                Log.d(TAG, "缓存目录存在: ${cacheDir.exists()}, 可写: ${cacheDir.canWrite()}")
+                AppLogger.d(TAG, "MNN缓存目录: ${cacheDir.absolutePath}")
+                AppLogger.d(TAG, "缓存目录存在: ${cacheDir.exists()}, 可写: ${cacheDir.canWrite()}")
                 
                 // 创建 LLM Session（配置必须在创建时传入！）
                 llmSession = MNNLlmSession.create(
@@ -162,11 +162,11 @@ class MNNProvider(
                     )
                 }
 
-                Log.i(TAG, "MNN LLM模型初始化成功，后端: $backendType")
+                AppLogger.i(TAG, "MNN LLM模型初始化成功，后端: $backendType")
             }
             Result.success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "初始化MNN LLM模型失败", e)
+            AppLogger.e(TAG, "初始化MNN LLM模型失败", e)
             Result.failure(e)
         }
     }
@@ -179,7 +179,7 @@ class MNNProvider(
             val session = llmSession ?: return@withContext estimateTokens(text)
             session.tokenize(text).size
         } catch (e: Exception) {
-            Log.w(TAG, "Token计数失败，使用估算", e)
+            AppLogger.w(TAG, "Token计数失败，使用估算", e)
             estimateTokens(text)
         }
     }
@@ -245,9 +245,9 @@ class MNNProvider(
             // 设置 thinking 模式（仅对支持的模型有效，如 Qwen3）
             try {
                 session.setThinkingMode(enableThinking)
-                Log.d(TAG, "Thinking mode set to: $enableThinking")
+                AppLogger.d(TAG, "Thinking mode set to: $enableThinking")
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to set thinking mode (model may not support it): ${e.message}")
+                AppLogger.w(TAG, "Failed to set thinking mode (model may not support it): ${e.message}")
             }
 
             // 应用模型参数（采样参数）
@@ -255,7 +255,7 @@ class MNNProvider(
 
             // 如果消息为空，不添加到历史记录
             if (message.isBlank()) {
-                Log.d(TAG, "消息为空，跳过处理")
+                AppLogger.d(TAG, "消息为空，跳过处理")
                 return@stream
             }
 
@@ -269,7 +269,7 @@ class MNNProvider(
             _inputTokenCount = countTokens(estimatedPrompt)
             onTokensUpdated(_inputTokenCount, 0, 0)
 
-            Log.d(TAG, "开始MNN LLM推理，历史消息数: ${fullHistory.size}, thinking模式: $enableThinking")
+            AppLogger.d(TAG, "开始MNN LLM推理，历史消息数: ${fullHistory.size}, thinking模式: $enableThinking")
 
             // 从模型参数中获取 max_tokens（如果有的话）
             val maxTokens = modelParameters
@@ -305,10 +305,10 @@ class MNNProvider(
                 emit("\n\n[推理过程出现错误]")
             }
 
-            Log.i(TAG, "MNN LLM推理完成，输出token数: $_outputTokenCount")
+            AppLogger.i(TAG, "MNN LLM推理完成，输出token数: $_outputTokenCount")
 
         } catch (e: Exception) {
-            Log.e(TAG, "发送消息时出错", e)
+            AppLogger.e(TAG, "发送消息时出错", e)
             emit("错误: ${e.message}")
         }
     }
@@ -357,7 +357,7 @@ class MNNProvider(
 
             Result.success("MNN LLM模型连接成功！\n\n模型: $modelName\n目录: $modelDir\n总大小: ${formatFileSize(totalSize)}\n\n$fileStatus")
         } catch (e: Exception) {
-            Log.e(TAG, "测试连接失败", e)
+            AppLogger.e(TAG, "测试连接失败", e)
             Result.failure(e)
         }
     }
@@ -466,7 +466,7 @@ class MNNProvider(
                                             else -> null
                                         }
                                     } catch (e: Exception) {
-                                        Log.w(TAG, "自定义OBJECT参数解析失败: ${param.apiName}", e)
+                                        AppLogger.w(TAG, "自定义OBJECT参数解析失败: ${param.apiName}", e)
                                         null
                                     }
                                     if (parsed != null) {
@@ -501,16 +501,16 @@ class MNNProvider(
                     append("}")
                 }
                 
-                Log.d(TAG, "应用模型参数: $configJson")
+                AppLogger.d(TAG, "应用模型参数: $configJson")
                 val success = session.setConfig(configJson)
                 if (!success) {
-                    Log.w(TAG, "部分模型参数设置失败")
+                    AppLogger.w(TAG, "部分模型参数设置失败")
                 }
             } else {
-                Log.d(TAG, "没有启用的模型参数需要应用")
+                AppLogger.d(TAG, "没有启用的模型参数需要应用")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "应用模型参数时出错", e)
+            AppLogger.e(TAG, "应用模型参数时出错", e)
         }
     }
     
@@ -561,9 +561,9 @@ class MNNProvider(
         try {
             llmSession?.release()
             llmSession = null
-            Log.d(TAG, "MNN LLM资源已释放")
+            AppLogger.d(TAG, "MNN LLM资源已释放")
         } catch (e: Exception) {
-            Log.e(TAG, "释放资源时出错", e)
+            AppLogger.e(TAG, "释放资源时出错", e)
         }
     }
 }

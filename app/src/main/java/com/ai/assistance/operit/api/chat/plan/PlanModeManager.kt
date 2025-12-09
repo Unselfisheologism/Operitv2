@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.api.chat.plan
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.EnhancedAIService
 import com.ai.assistance.operit.data.model.FunctionType
 import com.ai.assistance.operit.data.model.PromptFunctionType
@@ -188,10 +188,10 @@ class PlanModeManager(
             
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException || isCancelled.get()) {
-                Log.d(TAG, "深度搜索模式被取消")
+                AppLogger.d(TAG, "深度搜索模式被取消")
                 emit("<log>🟡 深度搜索模式已取消。</log>\n")
             } else {
-                Log.e(TAG, "深度搜索模式执行失败", e)
+                AppLogger.e(TAG, "深度搜索模式执行失败", e)
                 emit("<error>❌ 深度搜索模式执行失败: ${e.message}</error>\n")
             }
             // 执行失败或取消，设置为idle状态
@@ -243,30 +243,30 @@ class PlanModeManager(
             }
             
             val planResponse = ChatUtils.removeThinkingContent(planBuilder.toString().trim())
-            Log.d(TAG, "AI生成的执行计划: $planResponse")
+            AppLogger.d(TAG, "AI生成的执行计划: $planResponse")
             
             // 解析执行计划
             val executionGraph = PlanParser.parseExecutionGraph(planResponse)
             if (executionGraph == null) {
-                Log.e(TAG, "解析执行计划失败")
+                AppLogger.e(TAG, "解析执行计划失败")
                 return null
             }
             
             // 验证执行计划
             val (isValid, errorMessage) = PlanParser.validateExecutionGraph(executionGraph)
             if (!isValid) {
-                Log.e(TAG, "执行计划验证失败: $errorMessage")
+                AppLogger.e(TAG, "执行计划验证失败: $errorMessage")
                 return null
             }
             
-            Log.d(TAG, "执行计划生成并验证成功，包含 ${executionGraph.tasks.size} 个任务")
+            AppLogger.d(TAG, "执行计划生成并验证成功，包含 ${executionGraph.tasks.size} 个任务")
             return executionGraph
             
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) {
-                Log.d(TAG, "执行计划生成被取消")
+                AppLogger.d(TAG, "执行计划生成被取消")
             } else {
-                Log.e(TAG, "生成执行计划时发生错误", e)
+                AppLogger.e(TAG, "生成执行计划时发生错误", e)
             }
             return null
         }
@@ -292,7 +292,7 @@ $userMessage
         taskExecutor.cancelAllTasks()
         // 可以在这里取消正在进行的 planningService.sendMessage
         // 但由于 planningService 是局部变量，需要修改结构或依赖注入
-        Log.d(TAG, "PlanModeManager cancel called")
+        AppLogger.d(TAG, "PlanModeManager cancel called")
     }
     
     /**

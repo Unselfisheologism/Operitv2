@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.javascript
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.Keep
@@ -120,7 +120,7 @@ class JsEngine(private val context: Context) {
                             }
                     latch.countDown()
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error initializing WebView: ${e.message}", e)
+                    AppLogger.e(TAG, "Error initializing WebView: ${e.message}", e)
                     latch.countDown()
                 }
             }
@@ -251,7 +251,7 @@ class JsEngine(private val context: Context) {
                         }).join(' ');
                         
                         // 调用原始方法
-                        originalConsole.log.apply(console, arguments);
+                        originalConsole.AppLogger.apply(console, arguments);
                         
                         // 向Android报告日志
                         if (typeof NativeInterface !== 'undefined' && NativeInterface.logInfo) {
@@ -612,11 +612,11 @@ class JsEngine(private val context: Context) {
         ContextCompat.getMainExecutor(context).execute {
             try {
                 webView?.evaluateJavascript(initScript) { result ->
-                    Log.d(TAG, "JS environment initialization completed: $result")
+                    AppLogger.d(TAG, "JS environment initialization completed: $result")
                     jsEnvironmentInitialized = true
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to initialize JS environment: ${e.message}", e)
+                AppLogger.e(TAG, "Failed to initialize JS environment: ${e.message}", e)
             }
         }
 
@@ -796,7 +796,7 @@ class JsEngine(private val context: Context) {
         // 在主线程中执行脚本
         ContextCompat.getMainExecutor(context).execute {
             webView?.evaluateJavascript(executionScript) { result ->
-                Log.d(TAG, "Script execution dispatched. Sync result: $result (final async result is handled separately)")
+                AppLogger.d(TAG, "Script execution dispatched. Sync result: $result (final async result is handled separately)")
             }
         }
 
@@ -812,7 +812,7 @@ class JsEngine(private val context: Context) {
                             try {
                                 // 如果还没完成，尝试提前触发完成
                                 if (!future.isDone) {
-                                    Log.d(TAG, "Pre-timeout warning triggered")
+                                    AppLogger.d(TAG, "Pre-timeout warning triggered")
                                     ContextCompat.getMainExecutor(context).execute {
                                         webView?.evaluateJavascript(
                                                 """
@@ -826,7 +826,7 @@ class JsEngine(private val context: Context) {
                                     }
                                 }
                             } catch (e: Exception) {
-                                Log.e(TAG, "Error in pre-timeout handler: ${e.message}", e)
+                                AppLogger.e(TAG, "Error in pre-timeout handler: ${e.message}", e)
                             }
                         }
                     },
@@ -842,7 +842,7 @@ class JsEngine(private val context: Context) {
                 throw e
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Script execution timed out or failed: ${e.message}", e)
+            AppLogger.e(TAG, "Script execution timed out or failed: ${e.message}", e)
             // 确保WebView的JavaScript不再继续执行
             ContextCompat.getMainExecutor(context).execute {
                 webView?.evaluateJavascript(
@@ -861,7 +861,7 @@ class JsEngine(private val context: Context) {
             try {
                 resultCallback?.complete("Execution canceled: new execution started")
             } catch (e: Exception) {
-                Log.e(TAG, "Error completing previous callback: ${e.message}", e)
+                AppLogger.e(TAG, "Error completing previous callback: ${e.message}", e)
             }
         }
         resultCallback = null
@@ -901,7 +901,7 @@ class JsEngine(private val context: Context) {
                             null
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error in WebView cleanup: ${e.message}", e)
+                    AppLogger.e(TAG, "Error in WebView cleanup: ${e.message}", e)
                 }
             }
         }
@@ -951,7 +951,7 @@ class JsEngine(private val context: Context) {
                 outputStream.toByteArray().toString(Charsets.UTF_8)
 
             } catch (e: Exception) {
-                Log.e(TAG, "Native decompress operation failed: ${e.message}", e)
+                AppLogger.e(TAG, "Native decompress operation failed: ${e.message}", e)
                 "{\"nativeError\":\"${e.message?.replace("\"", "'")}\"}"
             }
         }
@@ -967,7 +967,7 @@ class JsEngine(private val context: Context) {
                     "[image registration failed]"
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "registerImageFromBase64 failed: ${e.message}", e)
+                AppLogger.e(TAG, "registerImageFromBase64 failed: ${e.message}", e)
                 "[image registration failed: ${e.message}]"
             }
         }
@@ -982,7 +982,7 @@ class JsEngine(private val context: Context) {
                     "[image registration failed]"
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "registerImageFromPath failed: ${e.message}", e)
+                AppLogger.e(TAG, "registerImageFromPath failed: ${e.message}", e)
                 "[image registration failed: ${e.message}]"
             }
         }
@@ -994,31 +994,31 @@ class JsEngine(private val context: Context) {
                     val args = Json.decodeFromString(ListSerializer(JsonElement.serializer()), argsJson)
                     val result: Any? = when (operation.lowercase()) {
                         "read" -> {
-                            Log.d(TAG, "Entering 'read' operation in image_processing.")
+                            AppLogger.d(TAG, "Entering 'read' operation in image_processing.")
                             val data = args[0].jsonPrimitive.content
                             val decodedBytes: ByteArray
                             if (data.startsWith(BINARY_HANDLE_PREFIX)) {
                                 val handle = data.substring(BINARY_HANDLE_PREFIX.length)
-                                Log.d(TAG, "Reading image from binary handle: $handle")
+                                AppLogger.d(TAG, "Reading image from binary handle: $handle")
                                 decodedBytes = binaryDataRegistry.remove(handle)
                                     ?: throw Exception("Invalid or expired binary handle: $handle")
                             } else {
-                                Log.d(TAG, "Reading image from Base64 string.")
+                                AppLogger.d(TAG, "Reading image from Base64 string.")
                                 decodedBytes = Base64.decode(data, Base64.DEFAULT)
                             }
-                            Log.d(TAG, "Decoded data to ${decodedBytes.size} bytes.")
+                            AppLogger.d(TAG, "Decoded data to ${decodedBytes.size} bytes.")
 
                             val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
 
                             if (bitmap == null) {
-                                Log.e(TAG, "BitmapFactory.decodeByteArray returned null. Throwing exception.")
+                                AppLogger.e(TAG, "BitmapFactory.decodeByteArray returned null. Throwing exception.")
                                 throw Exception("Failed to decode image. The format may be unsupported or data is corrupt.")
                             } else {
-                                Log.d(TAG, "BitmapFactory.decodeByteArray returned a non-null Bitmap.")
-                                Log.d(TAG, "Bitmap dimensions: ${bitmap.width}x${bitmap.height}")
-                                Log.d(TAG, "Bitmap config: ${bitmap.config}")
+                                AppLogger.d(TAG, "BitmapFactory.decodeByteArray returned a non-null Bitmap.")
+                                AppLogger.d(TAG, "Bitmap dimensions: ${bitmap.width}x${bitmap.height}")
+                                AppLogger.d(TAG, "Bitmap config: ${bitmap.config}")
                                 val id = UUID.randomUUID().toString()
-                                Log.d(TAG, "Storing bitmap with ID: $id")
+                                AppLogger.d(TAG, "Storing bitmap with ID: $id")
                                 bitmapRegistry[id] = bitmap
                                 id
                             }
@@ -1033,7 +1033,7 @@ class JsEngine(private val context: Context) {
                         }
                         "crop" -> {
                             val id = args[0].jsonPrimitive.content
-                            Log.d(TAG, "Attempting to crop bitmap with ID: $id")
+                            AppLogger.d(TAG, "Attempting to crop bitmap with ID: $id")
                             val x = args[1].jsonPrimitive.int
                             val y = args[2].jsonPrimitive.int
                             val w = args[3].jsonPrimitive.int
@@ -1048,7 +1048,7 @@ class JsEngine(private val context: Context) {
                         "composite" -> {
                             val baseId = args[0].jsonPrimitive.content
                             val srcId = args[1].jsonPrimitive.content
-                            Log.d(TAG, "Attempting to composite with base ID: $baseId and src ID: $srcId")
+                            AppLogger.d(TAG, "Attempting to composite with base ID: $baseId and src ID: $srcId")
                             val x = args[2].jsonPrimitive.int
                             val y = args[3].jsonPrimitive.int
                             val baseBitmap = bitmapRegistry[baseId]
@@ -1061,17 +1061,17 @@ class JsEngine(private val context: Context) {
                         }
                         "getwidth" -> {
                             val id = args[0].jsonPrimitive.content
-                            Log.d(TAG, "Attempting to getWidth for bitmap with ID: $id")
+                            AppLogger.d(TAG, "Attempting to getWidth for bitmap with ID: $id")
                             bitmapRegistry[id]?.width ?: throw Exception("Bitmap not found for getWidth (ID: $id)")
                         }
                         "getheight" -> {
                             val id = args[0].jsonPrimitive.content
-                            Log.d(TAG, "Attempting to getHeight for bitmap with ID: $id")
+                            AppLogger.d(TAG, "Attempting to getHeight for bitmap with ID: $id")
                             bitmapRegistry[id]?.height ?: throw Exception("Bitmap not found for getHeight (ID: $id)")
                         }
                         "getbase64" -> {
                             val id = args[0].jsonPrimitive.content
-                            Log.d(TAG, "Attempting to getBase64 for bitmap with ID: $id")
+                            AppLogger.d(TAG, "Attempting to getBase64 for bitmap with ID: $id")
                             val mime = args.getOrNull(1)?.jsonPrimitive?.content ?: "image/jpeg"
                             val bitmap = bitmapRegistry[id]
                                 ?: throw Exception("Bitmap not found for getBase64 (ID: $id)")
@@ -1082,7 +1082,7 @@ class JsEngine(private val context: Context) {
                         }
                         "release" -> {
                             val id = args[0].jsonPrimitive.content
-                            Log.d(TAG, "Attempting to release bitmap with ID: $id")
+                            AppLogger.d(TAG, "Attempting to release bitmap with ID: $id")
                             bitmapRegistry.remove(id)?.recycle()
                             null
                         }
@@ -1097,7 +1097,7 @@ class JsEngine(private val context: Context) {
                     }
                     sendToolResult(callbackId, Json.encodeToString(JsonElement.serializer(), jsonResultElement), false)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Native image processing failed: ${e.message}", e)
+                    AppLogger.e(TAG, "Native image processing failed: ${e.message}", e)
                     sendToolResult(callbackId, e.message ?: "Unknown image processing error", true)
                 }
             }.start()
@@ -1159,7 +1159,7 @@ class JsEngine(private val context: Context) {
                     else -> throw IllegalArgumentException("Unknown algorithm: $algorithm")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Native crypto operation failed: ${e.message}", e)
+                AppLogger.e(TAG, "Native crypto operation failed: ${e.message}", e)
                 // Return a structured error JSON that the JS bridge can understand
                 "{\"nativeError\":\"${e.message?.replace("\"", "'")}\"}"
             }
@@ -1168,12 +1168,12 @@ class JsEngine(private val context: Context) {
         @JavascriptInterface
         fun sendIntermediateResult(result: String) {
             try {
-                Log.d(TAG, "Received intermediate result from JS: ${result.take(200)}")
+                AppLogger.d(TAG, "Received intermediate result from JS: ${result.take(200)}")
                 ContextCompat.getMainExecutor(context).execute {
                     intermediateResultCallback?.invoke(result)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error processing intermediate result: ${e.message}", e)
+                AppLogger.e(TAG, "Error processing intermediate result: ${e.message}", e)
             }
         }
 
@@ -1189,11 +1189,11 @@ class JsEngine(private val context: Context) {
                 }
 
                 // 调用工具
-                Log.d(TAG, "[Sync] JavaScript tool call: $toolType:$toolName with params: $params")
+                AppLogger.d(TAG, "[Sync] JavaScript tool call: $toolType:$toolName with params: $params")
 
                 // 参数验证
                 if (toolName.isEmpty()) {
-                    Log.e(TAG, "Tool name cannot be empty")
+                    AppLogger.e(TAG, "Tool name cannot be empty")
                     return "Error: Tool name cannot be empty"
                 }
 
@@ -1212,7 +1212,7 @@ class JsEngine(private val context: Context) {
                 // 创建工具调用对象
                 val aiTool = AITool(name = fullToolName, parameters = toolParameters)
 
-                Log.d(TAG, "Executing tool (sync): $fullToolName")
+                AppLogger.d(TAG, "Executing tool (sync): $fullToolName")
 
                 // 使用 AIToolHandler 执行工具
                 val result = toolHandler.executeTool(aiTool)
@@ -1220,12 +1220,12 @@ class JsEngine(private val context: Context) {
                 // 记录执行结果
                 if (result.success) {
                     val resultString = result.result.toString()
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "[Sync] Tool execution succeeded: ${resultString.take(1000)}${if (resultString.length > 1000) "..." else ""}"
                     )
                 } else {
-                    Log.e(TAG, "[Sync] Tool execution failed: ${result.error}")
+                    AppLogger.e(TAG, "[Sync] Tool execution failed: ${result.error}")
                 }
 
                 // 返回结果
@@ -1270,7 +1270,7 @@ class JsEngine(private val context: Context) {
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "[Sync] Error in tool call: ${e.message}", e)
+                AppLogger.e(TAG, "[Sync] Error in tool call: ${e.message}", e)
                 return Json.encodeToString(
                         JsonElement.serializer(),
                         buildJsonObject {
@@ -1298,14 +1298,14 @@ class JsEngine(private val context: Context) {
                 }
 
                 // 调用工具
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "[Async] JavaScript tool call: $toolType:$toolName with params: $params, callbackId: $callbackId"
                 )
 
                 // 参数验证
                 if (toolName.isEmpty()) {
-                    Log.e(TAG, "Tool name cannot be empty")
+                    AppLogger.e(TAG, "Tool name cannot be empty")
                     val errorJson =
                             Json.encodeToString(
                                     JsonElement.serializer(),
@@ -1333,7 +1333,7 @@ class JsEngine(private val context: Context) {
                 // 创建工具调用对象
                 val aiTool = AITool(name = fullToolName, parameters = toolParameters)
 
-                Log.d(TAG, "Executing tool (async): $fullToolName")
+                AppLogger.d(TAG, "Executing tool (async): $fullToolName")
 
                 // 在后台线程中执行工具调用
                 Thread {
@@ -1344,7 +1344,7 @@ class JsEngine(private val context: Context) {
                                 // 记录执行结果
                                 if (result.success) {
                                     val resultString = result.result.toString()
-                                    Log.d(
+                                    AppLogger.d(
                                             TAG,
                                             "[Async] Tool execution succeeded: ${resultString.take(1000)}${if (resultString.length > 1000) "..." else ""}"
                                     )
@@ -1361,7 +1361,7 @@ class JsEngine(private val context: Context) {
                                                                 if (resultData.value.size > BINARY_DATA_THRESHOLD) {
                                                                     val handle = UUID.randomUUID().toString()
                                                                     binaryDataRegistry[handle] = resultData.value
-                                                                    Log.d(TAG, "[Async] Stored large binary data with handle: $handle")
+                                                                    AppLogger.d(TAG, "[Async] Stored large binary data with handle: $handle")
                                                                     put("data", JsonPrimitive("$BINARY_HANDLE_PREFIX$handle"))
                                                                 } else {
                                                                     put("data", JsonPrimitive(Base64.encodeToString(resultData.value, Base64.NO_WRAP)))
@@ -1414,7 +1414,7 @@ class JsEngine(private val context: Context) {
                                             )
                                     sendToolResult(callbackId, resultJson, false)
                                 } else {
-                                    Log.e(TAG, "[Async] Tool execution failed: ${result.error}")
+                                    AppLogger.e(TAG, "[Async] Tool execution failed: ${result.error}")
                                     // 发送错误结果回调
                                     val errorJson =
                                             Json.encodeToString(
@@ -1433,7 +1433,7 @@ class JsEngine(private val context: Context) {
                                     sendToolResult(callbackId, errorJson, true)
                                 }
                             } catch (e: Exception) {
-                                Log.e(TAG, "[Async] Error in async tool execution: ${e.message}", e)
+                                AppLogger.e(TAG, "[Async] Error in async tool execution: ${e.message}", e)
                                 // 发送异常结果回调
                                 val errorJson =
                                         Json.encodeToString(
@@ -1451,7 +1451,7 @@ class JsEngine(private val context: Context) {
                         }
                         .start()
             } catch (e: Exception) {
-                Log.e(TAG, "[Async] Error setting up async tool call: ${e.message}", e)
+                AppLogger.e(TAG, "[Async] Error setting up async tool call: ${e.message}", e)
                 val errorJson =
                         Json.encodeToString(
                                 JsonElement.serializer(),
@@ -1500,7 +1500,7 @@ class JsEngine(private val context: Context) {
                             }
                     webView?.evaluateJavascript(jsCode, null)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error sending tool result to JavaScript: ${e.message}", e)
+                    AppLogger.e(TAG, "Error sending tool result to JavaScript: ${e.message}", e)
                 }
             }
         }
@@ -1509,19 +1509,19 @@ class JsEngine(private val context: Context) {
         fun setResult(result: String) {
             try {
                 // 加入更详细的日志，帮助排查异步问题
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "Setting result from JavaScript: result=${result.take(500)}, length=${result.length}, callback=${resultCallback != null}, isDone=${resultCallback?.isDone}"
                 )
 
                 // 确保回调仍然有效
                 if (resultCallback == null) {
-                    Log.e(TAG, "Result callback is null when trying to complete")
+                    AppLogger.e(TAG, "Result callback is null when trying to complete")
                     return
                 }
 
                 if (resultCallback!!.isDone) {
-                    Log.w(TAG, "Result callback is already completed when trying to set result")
+                    AppLogger.w(TAG, "Result callback is already completed when trying to set result")
                     return
                 }
 
@@ -1530,20 +1530,20 @@ class JsEngine(private val context: Context) {
                     try {
                         // 返回成功结果
                         if (!resultCallback!!.isDone) {
-                            Log.d(TAG, "Actually completing the result callback")
+                            AppLogger.d(TAG, "Actually completing the result callback")
                             resultCallback!!.complete(result)
                         } else {
-                            Log.w(TAG, "Callback became complete between check and execution")
+                            AppLogger.w(TAG, "Callback became complete between check and execution")
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error completing result on main thread: ${e.message}", e)
+                        AppLogger.e(TAG, "Error completing result on main thread: ${e.message}", e)
                         if (!resultCallback!!.isDone) {
                             resultCallback!!.completeExceptionally(e)
                         }
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error setting result: ${e.message}", e)
+                AppLogger.e(TAG, "Error setting result: ${e.message}", e)
                 resultCallback?.completeExceptionally(e)
             }
         }
@@ -1552,7 +1552,7 @@ class JsEngine(private val context: Context) {
         fun setError(error: String) {
             try {
                 // 加入更详细的日志
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "Setting error from JavaScript: $error, callback=${resultCallback != null}, isDone=${resultCallback?.isDone}"
                 )
@@ -1586,20 +1586,20 @@ class JsEngine(private val context: Context) {
                     }
                 } catch (e: Exception) {
                     // 不是有效的JSON或解析失败，使用原始错误字符串
-                    Log.d(TAG, "Error parsing error message as JSON: ${e.message}")
+                    AppLogger.d(TAG, "Error parsing error message as JSON: ${e.message}")
                 }
 
                 // 记录错误日志
-                Log.e(TAG, "JS ERROR: $logMessage")
+                AppLogger.e(TAG, "JS ERROR: $logMessage")
 
                 // 确保回调仍然有效
                 if (resultCallback == null) {
-                    Log.e(TAG, "Result callback is null when trying to complete with error")
+                    AppLogger.e(TAG, "Result callback is null when trying to complete with error")
                     return
                 }
 
                 if (resultCallback!!.isDone) {
-                    Log.w(TAG, "Result callback is already completed when trying to set error")
+                    AppLogger.w(TAG, "Result callback is already completed when trying to set error")
                     return
                 }
 
@@ -1611,24 +1611,24 @@ class JsEngine(private val context: Context) {
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error setting error result: ${e.message}", e)
+                AppLogger.e(TAG, "Error setting error result: ${e.message}", e)
                 resultCallback?.completeExceptionally(e)
             }
         }
 
         @JavascriptInterface
         fun logInfo(message: String) {
-            Log.i(TAG, "JS: $message")
+            AppLogger.i(TAG, "JS: $message")
         }
 
         @JavascriptInterface
         fun logError(message: String) {
-            Log.e(TAG, "JS ERROR: $message")
+            AppLogger.e(TAG, "JS ERROR: $message")
         }
 
         @JavascriptInterface
         fun logDebug(message: String, data: String) {
-            Log.d(TAG, "JS DEBUG: $message | $data")
+            AppLogger.d(TAG, "JS DEBUG: $message | $data")
         }
 
         @JavascriptInterface
@@ -1638,7 +1638,7 @@ class JsEngine(private val context: Context) {
                 errorLine: Int,
                 errorStack: String
         ) {
-            Log.e(
+            AppLogger.e(
                     TAG,
                     "DETAILED JS ERROR: \nType: $errorType\nMessage: $errorMessage\nLine: $errorLine\nStack: $errorStack"
             )
@@ -1680,23 +1680,23 @@ class JsEngine(private val context: Context) {
                     }
                     webView = null
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error destroying WebView: ${e.message}", e)
+                    AppLogger.e(TAG, "Error destroying WebView: ${e.message}", e)
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error during JsEngine destruction: ${e.message}", e)
+            AppLogger.e(TAG, "Error during JsEngine destruction: ${e.message}", e)
         }
     }
 
     /** 处理引擎异常 */
     private fun handleException(e: Exception): String {
-        Log.e(TAG, "JsEngine exception: ${e.message}", e)
+        AppLogger.e(TAG, "JsEngine exception: ${e.message}", e)
 
         // 尝试重置当前状态
         try {
             resetState()
         } catch (resetEx: Exception) {
-            Log.e(TAG, "Failed to reset state after exception: ${resetEx.message}", resetEx)
+            AppLogger.e(TAG, "Failed to reset state after exception: ${resetEx.message}", resetEx)
         }
 
         return "Error: ${e.message}"
@@ -1705,10 +1705,10 @@ class JsEngine(private val context: Context) {
     /** 诊断引擎状态 用于调试目的，记录当前状态信息 */
     fun diagnose() {
         try {
-            Log.d(TAG, "=== JsEngine Diagnostics ===")
-            Log.d(TAG, "WebView initialized: ${webView != null}")
-            Log.d(TAG, "Result callback: ${resultCallback?.isDone ?: "null"}")
-            Log.d(TAG, "Tool callbacks pending: ${toolCallbacks.size}")
+            AppLogger.d(TAG, "=== JsEngine Diagnostics ===")
+            AppLogger.d(TAG, "WebView initialized: ${webView != null}")
+            AppLogger.d(TAG, "Result callback: ${resultCallback?.isDone ?: "null"}")
+            AppLogger.d(TAG, "Tool callbacks pending: ${toolCallbacks.size}")
 
             // 检查WebView状态
             if (webView != null) {
@@ -1738,13 +1738,13 @@ class JsEngine(private val context: Context) {
                             return JSON.stringify(result);
                         })();
                     """
-                    ) { diagResult -> Log.d(TAG, "WebView diagnostics: $diagResult") }
+                    ) { diagResult -> AppLogger.d(TAG, "WebView diagnostics: $diagResult") }
                 }
             }
 
-            Log.d(TAG, "=========================")
+            AppLogger.d(TAG, "=========================")
         } catch (e: Exception) {
-            Log.e(TAG, "Error during diagnostics: ${e.message}", e)
+            AppLogger.e(TAG, "Error during diagnostics: ${e.message}", e)
         }
     }
 }
@@ -1753,7 +1753,7 @@ private fun loadPakoJs(context: Context): String {
     return try {
         context.assets.open("js/pako.js").bufferedReader().use { it.readText() }
     } catch (e: Exception) {
-        Log.e("JsEngine", "Failed to load pako.js", e)
+        AppLogger.e("JsEngine", "Failed to load pako.js", e)
         "// pako.js failed to load"
     }
 }
@@ -1762,7 +1762,7 @@ private fun loadCryptoJs(context: Context): String {
     return try {
         context.assets.open("js/CryptoJS.js").bufferedReader().use { it.readText() }
     } catch (e: Exception) {
-        Log.e("JsEngine", "Failed to load CryptoJS.js", e)
+        AppLogger.e("JsEngine", "Failed to load CryptoJS.js", e)
         "// CryptoJS.js failed to load"
     }
 }
@@ -1771,7 +1771,7 @@ private fun loadJimpJs(context: Context): String {
     return try {
         context.assets.open("js/Jimp.js").bufferedReader().use { it.readText() }
     } catch (e: Exception) {
-        Log.e("JsEngine", "Failed to load Jimp.js", e)
+        AppLogger.e("JsEngine", "Failed to load Jimp.js", e)
         "// Jimp.js failed to load"
     }
 }

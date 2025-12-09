@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.standard
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.data.model.AITool
 import com.ai.assistance.operit.data.model.ToolResult
@@ -77,7 +77,7 @@ class SSHRemoteConnectionTools(private val context: Context) {
         }
         
         return try {
-            Log.d(TAG, "Connecting to SSH: $username@$host:$port")
+            AppLogger.d(TAG, "Connecting to SSH: $username@$host:$port")
             
             // 先断开已有连接
             sshFileManager.disconnect(DEFAULT_CONNECTION_ID)
@@ -98,7 +98,7 @@ class SSHRemoteConnectionTools(private val context: Context) {
             val result = sshFileManager.connect(connectionParams)
             
             if (result.isSuccess) {
-                Log.d(TAG, "SSH login successful")
+                AppLogger.d(TAG, "SSH login successful")
                 
                 ToolResult(
                     toolName = tool.name,
@@ -115,7 +115,9 @@ class SSHRemoteConnectionTools(private val context: Context) {
                 )
             } else {
                 val error = result.exceptionOrNull()
-                Log.e(TAG, "SSH connection failed", error)
+                error?.let { ex ->
+                    AppLogger.e(TAG, "SSH connection failed", ex)
+                } ?: AppLogger.e(TAG, "SSH connection failed with unknown error")
                 
                 ToolResult(
                     toolName = tool.name,
@@ -125,7 +127,7 @@ class SSHRemoteConnectionTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "SSH connection error", e)
+            AppLogger.e(TAG, "SSH connection error", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -142,12 +144,12 @@ class SSHRemoteConnectionTools(private val context: Context) {
      */
     suspend fun sshExit(tool: AITool): ToolResult {
         return try {
-            Log.d(TAG, "Logging out from SSH")
+            AppLogger.d(TAG, "Logging out from SSH")
             
             val result = sshFileManager.disconnect(DEFAULT_CONNECTION_ID)
             
             if (result.isSuccess) {
-                Log.d(TAG, "SSH logout successful")
+                AppLogger.d(TAG, "SSH logout successful")
                 
                 ToolResult(
                     toolName = tool.name,
@@ -168,7 +170,7 @@ class SSHRemoteConnectionTools(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "SSH logout error", e)
+            AppLogger.e(TAG, "SSH logout error", e)
             // 即使出错也返回成功
             ToolResult(
                 toolName = tool.name,

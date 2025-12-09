@@ -2,7 +2,7 @@ package com.ai.assistance.operit.core.tools.system
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.util.GithubReleaseUtil
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers

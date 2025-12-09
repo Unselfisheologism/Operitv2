@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.features.chat.webview
 
 import android.content.Context
 import android.os.Environment
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.DirectoryListingData
 import com.ai.assistance.operit.core.tools.StringResultData
@@ -91,11 +91,11 @@ private constructor(
             // Always overwrite. First, delete existing files if the directory exists.
             if (destDir.exists()) {
                 destDir.deleteRecursively()
-                Log.d("LocalWebServer", "Cleared existing computer directory for refresh: ${destDir.absolutePath}")
+                AppLogger.d("LocalWebServer", "Cleared existing computer directory for refresh: ${destDir.absolutePath}")
             }
 
             if (!destDir.mkdirs()) {
-                Log.e("LocalWebServer", "Failed to create destination directory: ${destDir.absolutePath}")
+                AppLogger.e("LocalWebServer", "Failed to create destination directory: ${destDir.absolutePath}")
                 return
             }
 
@@ -103,7 +103,7 @@ private constructor(
             try {
                 val assets = assetManager.list(assetDir)
                 if (assets == null || assets.isEmpty()) {
-                    Log.w("LocalWebServer", "No assets found in directory: $assetDir")
+                    AppLogger.w("LocalWebServer", "No assets found in directory: $assetDir")
                     return
                 }
                 for (asset in assets) {
@@ -129,7 +129,7 @@ private constructor(
                     }
                 }
             } catch (e: IOException) {
-                Log.e("LocalWebServer", "Failed to copy assets from '$assetDir'", e)
+                AppLogger.e("LocalWebServer", "Failed to copy assets from '$assetDir'", e)
             }
         }
     }
@@ -140,24 +140,24 @@ private constructor(
     override fun start() {
         // 检查服务器是否已经在运行，避免重复启动
         if (isServerRunning.get()) {
-            Log.d(TAG, "服务器已在端口 $port 上运行，跳过启动")
+            AppLogger.d(TAG, "服务器已在端口 $port 上运行，跳过启动")
             return
         }
         
         if (type == ServerType.COMPUTER) {
             val computerRoot = getComputerRootPath()
-            Log.d(TAG, "确保AI电脑资源已是最新，路径: ${computerRoot.absolutePath}")
+            AppLogger.d(TAG, "确保AI电脑资源已是最新，路径: ${computerRoot.absolutePath}")
             copyAssetsToDirectory(context, "computer_desktop", computerRoot)
         }
         super.start(SOCKET_READ_TIMEOUT, false)
-        Log.d(TAG, "本地Web服务器已在端口 $port 上启动, 根目录: $rootPath")
+        AppLogger.d(TAG, "本地Web服务器已在端口 $port 上启动, 根目录: $rootPath")
         isServerRunning.set(true)
     }
 
     override fun stop() {
         super.stop()
         isServerRunning.set(false)
-        Log.d(TAG, "Local server stopped at port: $port")
+        AppLogger.d(TAG, "Local server stopped at port: $port")
     }
 
     fun updateChatWorkspace(newWorkspacePath: String) {
@@ -166,7 +166,7 @@ private constructor(
         // but for now, we'll just update the path for the WORKSPACE instance.
         this.rootPath = newWorkspacePath
         ensureWorkspaceDirExists(newWorkspacePath)
-        Log.d(TAG, "Workspace path updated to: $rootPath")
+        AppLogger.d(TAG, "Workspace path updated to: $rootPath")
     }
 
     fun isRunning(): Boolean {
@@ -174,7 +174,7 @@ private constructor(
     }
 
     override fun serve(session: IHTTPSession): Response {
-        Log.d(TAG, "Request received: ${session.uri} at port $port")
+        AppLogger.d(TAG, "Request received: ${session.uri} at port $port")
 
         // API route for file listing
         if (session.uri.startsWith("/api/")) {
@@ -186,7 +186,7 @@ private constructor(
         val file = File(rootPath, uri)
 
         if (!file.exists() || !isInRoot(file)) {
-            Log.w(TAG, "File not found or access denied: ${file.absolutePath}")
+            AppLogger.w(TAG, "File not found or access denied: ${file.absolutePath}")
             return newFixedLengthResponse(
                 Response.Status.NOT_FOUND,
                 MIME_PLAINTEXT,
@@ -255,7 +255,7 @@ private constructor(
             val rootDir = File(rootPath)
             file.canonicalPath.startsWith(rootDir.canonicalPath)
         } catch (e: IOException) {
-            Log.e(TAG, "Error checking file path: ${e.message}")
+            AppLogger.e(TAG, "Error checking file path: ${e.message}")
             false
         }
     }
@@ -300,7 +300,7 @@ private constructor(
                 return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, result.error ?: "Failed to list files").addCorsHeaders()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error listing directory", e)
+            AppLogger.e(TAG, "Error listing directory", e)
             return newFixedLengthResponse(Response.Status.INTERNAL_ERROR, MIME_PLAINTEXT, "Error: ${e.message}").addCorsHeaders()
         }
     }
@@ -321,7 +321,7 @@ private constructor(
         val dir = File(path)
         if (!dir.exists()) {
             dir.mkdirs()
-            Log.d(TAG, "创建工作区目录: $path")
+            AppLogger.d(TAG, "创建工作区目录: $path")
         }
     }
     

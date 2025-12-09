@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.ai.assistance.operit.data.mcp.MCPLocalServer
 
 /**
- * Content component for the MCP server details dialog.
+ * Content component for the MCP server details diaAppLogger.
  * 
  * @param server The MCP server to display details for
  * @param isInstalled Whether the server is installed

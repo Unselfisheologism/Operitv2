@@ -9,7 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.Animation
 import android.view.animation.ScaleAnimation
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 
 /**
  * 代码编辑器容器，处理缩放和滚动

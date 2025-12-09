@@ -10,7 +10,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.RemoteException
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.ai.assistance.operit.R
@@ -63,7 +63,7 @@ object UIHierarchyManager {
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            Log.d(TAG, "无障碍服务提供者已连接")
+            AppLogger.d(TAG, "无障碍服务提供者已连接")
             accessibilityProvider = IAccessibilityProvider.Stub.asInterface(service)
             _isBound.value = true
             connectionContinuation?.invoke(true)
@@ -71,7 +71,7 @@ object UIHierarchyManager {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            Log.d(TAG, "无障碍服务提供者已断开")
+            AppLogger.d(TAG, "无障碍服务提供者已断开")
             accessibilityProvider = null
             _isBound.value = false
             connectionContinuation?.invoke(false)
@@ -93,10 +93,10 @@ object UIHierarchyManager {
                     inputStream.copyTo(outputStream)
                 }
             }
-            Log.d(TAG, "无障碍服务APK已提取到: ${apkFile.absolutePath}")
+            AppLogger.d(TAG, "无障碍服务APK已提取到: ${apkFile.absolutePath}")
             apkFile
         } catch (e: Exception) {
-            Log.e(TAG, "从assets提取无障碍服务APK失败", e)
+            AppLogger.e(TAG, "从assets提取无障碍服务APK失败", e)
             null
         }
     }
@@ -141,7 +141,7 @@ object UIHierarchyManager {
                 try {
                     context.startActivity(installIntent)
                 } catch (e: Exception) {
-                    Log.e(TAG, "启动安装界面失败", e)
+                    AppLogger.e(TAG, "启动安装界面失败", e)
                     Toast.makeText(
                         context,
                         context.getString(R.string.toast_operation_failed, e.message ?: ""),
@@ -165,10 +165,10 @@ object UIHierarchyManager {
      */
     private suspend fun ensureBound(context: Context): Boolean {
         if (!_isBound.value || accessibilityProvider == null) {
-            Log.w(TAG, "服务未绑定或提供者为null，尝试自动重新绑定...")
+            AppLogger.w(TAG, "服务未绑定或提供者为null，尝试自动重新绑定...")
             val bound = bindToService(context)
             if (!bound) {
-                Log.e(TAG, "自动重新绑定失败")
+                AppLogger.e(TAG, "自动重新绑定失败")
                 return false
             }
         }
@@ -196,12 +196,12 @@ object UIHierarchyManager {
      */
     suspend fun bindToService(context: Context): Boolean {
         return bindingMutex.withLock {
-            Log.d(TAG, "bindToService invoked. Thread: ${Thread.currentThread().name}, Context: ${context.javaClass.name}")
+            AppLogger.d(TAG, "bindToService invoked. Thread: ${Thread.currentThread().name}, Context: ${context.javaClass.name}")
 
             // 只有在已完全绑定（bound且provider不为空）或者应用未安装的情况下才直接返回
             // 如果 _isBound 为 true 但 provider 为 null，则认为是状态不一致，需要重新绑定
             if ((_isBound.value && accessibilityProvider != null) || !isProviderAppInstalled(context)) {
-                if (!_isBound.value) Log.w(TAG, "无法绑定：服务已绑定或提供者应用未安装")
+                if (!_isBound.value) AppLogger.w(TAG, "无法绑定：服务已绑定或提供者应用未安装")
                 return@withLock _isBound.value
             }
 
@@ -209,11 +209,11 @@ object UIHierarchyManager {
             val resolveInfo: ResolveInfo? = context.packageManager.resolveService(implicitIntent, PackageManager.MATCH_ALL)
 
             if (resolveInfo == null) {
-                Log.e(TAG, "无法解析服务: $PROVIDER_ACTION. 请确认提供者应用已正确安装。")
+                AppLogger.e(TAG, "无法解析服务: $PROVIDER_ACTION. 请确认提供者应用已正确安装。")
                 return@withLock false
             }
 
-            Log.d(TAG, "服务解析成功: ${resolveInfo.serviceInfo.packageName}/${resolveInfo.serviceInfo.name}")
+            AppLogger.d(TAG, "服务解析成功: ${resolveInfo.serviceInfo.packageName}/${resolveInfo.serviceInfo.name}")
 
             val explicitIntent = Intent(PROVIDER_ACTION).apply {
                 component = ComponentName(resolveInfo.serviceInfo.packageName, resolveInfo.serviceInfo.name)
@@ -223,37 +223,37 @@ object UIHierarchyManager {
             val result = withTimeoutOrNull(BIND_SERVICE_TIMEOUT_MS) {
                 suspendCancellableCoroutine { continuation ->
                     connectionContinuation = { success ->
-                        Log.d(TAG, "connectionContinuation called with success=$success")
+                        AppLogger.d(TAG, "connectionContinuation called with success=$success")
                         if (continuation.isActive) {
                             continuation.resume(success)
                         }
                     }
                     try {
-                        Log.d(TAG, "尝试使用 ApplicationContext 绑定...")
+                        AppLogger.d(TAG, "尝试使用 ApplicationContext 绑定...")
                         var bound = context.applicationContext.bindService(explicitIntent, serviceConnection, Context.BIND_AUTO_CREATE)
-                        Log.d(TAG, "ApplicationContext 绑定结果: $bound")
+                        AppLogger.d(TAG, "ApplicationContext 绑定结果: $bound")
 
                         if (!bound) {
-                            Log.w(TAG, "ApplicationContext绑定失败，尝试使用原始Context (${context.javaClass.simpleName}) ...")
+                            AppLogger.w(TAG, "ApplicationContext绑定失败，尝试使用原始Context (${context.javaClass.simpleName}) ...")
                             bound = context.bindService(explicitIntent, serviceConnection, Context.BIND_AUTO_CREATE)
-                            Log.d(TAG, "原始 Context 绑定结果: $bound")
+                            AppLogger.d(TAG, "原始 Context 绑定结果: $bound")
                         }
 
                         if (!bound) {
-                            Log.e(TAG, "bindService返回false，绑定失败。可能是权限问题或后台启动限制。")
+                            AppLogger.e(TAG, "bindService返回false，绑定失败。可能是权限问题或后台启动限制。")
                             if (continuation.isActive) {
                                 continuation.resume(false)
                             }
                             connectionContinuation = null
                         }
                     } catch (e: SecurityException) {
-                        Log.e(TAG, "绑定服务时出现安全异常", e)
+                        AppLogger.e(TAG, "绑定服务时出现安全异常", e)
                         if (continuation.isActive) {
                             continuation.resume(false)
                         }
                         connectionContinuation = null
                     } catch (e: Exception) {
-                        Log.e(TAG, "绑定服务时出现未知异常", e)
+                        AppLogger.e(TAG, "绑定服务时出现未知异常", e)
                         if (continuation.isActive) {
                             continuation.resume(false)
                         }
@@ -263,7 +263,7 @@ object UIHierarchyManager {
             }
 
             if (result == null) {
-                Log.e(TAG, "绑定服务超时 (${BIND_SERVICE_TIMEOUT_MS}ms). 无障碍服务提供者可能未响应或崩溃.")
+                AppLogger.e(TAG, "绑定服务超时 (${BIND_SERVICE_TIMEOUT_MS}ms). 无障碍服务提供者可能未响应或崩溃.")
                 connectionContinuation = null
                 _isBound.value = false
                 try {
@@ -280,7 +280,7 @@ object UIHierarchyManager {
                 return@withLock false
             }
 
-            Log.d(TAG, "bindToService 成功完成")
+            AppLogger.d(TAG, "bindToService 成功完成")
             result
         }
     }
@@ -293,11 +293,11 @@ object UIHierarchyManager {
             try {
                 context.applicationContext.unbindService(serviceConnection)
             } catch (e: Exception) {
-                Log.e(TAG, "解绑服务失败", e)
+                AppLogger.e(TAG, "解绑服务失败", e)
             }
             _isBound.value = false
             accessibilityProvider = null
-            Log.d(TAG, "服务已解绑")
+            AppLogger.d(TAG, "服务已解绑")
         }
     }
 
@@ -307,13 +307,13 @@ object UIHierarchyManager {
      */
     suspend fun getUIHierarchy(context: Context): String {
         if (!ensureBound(context)) {
-            Log.e(TAG, "绑定失败，无法获取UI层次结构")
+            AppLogger.e(TAG, "绑定失败，无法获取UI层次结构")
             return ""
         }
         return try {
             accessibilityProvider?.uiHierarchy ?: ""
         } catch (e: RemoteException) {
-            Log.e(TAG, "从提供者获取UI层次结构失败", e)
+            AppLogger.e(TAG, "从提供者获取UI层次结构失败", e)
             // Consider re-binding or notifying the user
             ""
         }
@@ -352,7 +352,7 @@ object UIHierarchyManager {
             return Pair(null, null)
 
         } catch (e: Exception) {
-            Log.e(TAG, "解析窗口信息时出错", e)
+            AppLogger.e(TAG, "解析窗口信息时出错", e)
             return Pair(null, null)
         }
     }
@@ -362,13 +362,13 @@ object UIHierarchyManager {
      */
     suspend fun performClick(context: Context, x: Int, y: Int): Boolean {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法执行点击")
+            AppLogger.w(TAG, "绑定失败，无法执行点击")
             return false
         }
         return try {
             accessibilityProvider?.performClick(x, y) ?: false
         } catch (e: RemoteException) {
-            Log.e(TAG, "请求点击操作失败", e)
+            AppLogger.e(TAG, "请求点击操作失败", e)
             false
         }
     }
@@ -378,14 +378,14 @@ object UIHierarchyManager {
      */
     suspend fun registerAccessibilityEventListener(context: Context, listener: com.ai.assistance.operit.provider.IAccessibilityEventCallback): Boolean {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法注册监听器")
+            AppLogger.w(TAG, "绑定失败，无法注册监听器")
             return false
         }
         return try {
             accessibilityProvider?.registerAccessibilityEventListener(listener)
             true
         } catch (e: RemoteException) {
-            Log.e(TAG, "注册无障碍事件监听器失败", e)
+            AppLogger.e(TAG, "注册无障碍事件监听器失败", e)
             false
         }
     }
@@ -395,14 +395,14 @@ object UIHierarchyManager {
      */
     suspend fun unregisterAccessibilityEventListener(context: Context, listener: com.ai.assistance.operit.provider.IAccessibilityEventCallback): Boolean {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法注销监听器")
+            AppLogger.w(TAG, "绑定失败，无法注销监听器")
             return false
         }
         return try {
             accessibilityProvider?.unregisterAccessibilityEventListener(listener)
             true
         } catch (e: RemoteException) {
-            Log.e(TAG, "注销无障碍事件监听器失败", e)
+            AppLogger.e(TAG, "注销无障碍事件监听器失败", e)
             false
         }
     }
@@ -412,13 +412,13 @@ object UIHierarchyManager {
      */
     suspend fun performSwipe(context: Context, startX: Int, startY: Int, endX: Int, endY: Int, duration: Long): Boolean {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法执行滑动")
+            AppLogger.w(TAG, "绑定失败，无法执行滑动")
                 return false
             }
         return try {
             accessibilityProvider?.performSwipe(startX, startY, endX, endY, duration) ?: false
         } catch (e: RemoteException) {
-            Log.e(TAG, "请求滑动操作失败", e)
+            AppLogger.e(TAG, "请求滑动操作失败", e)
             false
         }
     }
@@ -428,13 +428,13 @@ object UIHierarchyManager {
      */
     suspend fun performGlobalAction(context: Context, actionId: Int): Boolean {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法执行全局操作")
+            AppLogger.w(TAG, "绑定失败，无法执行全局操作")
             return false
         }
         return try {
             accessibilityProvider?.performGlobalAction(actionId) ?: false
         } catch (e: RemoteException) {
-            Log.e(TAG, "请求全局操作失败", e)
+            AppLogger.e(TAG, "请求全局操作失败", e)
             false
         }
     }
@@ -444,13 +444,13 @@ object UIHierarchyManager {
      */
     suspend fun findFocusedNodeId(context: Context): String? {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法查找焦点节点")
+            AppLogger.w(TAG, "绑定失败，无法查找焦点节点")
             return null
         }
         return try {
             accessibilityProvider?.findFocusedNodeId()
         } catch (e: RemoteException) {
-            Log.e(TAG, "请求查找焦点节点ID失败", e)
+            AppLogger.e(TAG, "请求查找焦点节点ID失败", e)
             null
         }
     }
@@ -460,13 +460,13 @@ object UIHierarchyManager {
      */
     suspend fun setTextOnNode(context: Context, nodeId: String, text: String): Boolean {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法设置文本")
+            AppLogger.w(TAG, "绑定失败，无法设置文本")
             return false
         }
         return try {
             accessibilityProvider?.setTextOnNode(nodeId, text) ?: false
         } catch (e: RemoteException) {
-            Log.e(TAG, "请求设置文本失败", e)
+            AppLogger.e(TAG, "请求设置文本失败", e)
             false
         }
     }
@@ -476,13 +476,13 @@ object UIHierarchyManager {
      */
     suspend fun isAccessibilityServiceEnabled(context: Context): Boolean {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法检查无障碍服务状态")
+            AppLogger.w(TAG, "绑定失败，无法检查无障碍服务状态")
             return false
         }
         return try {
             accessibilityProvider?.isAccessibilityServiceEnabled ?: false
         } catch (e: RemoteException) {
-            Log.e(TAG, "检查无障碍服务状态失败", e)
+            AppLogger.e(TAG, "检查无障碍服务状态失败", e)
             false
         }
     }
@@ -492,13 +492,13 @@ object UIHierarchyManager {
      */
     suspend fun getCurrentActivityName(context: Context): String? {
         if (!ensureBound(context)) {
-            Log.w(TAG, "绑定失败，无法获取Activity名称")
+            AppLogger.w(TAG, "绑定失败，无法获取Activity名称")
             return null
         }
         return try {
             accessibilityProvider?.currentActivityName
         } catch (e: RemoteException) {
-            Log.e(TAG, "从提供者获取Activity名称失败", e)
+            AppLogger.e(TAG, "从提供者获取Activity名称失败", e)
             null
         }
     }

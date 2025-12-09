@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.javascript
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 
 private const val TAG = "JsAssetLoader"
 
@@ -20,7 +20,7 @@ fun loadUINodeJs(context: Context): String {
         inputStream.close()
         String(buffer)
     } catch (e: Exception) {
-        Log.e(TAG, "Error loading UINode.js: ${e.message}", e)
+        AppLogger.e(TAG, "Error loading UINode.js: ${e.message}", e)
         // 如果加载失败，返回空字符串
         ""
     }
@@ -41,7 +41,7 @@ fun loadAndroidUtilsJs(context: Context): String {
         inputStream.close()
         String(buffer)
     } catch (e: Exception) {
-        Log.e(TAG, "Error loading AndroidUtils.js: ${e.message}", e)
+        AppLogger.e(TAG, "Error loading AndroidUtils.js: ${e.message}", e)
         // 如果加载失败，返回空字符串
         ""
     }
@@ -62,7 +62,7 @@ fun loadOkHttp3Js(context: Context): String {
         inputStream.close()
         String(buffer)
     } catch (e: Exception) {
-        Log.e(TAG, "Error loading OkHttp3.js: ${e.message}", e)
+        AppLogger.e(TAG, "Error loading OkHttp3.js: ${e.message}", e)
         // 如果加载失败，返回空字符串
         ""
     }

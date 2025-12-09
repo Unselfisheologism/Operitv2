@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.api.chat.llmprovider
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.model.ApiProviderType
 import com.ai.assistance.operit.data.model.ModelConfigData
 import com.ai.assistance.operit.data.preferences.ModelConfigManager
@@ -50,7 +50,7 @@ object AIServiceFactory {
             }
             headers
         } catch (e: Exception) {
-            Log.e("AIServiceFactory", "解析自定义请求头失败", e)
+            AppLogger.e("AIServiceFactory", "解析自定义请求头失败", e)
             emptyMap()
         }
     }

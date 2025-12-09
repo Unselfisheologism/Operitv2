@@ -20,7 +20,7 @@ import androidx.appcompat.widget.AppCompatEditText
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.util.HashMap
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 
 /**
  * 彩色文本编辑器，支持语法高亮和自定义绘制

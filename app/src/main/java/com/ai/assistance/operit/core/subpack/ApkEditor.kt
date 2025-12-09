@@ -3,7 +3,7 @@ package com.ai.assistance.operit.core.subpack
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.io.File
 import java.io.InputStream
 
@@ -96,11 +96,11 @@ private constructor(
      */
     fun extract(): ApkEditor {
         try {
-            Log.d(TAG, "开始解压APK: ${apkFile.absolutePath}")
+            AppLogger.d(TAG, "开始解压APK: ${apkFile.absolutePath}")
             extractedDir = apkReverseEngineer.extractApk(apkFile)
             return this
         } catch (e: Exception) {
-            Log.e(TAG, "解压APK失败", e)
+            AppLogger.e(TAG, "解压APK失败", e)
             throw e
         }
     }
@@ -253,7 +253,7 @@ private constructor(
         // 先重新打包
         val unsignedApk = repack()
 
-        Log.d(TAG, "未签名APK生成成功: ${unsignedApk.absolutePath}, 文件大小: ${unsignedApk.length()}")
+        AppLogger.d(TAG, "未签名APK生成成功: ${unsignedApk.absolutePath}, 文件大小: ${unsignedApk.length()}")
 
         // 确保文件确实存在
         if (!unsignedApk.exists() || unsignedApk.length() == 0L) {
@@ -277,7 +277,7 @@ private constructor(
             File(context.cacheDir, "signed_${apkFile.name}")
         }
 
-        Log.d(TAG, "开始签名APK，输入: ${unsignedApk.absolutePath}, 输出: ${signedOutputFile.absolutePath}")
+        AppLogger.d(TAG, "开始签名APK，输入: ${unsignedApk.absolutePath}, 输出: ${signedOutputFile.absolutePath}")
 
         // 签名APK
         val signResult = apkReverseEngineer.signApk(
@@ -312,13 +312,13 @@ private constructor(
             // 复制成功后删除临时文件
             signedOutputFile.delete()
             
-            Log.d(TAG, "已将签名后的APK从临时文件复制到指定输出位置: ${outputFile!!.absolutePath}")
+            AppLogger.d(TAG, "已将签名后的APK从临时文件复制到指定输出位置: ${outputFile!!.absolutePath}")
             outputFile!!
         } else {
             signedOutputFile
         }
 
-        Log.d(TAG, "APK签名完成: ${finalOutputFile.absolutePath}, 文件大小: ${finalOutputFile.length()}字节")
+        AppLogger.d(TAG, "APK签名完成: ${finalOutputFile.absolutePath}, 文件大小: ${finalOutputFile.length()}字节")
         return finalOutputFile
     }
 
@@ -330,7 +330,7 @@ private constructor(
 
         // 修改包名
         if (newPackageName != null) {
-            Log.d(TAG, "修改包名为: $newPackageName")
+            AppLogger.d(TAG, "修改包名为: $newPackageName")
             if (!apkReverseEngineer.modifyPackageName(extractedDir!!, newPackageName!!)) {
                 throw RuntimeException("修改包名失败")
             }
@@ -338,7 +338,7 @@ private constructor(
 
         // 修改应用名称
         if (newAppName != null) {
-            Log.d(TAG, "修改应用名称为: $newAppName")
+            AppLogger.d(TAG, "修改应用名称为: $newAppName")
             if (!apkReverseEngineer.modifyAppName(extractedDir!!, newAppName!!)) {
                 throw RuntimeException("修改应用名称失败")
             }
@@ -346,7 +346,7 @@ private constructor(
 
         // 修改版本名和版本号
         if (newVersionName != null && newVersionCode != null) {
-            Log.d(TAG, "修改版本为: $newVersionName ($newVersionCode)")
+            AppLogger.d(TAG, "修改版本为: $newVersionName ($newVersionCode)")
             if (!apkReverseEngineer.modifyVersion(extractedDir!!, newVersionName!!, newVersionCode!!)) {
                 throw RuntimeException("修改版本失败")
             }
@@ -354,7 +354,7 @@ private constructor(
 
         // 更改应用图标
         if (newIconBitmap != null) {
-            Log.d(TAG, "更换应用图标")
+            AppLogger.d(TAG, "更换应用图标")
             if (!apkReverseEngineer.changeAppIcon(extractedDir!!, newIconBitmap!!)) {
                 throw RuntimeException("更换应用图标失败")
             }

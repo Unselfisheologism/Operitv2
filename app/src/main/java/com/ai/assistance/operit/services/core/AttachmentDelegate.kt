@@ -3,7 +3,7 @@ package com.ai.assistance.operit.services.core
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.data.model.AITool
 import com.ai.assistance.operit.data.model.AttachmentInfo
@@ -68,7 +68,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     val tempFile = createTempFileFromUri(uri, fileName)
 
                     if (tempFile != null) {
-                        Log.d(TAG, "成功从相机URI创建临时文件: ${tempFile.absolutePath}")
+                        AppLogger.d(TAG, "成功从相机URI创建临时文件: ${tempFile.absolutePath}")
 
                         val attachmentInfo =
                                 AttachmentInfo(
@@ -85,12 +85,12 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
 
                         _toastEvent.emit("已添加照片附件: $fileName")
                     } else {
-                        Log.e(TAG, "无法从相机URI创建临时文件")
+                        AppLogger.e(TAG, "无法从相机URI创建临时文件")
                         _toastEvent.emit("无法处理拍摄的照片，请重试")
                     }
                 } catch (e: Exception) {
                     _toastEvent.emit("添加照片附件失败: ${e.message}")
-                    Log.e(TAG, "添加照片附件错误", e)
+                    AppLogger.e(TAG, "添加照片附件错误", e)
                 }
             }
 
@@ -102,7 +102,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     if (filePath.contains("/sdcard/.transforms/synthetic/picker/") ||
                                     filePath.contains("/com.android.providers.media.photopicker/")
                     ) {
-                        Log.d(TAG, "检测到媒体选择器特殊路径: $filePath")
+                        AppLogger.d(TAG, "检测到媒体选择器特殊路径: $filePath")
 
                         try {
                             // 尝试从特殊路径提取实际URI
@@ -113,7 +113,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                                 val tempFile = createTempFileFromUri(actualUri, fileName)
 
                                 if (tempFile != null) {
-                                    Log.d(TAG, "成功从媒体选择器路径创建临时文件: ${tempFile.absolutePath}")
+                                    AppLogger.d(TAG, "成功从媒体选择器路径创建临时文件: ${tempFile.absolutePath}")
 
                                     // 创建附件对象
                                     val mimeType =
@@ -135,12 +135,12 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                                     _toastEvent.emit("已添加附件: $fileName")
                                     return@withContext
                                 } else {
-                                    Log.e(TAG, "无法从媒体路径创建临时文件")
+                                    AppLogger.e(TAG, "无法从媒体路径创建临时文件")
                                     _toastEvent.emit("无法处理媒体文件，请尝试其他方式")
                                 }
                             }
                         } catch (e: Exception) {
-                            Log.e(TAG, "处理媒体选择器路径失败", e)
+                            AppLogger.e(TAG, "处理媒体选择器路径失败", e)
                             // 继续尝试常规处理方法
                         }
                     }
@@ -148,18 +148,18 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     // Check if it's a content URI path
                     if (filePath.startsWith("content://")) {
                         val uri = Uri.parse(filePath)
-                        Log.d(TAG, "Handling content URI: $uri")
+                        AppLogger.d(TAG, "Handling content URI: $uri")
 
                         // Get file metadata from ContentResolver
                         val fileName = getFileNameFromUri(uri)
                         val mimeType = context.contentResolver.getType(uri) ?: "application/octet-stream"
 
                         // Always create a temporary file for content URIs to ensure persistent access
-                        Log.d(TAG, "Copying content URI to a local temporary file.")
+                        AppLogger.d(TAG, "Copying content URI to a local temporary file.")
                         val tempFile = createTempFileFromUri(uri, fileName)
 
                         if (tempFile != null && tempFile.exists()) {
-                            Log.d(TAG, "Successfully created temp file: ${tempFile.absolutePath}")
+                            AppLogger.d(TAG, "Successfully created temp file: ${tempFile.absolutePath}")
                             val attachmentInfo =
                                 AttachmentInfo(
                                     filePath = tempFile.absolutePath,
@@ -175,7 +175,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                             }
                             _toastEvent.emit("已添加附件: $fileName")
                         } else {
-                            Log.e(TAG, "Failed to create temp file from URI: $uri")
+                            AppLogger.e(TAG, "Failed to create temp file from URI: $uri")
                             _toastEvent.emit("无法附加文件: $fileName")
                         }
                     } else {
@@ -216,7 +216,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     }
                 } catch (e: Exception) {
                     _toastEvent.emit("添加附件失败: ${e.message}")
-                    Log.e(TAG, "添加附件错误", e)
+                    AppLogger.e(TAG, "添加附件错误", e)
                 }
             }
 
@@ -239,7 +239,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
             // 最后尝试直接将路径转为URI
             return Uri.parse("file://$filePath")
         } catch (e: Exception) {
-            Log.e(TAG, "提取媒体URI失败: $filePath", e)
+            AppLogger.e(TAG, "提取媒体URI失败: $filePath", e)
             return null
         }
     }
@@ -275,13 +275,13 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     }
 
                     if (tempFile.exists() && tempFile.length() > 0) {
-                        Log.d(TAG, "成功创建临时图片文件: ${tempFile.absolutePath}")
+                        AppLogger.d(TAG, "成功创建临时图片文件: ${tempFile.absolutePath}")
                         return@withContext tempFile
                     }
 
                     return@withContext null
                 } catch (e: Exception) {
-                    Log.e(TAG, "创建临时文件失败", e)
+                    AppLogger.e(TAG, "创建临时文件失败", e)
                     return@withContext null
                 }
             }
@@ -341,7 +341,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     }
                 } catch (e: Exception) {
                     _toastEvent.emit("获取屏幕内容失败: ${e.message}")
-                    Log.e(TAG, "Error capturing screen content", e)
+                    AppLogger.e(TAG, "Error capturing screen content", e)
                 }
             }
 
@@ -388,7 +388,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     }
                 } catch (e: Exception) {
                     _toastEvent.emit("获取通知失败: ${e.message}")
-                    Log.e(TAG, "Error capturing notifications", e)
+                    AppLogger.e(TAG, "Error capturing notifications", e)
                 }
             }
 
@@ -435,7 +435,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     }
                 } catch (e: Exception) {
                     _toastEvent.emit("获取位置失败: ${e.message}")
-                    Log.e(TAG, "Error capturing location", e)
+                    AppLogger.e(TAG, "Error capturing location", e)
                 }
             }
 
@@ -479,7 +479,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     _toastEvent.emit(folderCountText)
                 } catch (e: Exception) {
                     _toastEvent.emit("添加记忆文件夹失败: ${e.message}")
-                    Log.e(TAG, "Error capturing memory folders", e)
+                    AppLogger.e(TAG, "Error capturing memory folders", e)
                 }
             }
 
@@ -521,7 +521,7 @@ $foldersText
                     // 处理raw:前缀，直接解码路径
                     if (id.startsWith("raw:")) {
                         val decodedPath = java.net.URLDecoder.decode(id.substring(4), "UTF-8")
-                        Log.d(TAG, "Downloads文档URI解析为: $decodedPath")
+                        AppLogger.d(TAG, "Downloads文档URI解析为: $decodedPath")
                         return decodedPath
                     }
                     
@@ -563,14 +563,14 @@ $foldersText
                         return "/storage/sdcard1/${split[1]}"
                     }
                 } catch (e: Exception) {
-                    Log.d(TAG, "通过DocumentsContract获取路径失败", e)
+                    AppLogger.d(TAG, "通过DocumentsContract获取路径失败", e)
                 }
                 
                 // 方法2: 通过MediaStore查询
                 return getDataColumn(uri, null, null)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取文件实际路径失败: ${e.message}", e)
+            AppLogger.e(TAG, "获取文件实际路径失败: ${e.message}", e)
         }
         
         return null
@@ -588,7 +588,7 @@ $foldersText
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "查询URI数据列失败: ${e.message}", e)
+            AppLogger.e(TAG, "查询URI数据列失败: ${e.message}", e)
         }
         
         return null
@@ -611,7 +611,7 @@ $foldersText
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error getting file name from URI", e)
+                    AppLogger.e(TAG, "Error getting file name from URI", e)
                 }
 
                 return@withContext fileName
@@ -633,7 +633,7 @@ $foldersText
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error getting file size from URI", e)
+                    AppLogger.e(TAG, "Error getting file size from URI", e)
                 }
 
                 return@withContext fileSize

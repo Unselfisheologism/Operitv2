@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.api.chat.library
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.model.Memory
 import com.ai.assistance.operit.data.repository.MemoryRepository
 import java.text.SimpleDateFormat
@@ -34,7 +34,7 @@ class ProblemLibraryTool private constructor(private val context: Context) {
                         INSTANCE
                                 ?: ProblemLibraryTool(context.applicationContext).also {
                                     INSTANCE = it
-                                    Log.d(TAG, "ProblemLibraryTool (Legacy) 单例实例已创建")
+                                    AppLogger.d(TAG, "ProblemLibraryTool (Legacy) 单例实例已创建")
                                 }
                     }
         }
@@ -105,29 +105,29 @@ class ProblemLibraryTool private constructor(private val context: Context) {
     // 保存问题记录
     @Deprecated("This method saves to a legacy data structure.")
     fun saveProblemRecord(record: ProblemRecord) {
-        Log.d(TAG, "[Legacy] 开始保存问题记录, UUID: ${record.uuid}")
+        AppLogger.d(TAG, "[Legacy] 开始保存问题记录, UUID: ${record.uuid}")
         kotlinx.coroutines.runBlocking {
             try {
                 // 转换为Memory对象
                 val memory = convertToMemory(record)
-                Log.d(TAG, "[Legacy] 已将ProblemRecord转换为Memory对象")
+                AppLogger.d(TAG, "[Legacy] 已将ProblemRecord转换为Memory对象")
 
                 // 保存Memory
                 memoryRepository.saveMemory(memory)
 
                 // 添加相关标签
                 memoryRepository.addTagToMemory(memory, "ProblemLibrary_Legacy")
-                Log.d(TAG, "[Legacy] 已添加 'ProblemLibrary_Legacy' 标签")
+                AppLogger.d(TAG, "[Legacy] 已添加 'ProblemLibrary_Legacy' 标签")
 
                 // 为每个工具添加标签
                 record.tools.forEach { tool ->
                     memoryRepository.addTagToMemory(memory, "tool:$tool")
                 }
-                Log.d(TAG, "[Legacy] 已为工具添加标签: ${record.tools.joinToString()}")
+                AppLogger.d(TAG, "[Legacy] 已为工具添加标签: ${record.tools.joinToString()}")
 
-                Log.d(TAG, "[Legacy] 问题记录已成功保存到Memory系统: ${record.uuid}")
+                AppLogger.d(TAG, "[Legacy] 问题记录已成功保存到Memory系统: ${record.uuid}")
             } catch (e: Exception) {
-                Log.e(TAG, "[Legacy] 保存问题记录失败: ${e.message}", e)
+                AppLogger.e(TAG, "[Legacy] 保存问题记录失败: ${e.message}", e)
             }
         }
     }
@@ -141,7 +141,7 @@ class ProblemLibraryTool private constructor(private val context: Context) {
                 val memories = memoryRepository.searchMemories("ProblemLibrary_Legacy")
                 memories.map { convertToProblemRecord(it) }
             } catch (e: Exception) {
-                Log.e(TAG, "获取所有 Legacy 问题记录失败: ${e.message}", e)
+                AppLogger.e(TAG, "获取所有 Legacy 问题记录失败: ${e.message}", e)
                 emptyList()
             }
         }
@@ -169,7 +169,7 @@ class ProblemLibraryTool private constructor(private val context: Context) {
 
                     return@withContext filteredMemories.map { convertToProblemRecord(it) }
                 } catch (e: Exception) {
-                    Log.e(TAG, "搜索 Legacy 问题库失败: ${e.message}", e)
+                    AppLogger.e(TAG, "搜索 Legacy 问题库失败: ${e.message}", e)
                     emptyList()
                 }
             }
@@ -184,14 +184,14 @@ class ProblemLibraryTool private constructor(private val context: Context) {
                 if (memory != null && memory.tags.any { it.name == "ProblemLibrary_Legacy" }) {
                     // 删除Memory
                     memoryRepository.deleteMemory(memory.id)
-                    Log.d(TAG, "Legacy 问题记录已删除: $uuid")
+                    AppLogger.d(TAG, "Legacy 问题记录已删除: $uuid")
                     true
                 } else {
-                    Log.w(TAG, "未找到要删除的 Legacy 问题记录: $uuid")
+                    AppLogger.w(TAG, "未找到要删除的 Legacy 问题记录: $uuid")
                     false
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "删除 Legacy 问题记录失败: ${e.message}", e)
+                AppLogger.e(TAG, "删除 Legacy 问题记录失败: ${e.message}", e)
                 false
             }
         }
@@ -211,7 +211,7 @@ class ProblemLibraryTool private constructor(private val context: Context) {
 
                     return@withContext formatProblemLibraryResults(searchResults)
                 } catch (e: Exception) {
-                    Log.e(TAG, "查询 Legacy 问题库失败: ${e.message}", e)
+                    AppLogger.e(TAG, "查询 Legacy 问题库失败: ${e.message}", e)
                     "查询 Legacy 问题库时出错: ${e.message}"
                 }
             }

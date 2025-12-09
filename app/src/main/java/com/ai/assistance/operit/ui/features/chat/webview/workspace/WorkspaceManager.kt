@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.chat.webview.workspace
 
 import android.annotation.SuppressLint
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.MotionEvent
 import android.webkit.WebView
 import androidx.compose.animation.*
@@ -141,7 +141,7 @@ fun WorkspaceManager(
     // 监听WebView刷新计数器变化并触发刷新
     LaunchedEffect(webViewRefreshCounter) {
         if (webViewRefreshCounter > 0) {
-            Log.d("WorkspaceManager", "WebView refresh triggered, counter: $webViewRefreshCounter")
+            AppLogger.d("WorkspaceManager", "WebView refresh triggered, counter: $webViewRefreshCounter")
             // 确保webView已经加载完成后再刷新
             kotlinx.coroutines.delay(100) // 短暂延迟确保webView准备就绪
             webView.reload()
@@ -364,7 +364,7 @@ fun WorkspaceManager(
                                     actualViewModel.executeCommandInWorkspace(command, workspacePath)
                                 } else {
                                     // 对于旧版本Android，显示不支持提示
-                                    Log.w("WorkspaceManager", "Terminal features require Android 8.0+")
+                                    AppLogger.w("WorkspaceManager", "Terminal features require Android 8.0+")
                                 }
                             }
                         )

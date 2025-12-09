@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.packages.dialogs
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -273,7 +273,7 @@ private suspend fun executeAutomationFunction(
     onExecuting: (Boolean) -> Unit,
     onResult: (ExecutionResult) -> Unit
 ) {
-    Log.d("AutomationExecutionDialog", "Executing function: ${function.name} with params: $parameters")
+    AppLogger.d("AutomationExecutionDialog", "Executing function: ${function.name} with params: $parameters")
     
     withContext(Dispatchers.Main) {
         onExecuting(true)
@@ -293,7 +293,7 @@ private suspend fun executeAutomationFunction(
                 val config = packageManager.getConfigByAppPackageName(packageInfo.packageName)
                 if (config?.functionDefinitions?.containsKey(function.name) == true) {
                     foundConfig = config
-                    Log.d("AutomationExecutionDialog", "Found function '${function.name}' in package: ${packageInfo.name}")
+                    AppLogger.d("AutomationExecutionDialog", "Found function '${function.name}' in package: ${packageInfo.name}")
                     break
                 }
             }
@@ -303,7 +303,7 @@ private suspend fun executeAutomationFunction(
                 return@withContext
             }
             
-            Log.d("AutomationExecutionDialog", "Loading config into UIRouter for function: ${function.name}")
+            AppLogger.d("AutomationExecutionDialog", "Loading config into UIRouter for function: ${function.name}")
             uiRouter.loadConfig(foundConfig, merge = false)
             
             val availableFunctions = uiRouter.getAvailableFunctions()
@@ -312,7 +312,7 @@ private suspend fun executeAutomationFunction(
                 return@withContext
             }
             
-            Log.d("AutomationExecutionDialog", "Function '${function.name}' successfully loaded. Planning execution...")
+            AppLogger.d("AutomationExecutionDialog", "Function '${function.name}' successfully loaded. Planning execution...")
 
             val plan = uiRouter.planFunction(function.name, parameters)
             if (plan == null) {
@@ -320,20 +320,20 @@ private suspend fun executeAutomationFunction(
                 return@withContext
             }
 
-            Log.d("AutomationExecutionDialog", "Execution plan created. Executing...")
+            AppLogger.d("AutomationExecutionDialog", "Execution plan created. Executing...")
             val result = plan.execute(parameters)
             
             if (result.success) {
                 onResult(ExecutionResult(true, "执行成功：${function.name}"))
-                Log.i("AutomationExecutionDialog", "Function executed successfully")
+                AppLogger.i("AutomationExecutionDialog", "Function executed successfully")
             } else {
                 onResult(ExecutionResult(false, "执行失败：${result.error ?: "未知错误"}"))
-                Log.e("AutomationExecutionDialog", "Function execution failed: ${result.error}")
+                AppLogger.e("AutomationExecutionDialog", "Function execution failed: ${result.error}")
             }
         }
     } catch (e: Exception) {
         onResult(ExecutionResult(false, "执行异常：${e.message}"))
-        Log.e("AutomationExecutionDialog", "Exception during execution", e)
+        AppLogger.e("AutomationExecutionDialog", "Exception during execution", e)
     } finally {
         withContext(Dispatchers.Main) {
             onExecuting(false)

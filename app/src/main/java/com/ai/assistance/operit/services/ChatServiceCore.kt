@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.services
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.ui.text.input.TextFieldValue
 import com.ai.assistance.operit.api.chat.EnhancedAIService
 import com.ai.assistance.operit.data.model.AttachmentInfo
@@ -51,7 +51,7 @@ class ChatServiceCore(
     private var initialized = false
 
     init {
-        Log.d(TAG, "ChatServiceCore 初始化")
+        AppLogger.d(TAG, "ChatServiceCore 初始化")
         initializeDelegates()
     }
 
@@ -75,7 +75,7 @@ class ChatServiceCore(
                 tokenStatisticsDelegate.setupCollectors()
                 // 通知外部监听者
                 onEnhancedAiServiceReady?.invoke(service)
-                Log.d(TAG, "EnhancedAIService 已更新")
+                AppLogger.d(TAG, "EnhancedAIService 已更新")
             }
         )
 
@@ -130,7 +130,7 @@ class ChatServiceCore(
                 chatHistoryDelegate.saveCurrentChat(inputTokens, outputTokens, windowSize)
             },
             showErrorMessage = { error ->
-                Log.e(TAG, "错误: $error")
+                AppLogger.e(TAG, "错误: $error")
                 // 错误消息可以通过回调传递给 UI
             },
             updateChatTitle = { chatId, title ->
@@ -150,7 +150,7 @@ class ChatServiceCore(
             },
             speakMessage = { text ->
                 // TTS 功能需要在外部实现
-                Log.d(TAG, "朗读消息: $text")
+                AppLogger.d(TAG, "朗读消息: $text")
             },
             onTokenLimitExceeded = {
                 messageCoordinationDelegate.handleTokenLimitExceeded()
@@ -174,7 +174,7 @@ class ChatServiceCore(
         )
 
         initialized = true
-        Log.d(TAG, "所有委托已初始化")
+        AppLogger.d(TAG, "所有委托已初始化")
     }
 
     // ========== 消息处理相关 ==========

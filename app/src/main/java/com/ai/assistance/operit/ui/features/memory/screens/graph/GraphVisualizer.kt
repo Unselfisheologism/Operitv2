@@ -34,7 +34,7 @@ import kotlin.math.sin
 import kotlin.math.PI
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.geometry.Rect
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 
 // 辅助函数：判断两个矩形是否相交
 private fun Rect.intersects(other: Rect): Boolean {
@@ -55,7 +55,7 @@ fun GraphVisualizer(
     onEdgeClick: (Edge) -> Unit,
     onNodesSelected: (Set<String>) -> Unit // 新增：框选完成后的回调
 ) {
-    Log.d("GraphVisualizer", "Recomposing. isBoxSelectionMode: $isBoxSelectionMode")
+    AppLogger.d("GraphVisualizer", "Recomposing. isBoxSelectionMode: $isBoxSelectionMode")
     val textMeasurer = rememberTextMeasurer()
     val colorScheme = MaterialTheme.colorScheme
     var nodePositions by remember { mutableStateOf(mapOf<String, Offset>()) }
@@ -269,17 +269,17 @@ fun GraphVisualizer(
         Canvas(modifier = Modifier
             .fillMaxSize()
             .pointerInput(isBoxSelectionMode) { // KEY CHANGE: Relaunch gestures when mode changes
-                Log.d("GraphVisualizer", "pointerInput recomposed/restarted. NEW MODE: ${if (isBoxSelectionMode) "BoxSelect" else "Normal"}")
+                AppLogger.d("GraphVisualizer", "pointerInput recomposed/restarted. NEW MODE: ${if (isBoxSelectionMode) "BoxSelect" else "Normal"}")
                 coroutineScope {
                     if (isBoxSelectionMode) {
-                        Log.d("GraphVisualizer", "Setting up GESTURES FOR BOX SELECTION mode.")
+                        AppLogger.d("GraphVisualizer", "Setting up GESTURES FOR BOX SELECTION mode.")
                         // --- 框选模式下的手势 ---
                         // 1. 拖拽框选 (排他性，禁用平移/缩放)
                         launch {
                             var dragStart: Offset? = null
                             detectDragGestures(
                                 onDragStart = { startOffset ->
-                                    Log.d("GraphVisualizer", "BoxSelect: onDragStart")
+                                    AppLogger.d("GraphVisualizer", "BoxSelect: onDragStart")
                                     dragStart = startOffset
                                     selectionRect = createNormalizedRect(startOffset, startOffset)
                                 },
@@ -290,7 +290,7 @@ fun GraphVisualizer(
                                     }
                                 },
                                 onDragEnd = {
-                                    Log.d("GraphVisualizer", "BoxSelect: onDragEnd")
+                                    AppLogger.d("GraphVisualizer", "BoxSelect: onDragEnd")
                                     selectionRect?.let { rect ->
                                         val selectedIds = nodePositions.filter { (_, pos) ->
                                             val viewPos = pos * scale + offset
@@ -302,7 +302,7 @@ fun GraphVisualizer(
                                     dragStart = null
                                 },
                                 onDragCancel = {
-                                    Log.d("GraphVisualizer", "BoxSelect: onDragCancel")
+                                    AppLogger.d("GraphVisualizer", "BoxSelect: onDragCancel")
                                     selectionRect = null
                                     dragStart = null
                                 }
@@ -311,7 +311,7 @@ fun GraphVisualizer(
                         // 2. 点击单选/取消
                         launch {
                             detectTapGestures(onTap = { tapOffset ->
-                                Log.d("GraphVisualizer", "BoxSelect: onTap")
+                                AppLogger.d("GraphVisualizer", "BoxSelect: onTap")
                                 val clickedNode = graph.nodes.findLast { node ->
                                     nodePositions[node.id]?.let { pos ->
                                         val viewPos = pos * scale + offset
@@ -324,11 +324,11 @@ fun GraphVisualizer(
                             })
                         }
                     } else {
-                        Log.d("GraphVisualizer", "Setting up GESTURES FOR NORMAL mode.")
+                        AppLogger.d("GraphVisualizer", "Setting up GESTURES FOR NORMAL mode.")
                         // --- 普通模式下的手势 ---
                         // 1. 平移和缩放
                         launch {
-                            Log.d("GraphVisualizer", "Launching detectTransformGestures (Pan/Zoom).")
+                            AppLogger.d("GraphVisualizer", "Launching detectTransformGestures (Pan/Zoom).")
                             detectTransformGestures { centroid, pan, zoom, _ ->
                                 val oldScale = scale
                                 val newScale = (scale * zoom).coerceIn(0.2f, 5f)
@@ -339,7 +339,7 @@ fun GraphVisualizer(
                         // 2. 点击
                         launch {
                             detectTapGestures(onTap = { tapOffset ->
-                                Log.d("GraphVisualizer", "Normal Mode: onTap")
+                                AppLogger.d("GraphVisualizer", "Normal Mode: onTap")
                                 val clickedNode = graph.nodes.findLast { node ->
                                     nodePositions[node.id]?.let { pos ->
                                         val viewPos = pos * scale + offset

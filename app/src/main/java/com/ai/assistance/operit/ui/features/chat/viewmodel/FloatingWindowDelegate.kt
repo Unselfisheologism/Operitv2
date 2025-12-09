@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Typography
 import com.ai.assistance.operit.data.model.ChatMessage
@@ -56,13 +56,13 @@ class FloatingWindowDelegate(
                         try {
                             val chatId = chatHistoryDelegate?.currentChatId?.value
                             if (chatId != null) {
-                                Log.d(TAG, "收到悬浮窗重新加载请求，chatId: $chatId")
+                                AppLogger.d(TAG, "收到悬浮窗重新加载请求，chatId: $chatId")
                                 chatHistoryDelegate?.reloadChatMessagesSmart(chatId)
                             } else {
-                                Log.w(TAG, "当前没有活跃对话，无法重新加载消息")
+                                AppLogger.w(TAG, "当前没有活跃对话，无法重新加载消息")
                             }
                         } catch (e: Exception) {
-                            Log.e(TAG, "重新加载消息失败", e)
+                            AppLogger.e(TAG, "重新加载消息失败", e)
                         }
                     }
                 }
@@ -118,7 +118,7 @@ class FloatingWindowDelegate(
         if (_isFloatingMode.value && floatingService != null) {
             // 如果服务已在运行，直接切换模式
             floatingService?.switchToMode(mode)
-            Log.d(TAG, "悬浮窗已在运行，直接切换到模式: $mode")
+            AppLogger.d(TAG, "悬浮窗已在运行，直接切换到模式: $mode")
             return
         }
 
@@ -153,7 +153,7 @@ class FloatingWindowDelegate(
             try {
                 context.unbindService(serviceConnection)
             } catch (e: IllegalArgumentException) {
-                Log.e(TAG, "服务可能已解绑: ${e.message}")
+                AppLogger.e(TAG, "服务可能已解绑: ${e.message}")
             }
             floatingService = null
         }
@@ -168,10 +168,10 @@ class FloatingWindowDelegate(
                 // floatingService?.windowState?.isUiBusy?.value = isUiToolExecuting
 
                 if (isUiToolExecuting) {
-                    Log.d(TAG, "UI tool executing, disabling window interaction.")
+                    AppLogger.d(TAG, "UI tool executing, disabling window interaction.")
                     floatingService?.setWindowInteraction(false)
                 } else {
-                    Log.d(TAG, "State is ${state::class.simpleName}, enabling window interaction.")
+                    AppLogger.d(TAG, "State is ${state::class.simpleName}, enabling window interaction.")
                     floatingService?.setWindowInteraction(true)
                 }
             }
@@ -186,7 +186,7 @@ class FloatingWindowDelegate(
                     // 先立即同步当前的消息历史（服务刚连接时）
                     val currentMessages = flow.value
                     if (currentMessages.isNotEmpty()) {
-                        Log.d(TAG, "悬浮窗服务连接，立即同步当前消息: ${currentMessages.size} 条")
+                        AppLogger.d(TAG, "悬浮窗服务连接，立即同步当前消息: ${currentMessages.size} 条")
                         floatingService?.updateChatMessages(currentMessages)
                     }
 
@@ -194,21 +194,21 @@ class FloatingWindowDelegate(
                     flow.collect { messages ->
                         // 只在悬浮窗模式激活时同步消息
                         if (_isFloatingMode.value) {
-                            Log.d(TAG, "从ChatHistoryDelegate收到消息更新: ${messages.size} 条")
+                            AppLogger.d(TAG, "从ChatHistoryDelegate收到消息更新: ${messages.size} 条")
                             floatingService?.updateChatMessages(messages)
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(TAG, "收集聊天历史时出错", e)
+                    AppLogger.e(TAG, "收集聊天历史时出错", e)
                 }
             }
-        } ?: Log.w(TAG, "chatHistoryFlow为空，无法订阅聊天历史更新")
+        } ?: AppLogger.w(TAG, "chatHistoryFlow为空，无法订阅聊天历史更新")
     }
 
     /** 通知悬浮窗服务重新加载消息 */
     fun notifyFloatingServiceReload() {
         if (_isFloatingMode.value && floatingService != null) {
-            Log.d(TAG, "通知悬浮窗服务重新加载消息")
+            AppLogger.d(TAG, "通知悬浮窗服务重新加载消息")
             floatingService?.reloadChatMessages()
         }
     }
@@ -220,7 +220,7 @@ class FloatingWindowDelegate(
             try {
                 context.unbindService(serviceConnection)
             } catch (e: Exception) {
-                Log.e(TAG, "在清理时解绑服务失败", e)
+                AppLogger.e(TAG, "在清理时解绑服务失败", e)
             }
         }
     }

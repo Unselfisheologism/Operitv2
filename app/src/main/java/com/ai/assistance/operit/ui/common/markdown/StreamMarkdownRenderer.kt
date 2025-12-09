@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.common.markdown
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.ImageView
 import androidx.collection.LruCache
 import androidx.compose.animation.core.animateFloatAsState
@@ -390,7 +390,7 @@ fun StreamMarkdownRenderer(
 
             // 移除收集完成时间日志
         } catch (e: Exception) {
-            Log.e(TAG, "【流渲染】Markdown流处理异常: ${e.message}", e)
+            AppLogger.e(TAG, "【流渲染】Markdown流处理异常: ${e.message}", e)
         } finally {
             // 移除时间计算变量和日志
             synchronizeRenderNodes(nodes, renderNodes, conversionCache, nodeAnimationStates, rendererId, scope)
@@ -654,7 +654,7 @@ fun StreamMarkdownRenderer(
                     // 移除UI更新时间相关日志
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "【静态渲染】解析Markdown内容出错: ${e.message}", e)
+                AppLogger.e(TAG, "【静态渲染】解析Markdown内容出错: ${e.message}", e)
             }
         }
     }
@@ -850,7 +850,7 @@ private fun synchronizeRenderNodes(
             // 如果节点内容发生变化，则更新
             if (renderNodes[i] != stableNode) {
                 renderNodes[i] = stableNode
-                // Log.d(TAG, "【渲染性能】最终同步：替换节点 at index $i")
+                // AppLogger.d(TAG, "【渲染性能】最终同步：替换节点 at index $i")
             }
         } else {
             // 添加新节点

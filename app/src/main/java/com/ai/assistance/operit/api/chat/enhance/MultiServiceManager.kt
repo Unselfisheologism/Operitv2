@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.api.chat.enhance
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.llmprovider.AIService
 import com.ai.assistance.operit.api.chat.llmprovider.AIServiceFactory
 import com.ai.assistance.operit.data.model.FunctionType
@@ -57,7 +57,7 @@ class MultiServiceManager(private val context: Context) {
                 defaultService = service
             }
 
-            Log.d(TAG, "已为功能${functionType}创建服务实例，使用配置${config.name}，模型索引${configMapping.modelIndex}")
+            AppLogger.d(TAG, "已为功能${functionType}创建服务实例，使用配置${config.name}，模型索引${configMapping.modelIndex}")
             service
         }
     }
@@ -69,6 +69,22 @@ class MultiServiceManager(private val context: Context) {
         }
     }
 
+    suspend fun cancelAllStreaming() {
+        serviceMutex.withLock {
+            val services = mutableSetOf<AIService>()
+            services.addAll(serviceInstances.values)
+            defaultService?.let { services.add(it) }
+
+            services.forEach { service ->
+                try {
+                    service.cancelStreaming()
+                } catch (e: Exception) {
+                    AppLogger.e(TAG, "取消服务流式传输时出错", e)
+                }
+            }
+        }
+    }
+
     /** 刷新指定功能类型的服务实例 当配置更改时调用此方法 */
     suspend fun refreshServiceForFunction(functionType: FunctionType) {
         serviceMutex.withLock {
@@ -76,9 +92,9 @@ class MultiServiceManager(private val context: Context) {
             serviceInstances[functionType]?.let { oldService ->
                 try {
                     oldService.release()
-                    Log.d(TAG, "已释放功能${functionType}的服务资源")
+                    AppLogger.d(TAG, "已释放功能${functionType}的服务资源")
                 } catch (e: Exception) {
-                    Log.e(TAG, "释放服务资源时出错", e)
+                    AppLogger.e(TAG, "释放服务资源时出错", e)
                 }
             }
 
@@ -91,7 +107,7 @@ class MultiServiceManager(private val context: Context) {
             }
 
             // 不立即创建新实例，而是等到需要时再创建
-            Log.d(TAG, "已移除功能${functionType}的服务实例缓存")
+            AppLogger.d(TAG, "已移除功能${functionType}的服务实例缓存")
         }
     }
 
@@ -103,13 +119,13 @@ class MultiServiceManager(private val context: Context) {
                 try {
                     service.release()
                 } catch (e: Exception) {
-                    Log.e(TAG, "释放服务资源时出错", e)
+                    AppLogger.e(TAG, "释放服务资源时出错", e)
                 }
             }
 
             serviceInstances.clear()
             defaultService = null
-            Log.d(TAG, "已清除所有服务实例缓存并释放资源")
+            AppLogger.d(TAG, "已清除所有服务实例缓存并释放资源")
         }
     }
 
@@ -125,7 +141,7 @@ class MultiServiceManager(private val context: Context) {
         // 记录越界警告
         if (actualIndex != modelIndex && modelIndex != 0) {
             val modelList = config.modelName.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            Log.w(TAG, "模型索引 $modelIndex 超出范围(0-${modelList.size - 1})，自动使用第一个模型")
+            AppLogger.w(TAG, "模型索引 $modelIndex 超出范围(0-${modelList.size - 1})，自动使用第一个模型")
         }
         
         // 根据实际索引选择具体模型
@@ -134,7 +150,7 @@ class MultiServiceManager(private val context: Context) {
         // 创建一个临时配置，使用选中的模型名称
         val configWithSelectedModel = config.copy(modelName = selectedModelName)
         
-        Log.d(TAG, "创建服务: 原始模型='${config.modelName}', 选中模型='$selectedModelName' (请求索引=$modelIndex, 实际索引=$actualIndex)")
+        AppLogger.d(TAG, "创建服务: 原始模型='${config.modelName}', 选中模型='$selectedModelName' (请求索引=$modelIndex, 实际索引=$actualIndex)")
 
         return AIServiceFactory.createService(
             config = configWithSelectedModel,

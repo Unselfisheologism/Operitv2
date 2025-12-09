@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.debugger
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AppOperationData
 import com.ai.assistance.operit.core.tools.NotificationData
 import com.ai.assistance.operit.core.tools.StringResultData
@@ -64,7 +64,7 @@ open class DebuggerSystemOperationTools(context: Context) :
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "修改系统设置时出错", e)
+            AppLogger.e(TAG, "修改系统设置时出错", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -124,7 +124,7 @@ open class DebuggerSystemOperationTools(context: Context) :
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取系统设置时出错", e)
+            AppLogger.e(TAG, "获取系统设置时出错", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -186,7 +186,7 @@ open class DebuggerSystemOperationTools(context: Context) :
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "安装应用时出错", e)
+            AppLogger.e(TAG, "安装应用时出错", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -256,7 +256,7 @@ open class DebuggerSystemOperationTools(context: Context) :
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "卸载应用时出错", e)
+            AppLogger.e(TAG, "卸载应用时出错", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -314,7 +314,7 @@ open class DebuggerSystemOperationTools(context: Context) :
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "启动应用时出错", e)
+            AppLogger.e(TAG, "启动应用时出错", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -363,7 +363,7 @@ open class DebuggerSystemOperationTools(context: Context) :
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "停止应用时出错", e)
+            AppLogger.e(TAG, "停止应用时出错", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -450,7 +450,7 @@ open class DebuggerSystemOperationTools(context: Context) :
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取通知时出错", e)
+            AppLogger.e(TAG, "获取通知时出错", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,

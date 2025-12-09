@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.features.chat.components
 
 import android.content.Context
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -285,10 +285,10 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
 
             // 如果使用_data列无法获取路径，则直接返回URI的字符串表示
             // 这样应用可以通过ContentResolver直接使用这个URI访问文件
-            Log.d("AttachmentSelector", "使用URI字符串: ${uri.toString()}")
+            AppLogger.d("AttachmentSelector", "使用URI字符串: ${uri.toString()}")
             return uri.toString()
         } catch (e: Exception) {
-            Log.e("AttachmentSelector", "获取文件路径错误", e)
+            AppLogger.e("AttachmentSelector", "获取文件路径错误", e)
         }
     }
 

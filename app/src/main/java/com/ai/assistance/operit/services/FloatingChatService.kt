@@ -12,7 +12,7 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.View
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Typography
@@ -100,7 +100,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
 
     private fun handleServiceCrash(thread: Thread, throwable: Throwable) {
         try {
-            Log.e(TAG, "Service crashed: ${throwable.message}", throwable)
+            AppLogger.e(TAG, "Service crashed: ${throwable.message}", throwable)
             val currentTime = System.currentTimeMillis()
             if (currentTime - lastCrashTime > 60000) {
                 crashCount = 0
@@ -109,7 +109,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             crashCount++
 
             if (crashCount > 3) {
-                Log.e(TAG, "Too many crashes in short time, stopping service")
+                AppLogger.e(TAG, "Too many crashes in short time, stopping service")
                 prefs.edit().putBoolean("service_disabled_due_to_crashes", true).apply()
                 stopSelf()
                 return
@@ -120,7 +120,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             intent.setPackage(packageName)
             startService(intent)
         } catch (e: Exception) {
-            Log.e(TAG, "Error handling crash", e)
+            AppLogger.e(TAG, "Error handling crash", e)
         } finally {
             defaultExceptionHandler?.uncaughtException(thread, throwable)
         }
@@ -128,13 +128,13 @@ class FloatingChatService : Service(), FloatingWindowCallback {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "onCreate")
+        AppLogger.d(TAG, "onCreate")
 
         Thread.setDefaultUncaughtExceptionHandler(customExceptionHandler)
 
         prefs = getSharedPreferences("floating_chat_prefs", Context.MODE_PRIVATE)
         if (prefs.getBoolean("service_disabled_due_to_crashes", false)) {
-            Log.w(TAG, "Service was disabled due to frequent crashes")
+            AppLogger.w(TAG, "Service was disabled due to frequent crashes")
             stopSelf()
             return
         }
@@ -144,11 +144,11 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             
             // 初始化 ChatServiceCore
             chatCore = ChatServiceCore(context = this, coroutineScope = serviceScope)
-            Log.d(TAG, "ChatServiceCore 已初始化")
+            AppLogger.d(TAG, "ChatServiceCore 已初始化")
             
             // 设置额外的 onTurnComplete 回调，用于通知应用重新加载消息
             chatCore.setAdditionalOnTurnComplete {
-                Log.d(TAG, "流完成，通知应用重新加载消息")
+                AppLogger.d(TAG, "流完成，通知应用重新加载消息")
                 binder.notifyReload()
             }
             
@@ -156,7 +156,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             serviceScope.launch {
                 chatCore.chatHistory.collect { messages ->
                     chatMessages.value = messages
-                    Log.d(TAG, "聊天历史已更新: ${messages.size} 条消息")
+                    AppLogger.d(TAG, "聊天历史已更新: ${messages.size} 条消息")
                 }
             }
             
@@ -164,7 +164,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             serviceScope.launch {
                 chatCore.attachments.collect { newAttachments ->
                     attachments.value = newAttachments
-                    Log.d(TAG, "附件列表已更新: ${newAttachments.size} 个附件")
+                    AppLogger.d(TAG, "附件列表已更新: ${newAttachments.size} 个附件")
                 }
             }
 
@@ -172,21 +172,21 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             serviceScope.launch {
                 chatCore.inputProcessingState.collect { state ->
                     inputProcessingState.value = state
-                    Log.d(TAG, "输入处理状态已更新: $state")
+                    AppLogger.d(TAG, "输入处理状态已更新: $state")
                 }
             }
             
             // 设置 EnhancedAIService 就绪回调，以便监听输入处理状态
             chatCore.setOnEnhancedAiServiceReady { aiService ->
-                Log.d(TAG, "EnhancedAIService 已就绪，开始监听输入处理状态")
+                AppLogger.d(TAG, "EnhancedAIService 已就绪，开始监听输入处理状态")
                 serviceScope.launch {
                     try {
                         aiService.inputProcessingState.collect { state ->
                             chatCore.handleInputProcessingState(state)
-                            Log.d(TAG, "输入处理状态已更新: $state")
+                            AppLogger.d(TAG, "输入处理状态已更新: $state")
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "监听输入处理状态失败", e)
+                        AppLogger.e(TAG, "监听输入处理状态失败", e)
                     }
                 }
             }
@@ -217,7 +217,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             startForeground(NOTIFICATION_ID, createNotification())
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error in onCreate", e)
+            AppLogger.e(TAG, "Error in onCreate", e)
             stopSelf()
         }
     }
@@ -235,10 +235,10 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             }
             if (wakeLock?.isHeld == false) {
                 wakeLock?.acquire(10 * 60 * 1000L)
-                Log.d(TAG, "WakeLock acquired")
+                AppLogger.d(TAG, "WakeLock acquired")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error acquiring WakeLock", e)
+            AppLogger.e(TAG, "Error acquiring WakeLock", e)
         }
     }
 
@@ -246,10 +246,10 @@ class FloatingChatService : Service(), FloatingWindowCallback {
         try {
             if (wakeLock?.isHeld == true) {
                 wakeLock?.release()
-                Log.d(TAG, "WakeLock released")
+                AppLogger.d(TAG, "WakeLock released")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error releasing WakeLock", e)
+            AppLogger.e(TAG, "Error releasing WakeLock", e)
         }
     }
 
@@ -291,7 +291,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d(TAG, "onStartCommand")
+        AppLogger.d(TAG, "onStartCommand")
         lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START)
         lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
 
@@ -303,9 +303,9 @@ class FloatingChatService : Service(), FloatingWindowCallback {
                 try {
                     val mode = FloatingMode.valueOf(modeName)
                     windowState.currentMode.value = mode
-                    Log.d(TAG, "Set mode from intent: $mode")
+                    AppLogger.d(TAG, "Set mode from intent: $mode")
                 } catch (e: IllegalArgumentException) {
-                    Log.w(TAG, "Invalid mode name in intent: $modeName")
+                    AppLogger.w(TAG, "Invalid mode name in intent: $modeName")
                 }
             }
 
@@ -345,14 +345,14 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             }
             windowManager.show()
         } catch (e: Exception) {
-            Log.e(TAG, "Error in onStartCommand", e)
+            AppLogger.e(TAG, "Error in onStartCommand", e)
         }
         return START_STICKY
     }
 
     override fun onTaskRemoved(rootIntent: Intent) {
         super.onTaskRemoved(rootIntent)
-        Log.d(TAG, "onTaskRemoved")
+        AppLogger.d(TAG, "onTaskRemoved")
         val restartServiceIntent =
                 Intent(applicationContext, this.javaClass).apply { setPackage(packageName) }
         startService(restartServiceIntent)
@@ -360,13 +360,13 @@ class FloatingChatService : Service(), FloatingWindowCallback {
 
     override fun onLowMemory() {
         super.onLowMemory()
-        Log.d(TAG, "onLowMemory: 系统内存不足")
+        AppLogger.d(TAG, "onLowMemory: 系统内存不足")
         saveState()
     }
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        Log.d(TAG, "onTrimMemory: level=$level")
+        AppLogger.d(TAG, "onTrimMemory: level=$level")
         if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN ||
                         level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL ||
                         level == ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW ||
@@ -377,27 +377,27 @@ class FloatingChatService : Service(), FloatingWindowCallback {
     }
 
     private fun handleAttachmentRequest(request: String) {
-        Log.d(TAG, "Attachment request received: $request")
+        AppLogger.d(TAG, "Attachment request received: $request")
         serviceScope.launch {
             try {
                 // 直接使用 chatCore 的 AttachmentDelegate 处理附件
                 chatCore.handleAttachment(request)
-                Log.d(TAG, "附件已添加: $request")
+                AppLogger.d(TAG, "附件已添加: $request")
             } catch (e: Exception) {
-                Log.e(TAG, "Error handling attachment request", e)
+                AppLogger.e(TAG, "Error handling attachment request", e)
             }
         }
     }
 
     fun removeAttachment(filePath: String) {
-        Log.d(TAG, "移除附件: $filePath")
+        AppLogger.d(TAG, "移除附件: $filePath")
         // 直接使用 chatCore 的 AttachmentDelegate 移除附件
         chatCore.removeAttachment(filePath)
     }
 
     fun updateChatMessages(messages: List<ChatMessage>) {
         serviceScope.launch {
-            Log.d(
+            AppLogger.d(
                     TAG,
                     "服务收到消息更新: ${messages.size} 条. 最后一条消息的 stream is null: ${messages.lastOrNull()?.contentStream == null}"
             )
@@ -422,7 +422,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             }
             
             chatMessages.value = mergedMessages
-            Log.d(TAG, "智能合并完成: 当前 ${currentMessages.size} 条 -> 合并后 ${mergedMessages.size} 条")
+            AppLogger.d(TAG, "智能合并完成: 当前 ${currentMessages.size} 条 -> 合并后 ${mergedMessages.size} 条")
         }
     }
 
@@ -433,7 +433,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             serviceScope.cancel()
             saveState()
             super.onDestroy()
-            Log.d(TAG, "onDestroy")
+            AppLogger.d(TAG, "onDestroy")
             lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
             lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
             lifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -441,18 +441,18 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             Thread.setDefaultUncaughtExceptionHandler(defaultExceptionHandler)
             prefs.edit().putInt("view_creation_retry", 0).apply()
         } catch (e: Exception) {
-            Log.e(TAG, "Error in onDestroy", e)
+            AppLogger.e(TAG, "Error in onDestroy", e)
         }
     }
 
     override fun onClose() {
-        Log.d(TAG, "Close request from window manager")
+        AppLogger.d(TAG, "Close request from window manager")
         binder.notifyClose()
         stopSelf()
     }
 
     override fun onSendMessage(message: String, promptType: PromptFunctionType) {
-        Log.d(TAG, "onSendMessage: $message, promptType: $promptType")
+        AppLogger.d(TAG, "onSendMessage: $message, promptType: $promptType")
         
         // 直接使用 chatCore 发送消息，不再通过 SharedFlow
         serviceScope.launch {
@@ -460,7 +460,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
                 // 获取当前聊天ID，如果没有则创建新聊天
                 var chatId = chatCore.currentChatId.value
                 if (chatId == null) {
-                    Log.d(TAG, "当前没有活跃对话，自动创建新对话")
+                    AppLogger.d(TAG, "当前没有活跃对话，自动创建新对话")
                     chatCore.createNewChat()
                     
                     // 等待对话ID更新
@@ -472,10 +472,10 @@ class FloatingChatService : Service(), FloatingWindowCallback {
                     
                     chatId = chatCore.currentChatId.value
                     if (chatId == null) {
-                        Log.e(TAG, "创建新对话超时，无法发送消息")
+                        AppLogger.e(TAG, "创建新对话超时，无法发送消息")
                         return@launch
                     }
-                    Log.d(TAG, "新对话创建完成，ID: $chatId")
+                    AppLogger.d(TAG, "新对话创建完成，ID: $chatId")
                 }
                 
                 // 设置消息文本
@@ -484,15 +484,15 @@ class FloatingChatService : Service(), FloatingWindowCallback {
                 // 发送消息（包含总结逻辑）
                 chatCore.sendUserMessage(promptType)
                 
-                Log.d(TAG, "消息已通过 chatCore 发送")
+                AppLogger.d(TAG, "消息已通过 chatCore 发送")
             } catch (e: Exception) {
-                Log.e(TAG, "发送消息时出错", e)
+                AppLogger.e(TAG, "发送消息时出错", e)
             }
         }
     }
 
     override fun onCancelMessage() {
-        Log.d(TAG, "onCancelMessage")
+        AppLogger.d(TAG, "onCancelMessage")
         
         // 直接使用 chatCore 取消消息，不再通过 SharedFlow
         chatCore.cancelCurrentMessage()
@@ -534,15 +534,15 @@ class FloatingChatService : Service(), FloatingWindowCallback {
 
     fun switchToMode(mode: FloatingMode) {
         windowState.currentMode.value = mode
-        Log.d(TAG, "Switching to mode: $mode")
+        AppLogger.d(TAG, "Switching to mode: $mode")
     }
 
     fun setWindowInteraction(enabled: Boolean) {
         if (::windowManager.isInitialized) {
             windowManager.setWindowInteraction(enabled)
-            Log.d(TAG, "Window interaction set to: $enabled")
+            AppLogger.d(TAG, "Window interaction set to: $enabled")
         } else {
-            Log.w(TAG, "WindowManager not initialized, cannot set interaction.")
+            AppLogger.w(TAG, "WindowManager not initialized, cannot set interaction.")
         }
     }
 
@@ -561,13 +561,13 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             try {
                 val chatId = chatCore.currentChatId.value
                 if (chatId != null) {
-                    Log.d(TAG, "重新加载聊天消息，chatId: $chatId")
+                    AppLogger.d(TAG, "重新加载聊天消息，chatId: $chatId")
                     chatCore.reloadChatMessagesSmart(chatId)
                 } else {
-                    Log.w(TAG, "当前没有活跃对话，无法重新加载消息")
+                    AppLogger.w(TAG, "当前没有活跃对话，无法重新加载消息")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "重新加载聊天消息失败", e)
+                AppLogger.e(TAG, "重新加载聊天消息失败", e)
             }
         }
     }

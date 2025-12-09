@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -223,7 +223,7 @@ fun BubbleUserMessageComposable(
                                             showContentPreview.value = true
                                         }
                                     } catch (e: Exception) {
-                                        Log.e(
+                                        AppLogger.e(
                                             "BubbleUserMessage",
                                             "Error reading attachment file",
                                             e
@@ -502,7 +502,7 @@ private fun parseMessageContent(content: String): MessageParseResult {
                     val bytes = Base64.decode(imageData.base64, Base64.DEFAULT)
                     BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                 } catch (e: Exception) {
-                    Log.e("BubbleUserMessage", "Failed to decode image: $id", e)
+                    AppLogger.e("BubbleUserMessage", "Failed to decode image: $id", e)
                     null
                 }
                 imageLinks.add(ImageLinkData(id, bitmap))
@@ -678,7 +678,7 @@ private fun parseMessageContent(content: String): MessageParseResult {
         return MessageParseResult(messageText.toString(), trailingAttachments, replyInfo, imageLinks)
     } catch (e: Exception) {
         // 如果解析失败，返回原始内容
-        android.util.Log.e("BubbleUserMessageComposable", "Failed to parse message content", e)
+        com.ai.assistance.operit.util.AppLogger.e("BubbleUserMessageComposable", "Failed to parse message content", e)
         return MessageParseResult(cleanedContent, workspaceAttachments, replyInfo, imageLinks)
     }
 }

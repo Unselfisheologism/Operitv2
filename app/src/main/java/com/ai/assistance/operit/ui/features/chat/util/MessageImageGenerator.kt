@@ -8,7 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
 import android.os.Build
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
@@ -87,7 +87,7 @@ object MessageImageGenerator {
         width: Int = 1080
     ): File {
         try {
-            Log.d(TAG, "开始生成消息图片（使用 Capturable），消息数量: ${messages.size}, 宽度: $width, 风格: $chatStyle")
+            AppLogger.d(TAG, "开始生成消息图片（使用 Capturable），消息数量: ${messages.size}, 宽度: $width, 风格: $chatStyle")
             
             if (messages.isEmpty()) {
                 throw IllegalArgumentException("消息列表不能为空")
@@ -265,7 +265,7 @@ object MessageImageGenerator {
                 scrollView.measure(widthMeasureSpec, heightMeasureSpec)
                 scrollView.layout(0, 0, scrollView.measuredWidth, scrollView.measuredHeight)
                 
-                Log.d(TAG, "ScrollView 测量完成，尺寸: ${scrollView.measuredWidth}x${scrollView.measuredHeight}")
+                AppLogger.d(TAG, "ScrollView 测量完成，尺寸: ${scrollView.measuredWidth}x${scrollView.measuredHeight}")
                 
                 // 等待 Compose 完成布局（给它一些时间）
                 delay(500)
@@ -275,7 +275,7 @@ object MessageImageGenerator {
                     // 使用 ScrollView 子视图的完整高度创建 Bitmap
                     // 这是关键：getChildAt(0).height 获取完整的内容高度
                     val contentHeight = scrollView.getChildAt(0).height
-                    Log.d(TAG, "内容完整高度: $contentHeight")
+                    AppLogger.d(TAG, "内容完整高度: $contentHeight")
                     
                     var tempBitmap = Bitmap.createBitmap(
                         scrollView.width,
@@ -297,7 +297,7 @@ object MessageImageGenerator {
                     // 检查是否为硬件 Bitmap，如果是则转换为软件 Bitmap
                     // 软件渲染不支持硬件 Bitmap，需要转换为软件 Bitmap
                     capturedBitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && tempBitmap.config == Bitmap.Config.HARDWARE) {
-                        Log.d(TAG, "检测到硬件 Bitmap，转换为软件 Bitmap")
+                        AppLogger.d(TAG, "检测到硬件 Bitmap，转换为软件 Bitmap")
                         val softwareBitmap = tempBitmap.copy(Bitmap.Config.ARGB_8888, false)
                         tempBitmap.recycle()
                         softwareBitmap
@@ -305,12 +305,12 @@ object MessageImageGenerator {
                         tempBitmap
                     }
                     
-                    Log.d(TAG, "捕获成功，图片尺寸: ${capturedBitmap.width}x${capturedBitmap.height}")
+                    AppLogger.d(TAG, "捕获成功，图片尺寸: ${capturedBitmap.width}x${capturedBitmap.height}")
                 } catch (e: Throwable) {
-                    Log.e(TAG, "捕获失败", e)
+                    AppLogger.e(TAG, "捕获失败", e)
                     throw RuntimeException("图片捕获失败: ${e.message}", e)
                 } finally {
-                    Log.d(TAG, "从窗口移除 ScrollView")
+                    AppLogger.d(TAG, "从窗口移除 ScrollView")
                     // 确保无论成功还是失败，都将视图移除
                     rootView.removeView(scrollView)
                 }
@@ -332,7 +332,7 @@ object MessageImageGenerator {
                     out.flush()
                 }
                 
-                Log.d(TAG, "图片已保存到: ${outputFile.absolutePath}, 大小: ${outputFile.length()} bytes")
+                AppLogger.d(TAG, "图片已保存到: ${outputFile.absolutePath}, 大小: ${outputFile.length()} bytes")
                 
                 // 回收 Bitmap
                 bitmap.recycle()
@@ -341,7 +341,7 @@ object MessageImageGenerator {
             }
             
         } catch (e: Exception) {
-            Log.e(TAG, "生成消息图片失败", e)
+            AppLogger.e(TAG, "生成消息图片失败", e)
             throw e
         }
     }

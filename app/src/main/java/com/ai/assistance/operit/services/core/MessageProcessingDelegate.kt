@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.services.core
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import com.ai.assistance.operit.R
@@ -92,7 +92,7 @@ class MessageProcessingDelegate(
     fun getCurrentResponseStream(): SharedStream<String>? = currentResponseStream
 
     init {
-        Log.d(TAG, "MessageProcessingDelegate初始化: 创建滚动事件流")
+        AppLogger.d(TAG, "MessageProcessingDelegate初始化: 创建滚动事件流")
     }
 
     fun updateUserMessage(message: String) {
@@ -164,14 +164,14 @@ class MessageProcessingDelegate(
                 updateChatTitle(chatId, newTitle)
             }
 
-            Log.d(TAG, "开始处理用户消息：附件数量=${attachments.size}")
+            AppLogger.d(TAG, "开始处理用户消息：附件数量=${attachments.size}")
 
             // 获取当前模型配置以检查是否启用直接图片处理
             // 聊天功能直接使用CHAT类型的配置
             val configId = functionalConfigManager.getConfigIdForFunction(FunctionType.CHAT)
             val currentModelConfig = modelConfigManager.getModelConfigFlow(configId).first()
             val enableDirectImageProcessing = currentModelConfig.enableDirectImageProcessing
-            Log.d(TAG, "直接图片处理状态: $enableDirectImageProcessing (配置ID: $configId)")
+            AppLogger.d(TAG, "直接图片处理状态: $enableDirectImageProcessing (配置ID: $configId)")
 
             // 1. 使用 AIMessageManager 构建最终消息
             val finalMessageContent = AIMessageManager.buildUserMessageContent(
@@ -199,10 +199,10 @@ class MessageProcessingDelegate(
             // 在发送消息前，同步工作区状态
             if (!workspacePath.isNullOrBlank()) {
                 try {
-                    Log.d(TAG, "Syncing workspace state for timestamp ${userMessage.timestamp}")
+                    AppLogger.d(TAG, "Syncing workspace state for timestamp ${userMessage.timestamp}")
                     WorkspaceBackupManager.getInstance(context).syncState(workspacePath, userMessage.timestamp)
                 } catch (e: Exception) {
-                    Log.e(TAG, "Workspace sync failed", e)
+                    AppLogger.e(TAG, "Workspace sync failed", e)
                     // 报告一个非致命错误，不会中断消息流程
                     _nonFatalErrorEvent.emit("工作区状态同步失败: ${e.message}")
                 }
@@ -242,7 +242,7 @@ class MessageProcessingDelegate(
                     val avatar = userPreferencesManager.getAiAvatarForCharacterCardFlow(activeCard.id).first()
                     Pair(activeCard.name, avatar)
                 } catch (e: Exception) {
-                    Log.e(TAG, "获取角色信息失败: ${e.message}", e)
+                    AppLogger.e(TAG, "获取角色信息失败: ${e.message}", e)
                     Pair(null, null)
                 }
 
@@ -282,7 +282,7 @@ class MessageProcessingDelegate(
                         replay = Int.MAX_VALUE, 
                         onComplete = {
                             deferred.complete(Unit)
-                            Log.d(
+                            AppLogger.d(
                                 TAG,
                                 "共享流完成，耗时: ${System.currentTimeMillis() - startTime}ms"
                             )
@@ -304,7 +304,7 @@ class MessageProcessingDelegate(
                 val (provider, modelName) = try {
                     service.getProviderAndModelForFunction(com.ai.assistance.operit.data.model.FunctionType.CHAT)
                 } catch (e: Exception) {
-                    Log.e(TAG, "获取provider和model信息失败: ${e.message}", e)
+                    AppLogger.e(TAG, "获取provider和model信息失败: ${e.message}", e)
                     Pair("", "")
                 }
 
@@ -316,7 +316,7 @@ class MessageProcessingDelegate(
                     provider = provider,
                     modelName = modelName
                 )
-                Log.d(
+                AppLogger.d(
                     TAG,
                     "创建带流的AI消息, stream is null: ${aiMessage.contentStream == null}, timestamp: ${aiMessage.timestamp}"
                 )
@@ -358,13 +358,13 @@ class MessageProcessingDelegate(
                 // 等待流完成，以便finally块可以正确执行来更新UI状态
                 deferred.await()
 
-                Log.d(TAG, "AI响应处理完成，总耗时: ${System.currentTimeMillis() - startTime}ms")
+                AppLogger.d(TAG, "AI响应处理完成，总耗时: ${System.currentTimeMillis() - startTime}ms")
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) {
-                    Log.d(TAG, "消息发送被取消")
+                    AppLogger.d(TAG, "消息发送被取消")
                     throw e
                 }
-                Log.e(TAG, "发送消息时出错", e)
+                AppLogger.e(TAG, "发送消息时出错", e)
                 withContext(Dispatchers.Main) { showErrorMessage("发送消息失败: ${e.message}") }
             } finally {
                 // 修改为使用 try-catch 来检查变量是否已初始化，而不是使用 ::var.isInitialized
@@ -378,7 +378,7 @@ class MessageProcessingDelegate(
                         val isWaifuModeEnabled = waifuPreferences.enableWaifuModeFlow.first()
                         
                         if (isWaifuModeEnabled && WaifuMessageProcessor.shouldSplitMessage(finalContent)) {
-                            Log.d(TAG, "Waifu模式已启用，开始创建独立消息，内容长度: ${finalContent.length}")
+                            AppLogger.d(TAG, "Waifu模式已启用，开始创建独立消息，内容长度: ${finalContent.length}")
                             
                             // 获取配置的字符延迟时间和标点符号设置
                             val charDelay = waifuPreferences.waifuCharDelayFlow.first().toLong()
@@ -395,7 +395,7 @@ class MessageProcessingDelegate(
                             val (provider, modelName) = try {
                                 getEnhancedAiService()?.getProviderAndModelForFunction(com.ai.assistance.operit.data.model.FunctionType.CHAT) ?: Pair("", "")
                             } catch (e: Exception) {
-                                Log.e(TAG, "获取provider和model信息失败: ${e.message}", e)
+                                AppLogger.e(TAG, "获取provider和model信息失败: ${e.message}", e)
                                 Pair("", "")
                             }
                             
@@ -404,11 +404,11 @@ class MessageProcessingDelegate(
                             
                             // 启动一个协程来创建独立的句子消息
                             coroutineScope.launch(Dispatchers.IO) {
-                                Log.d(TAG, "开始Waifu独立消息创建，字符延迟: ${charDelay}ms/字符，移除标点: $removePunctuation")
+                                AppLogger.d(TAG, "开始Waifu独立消息创建，字符延迟: ${charDelay}ms/字符，移除标点: $removePunctuation")
                                 
                                 // 分割句子
                                 val sentences = WaifuMessageProcessor.splitMessageBySentences(finalContent, removePunctuation)
-                                Log.d(TAG, "分割出${sentences.size}个句子")
+                                AppLogger.d(TAG, "分割出${sentences.size}个句子")
                                 
                                 // 为每个句子创建独立的消息
                                 for ((index, sentence) in sentences.withIndex()) {
@@ -418,11 +418,11 @@ class MessageProcessingDelegate(
                                     
                                     if (index > 0) {
                                         // 如果不是第一句，先延迟再发送
-                                        Log.d(TAG, "当前句字符数: $characterCount, 计算延迟: ${calculatedDelay}ms")
+                                        AppLogger.d(TAG, "当前句字符数: $characterCount, 计算延迟: ${calculatedDelay}ms")
                                         delay(calculatedDelay)
                                     }
                                     
-                                    Log.d(TAG, "创建第${index + 1}个独立消息: $sentence")
+                                    AppLogger.d(TAG, "创建第${index + 1}个独立消息: $sentence")
                                     
                                     // 创建独立的AI消息（使用外层已获取的provider和modelName）
                                     val sentenceMessage = ChatMessage(
@@ -447,7 +447,7 @@ class MessageProcessingDelegate(
                                     }
                                 }
                                 
-                                Log.d(TAG, "Waifu独立消息创建完成")
+                                AppLogger.d(TAG, "Waifu独立消息创建完成")
                             }
                         } else {
                             // 普通模式，直接清理流
@@ -465,9 +465,9 @@ class MessageProcessingDelegate(
                     }
                 } catch (e: UninitializedPropertyAccessException) {
                     // aiMessage 未初始化，忽略清理步骤
-                    Log.d(TAG, "AI消息未初始化，跳过流清理步骤")
+                    AppLogger.d(TAG, "AI消息未初始化，跳过流清理步骤")
                 } catch (e: Exception) {
-                    Log.e(TAG, "处理waifu模式时出错", e)
+                    AppLogger.e(TAG, "处理waifu模式时出错", e)
                     // 如果waifu模式处理失败，回退到普通模式
                     try {
                         val finalContent = aiMessage.content
@@ -478,7 +478,7 @@ class MessageProcessingDelegate(
                             }
                         }
                     } catch (ex: Exception) {
-                        Log.e(TAG, "回退到普通模式也失败", ex)
+                        AppLogger.e(TAG, "回退到普通模式也失败", ex)
                     }
                 }
 
@@ -510,7 +510,7 @@ class MessageProcessingDelegate(
             // 取消正在进行的流收集
             streamCollectionJob?.cancel()
             streamCollectionJob = null
-            Log.d(TAG, "流收集任务已取消")
+            AppLogger.d(TAG, "流收集任务已取消")
 
             withContext(Dispatchers.IO) {
                 AIMessageManager.cancelCurrentOperation()

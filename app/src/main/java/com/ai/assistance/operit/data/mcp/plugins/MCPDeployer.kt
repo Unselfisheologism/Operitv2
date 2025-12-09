@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.data.mcp.plugins
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.mcp.MCPLocalServer
 import com.ai.assistance.operit.core.tools.system.Terminal
 import com.ai.assistance.operit.core.tools.AIToolHandler
@@ -60,7 +60,7 @@ class MCPDeployer(private val context: Context) {
             withContext(Dispatchers.IO) {
                 try {
                     statusCallback(DeploymentStatus.InProgress("开始部署插件: $pluginId"))
-                    Log.d(TAG, "开始部署插件(自定义命令): $pluginId, 路径: $pluginPath")
+                    AppLogger.d(TAG, "开始部署插件(自定义命令): $pluginId, 路径: $pluginPath")
 
                     val mcpLocalServer = MCPLocalServer.getInstance(context)
 
@@ -69,7 +69,7 @@ class MCPDeployer(private val context: Context) {
                         val serverConfig = mcpLocalServer.getMCPServer(pluginId)
                         val command = serverConfig?.command?.lowercase() ?: "npx/uvx/uv"
 
-                        Log.d(TAG, "插件 $pluginId 使用 $command 命令（虚拟路径），开始最小化部署...")
+                        AppLogger.d(TAG, "插件 $pluginId 使用 $command 命令（虚拟路径），开始最小化部署...")
                         statusCallback(DeploymentStatus.InProgress("检测到 $command 类型插件，执行最小化部署"))
 
                         val terminal = Terminal.getInstance(context)
@@ -91,20 +91,20 @@ class MCPDeployer(private val context: Context) {
                                 return@withContext false
                             }
 
-                            Log.d(TAG, "虚拟路径插件 $pluginId 最小化部署完成")
+                            AppLogger.d(TAG, "虚拟路径插件 $pluginId 最小化部署完成")
                             statusCallback(DeploymentStatus.Success("$command 类型插件最小化部署完成，已可直接使用"))
                             return@withContext true
                         } finally {
                             kotlinx.coroutines.delay(2000L)
                             terminal.closeSession(sessionId)
-                            Log.d(TAG, "虚拟插件部署完成, 已关闭会話: $sessionId")
+                            AppLogger.d(TAG, "虚拟插件部署完成, 已关闭会話: $sessionId")
                         }
                     }
 
                     // 验证插件路径（仅对物理路径）
                     val pluginDir = File(pluginPath)
                     if (!pluginDir.exists() || !pluginDir.isDirectory) {
-                        Log.e(TAG, "插件目录不存在: $pluginPath")
+                        AppLogger.e(TAG, "插件目录不存在: $pluginPath")
                         statusCallback(DeploymentStatus.Error("插件目录不存在: $pluginPath"))
                         return@withContext false
                     }
@@ -120,12 +120,12 @@ class MCPDeployer(private val context: Context) {
                     
                     if (!marketConfig.isNullOrBlank()) {
                         // 优先使用市场配置
-                        Log.d(TAG, "使用市场配置部署插件: $pluginId")
+                        AppLogger.d(TAG, "使用市场配置部署插件: $pluginId")
                         statusCallback(DeploymentStatus.InProgress("使用市场配置部署插件..."))
                         mcpConfig = marketConfig
                     } else {
                         // 没有市场配置，分析项目并生成配置
-                        Log.d(TAG, "没有市场配置，分析项目生成配置: $pluginId")
+                        AppLogger.d(TAG, "没有市场配置，分析项目生成配置: $pluginId")
                         
                         // 创建项目分析器（仅用于分析项目类型和生成配置）
                         val projectAnalyzer = MCPProjectAnalyzer()
@@ -156,12 +156,12 @@ class MCPDeployer(private val context: Context) {
                     val configSaveResult = saveMCPConfigToLocalServer(mcpLocalServer, pluginId, mcpConfig)
 
                     if (!configSaveResult) {
-                        Log.e(TAG, "保存MCP配置失败: $pluginId")
+                        AppLogger.e(TAG, "保存MCP配置失败: $pluginId")
                         statusCallback(DeploymentStatus.Error("保存MCP配置失败"))
                         return@withContext false
                     }
 
-                    Log.d(TAG, "使用自定义命令: $customCommands")
+                    AppLogger.d(TAG, "使用自定义命令: $customCommands")
 
                     // 执行部署命令
                     return@withContext executeDeployCommands(
@@ -172,7 +172,7 @@ class MCPDeployer(private val context: Context) {
                             configGenerator.extractServerNameFromConfig(mcpConfig)
                     )
                 } catch (e: Exception) {
-                    Log.e(TAG, "使用自定义命令部署插件时出错", e)
+                    AppLogger.e(TAG, "使用自定义命令部署插件时出错", e)
                     statusCallback(DeploymentStatus.Error("部署出错: ${e.message}"))
                     return@withContext false
                 }
@@ -189,7 +189,7 @@ class MCPDeployer(private val context: Context) {
         try {
             val pluginDir = File(pluginPath)
             if (!pluginDir.exists() || !pluginDir.isDirectory) {
-                Log.e(TAG, "插件目录不存在: $pluginPath")
+                AppLogger.e(TAG, "插件目录不存在: $pluginPath")
                 return@withContext emptyList()
             }
 
@@ -209,13 +209,13 @@ class MCPDeployer(private val context: Context) {
             // 生成部署命令
             val deployCommands = commandGenerator.generateDeployCommands(projectStructure, readmeContent)
             if (deployCommands.isEmpty()) {
-                Log.e(TAG, "无法确定如何部署此插件: $pluginId")
+                AppLogger.e(TAG, "无法确定如何部署此插件: $pluginId")
                 return@withContext emptyList()
             }
 
             return@withContext deployCommands
         } catch (e: Exception) {
-            Log.e(TAG, "分析插件时出错: ${e.message}", e)
+            AppLogger.e(TAG, "分析插件时出错: ${e.message}", e)
             return@withContext emptyList()
         }
     }
@@ -242,7 +242,7 @@ class MCPDeployer(private val context: Context) {
                 return@withContext false
             }
 
-            Log.d(TAG, "为插件 $pluginId 创建独立部署会话: $sessionId")
+            AppLogger.d(TAG, "为插件 $pluginId 创建独立部署会话: $sessionId")
 
             // 定义插件在 proot 环境中的主目录路径
             val pluginHomeDir = "~/mcp_plugins"
@@ -290,7 +290,7 @@ class MCPDeployer(private val context: Context) {
                 statusCallback(DeploymentStatus.Error("复制文件到目标目录失败: ${copyResult.error}"))
                 return@withContext false
             }
-            Log.d(TAG, "成功复制插件目录: $terminalPluginPath -> $pluginDir")
+            AppLogger.d(TAG, "成功复制插件目录: $terminalPluginPath -> $pluginDir")
 
             // 切换到插件目录
             statusCallback(DeploymentStatus.InProgress("切换到插件目录"))
@@ -330,7 +330,7 @@ class MCPDeployer(private val context: Context) {
                                 "执行命令 (${index + 1}/${deployCommands.size}): $cleanCommand"
                         )
                 )
-                Log.d(TAG, "执行命令 (${index + 1}/${deployCommands.size}): $cleanCommand")
+                AppLogger.d(TAG, "执行命令 (${index + 1}/${deployCommands.size}): $cleanCommand")
 
                 val commandExecuted = terminal.executeCommand(sessionId, cleanCommand)
 
@@ -338,7 +338,7 @@ class MCPDeployer(private val context: Context) {
                 if (commandExecuted == null) {
                     if (isNonCriticalCommand) {
                         // 对于非关键命令，即使失败也继续
-                        Log.w(TAG, "非关键命令执行失败，但将继续部署: $cleanCommand")
+                        AppLogger.w(TAG, "非关键命令执行失败，但将继续部署: $cleanCommand")
                         statusCallback(
                                 DeploymentStatus.InProgress(
                                         "非关键命令执行失败，继续后续步骤: $cleanCommand"
@@ -346,7 +346,7 @@ class MCPDeployer(private val context: Context) {
                         )
                     } else {
                         // 关键命令失败，中止部署
-                        Log.e(TAG, "命令执行失败: $cleanCommand")
+                        AppLogger.e(TAG, "命令执行失败: $cleanCommand")
                         statusCallback(DeploymentStatus.Error("命令执行失败: $cleanCommand"))
                         return@withContext false
                     }
@@ -366,12 +366,12 @@ class MCPDeployer(private val context: Context) {
             val currentTime = System.currentTimeMillis()
             successMessage.append("部署时间: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(currentTime))}")
 
-            Log.d(TAG, "插件 $pluginId 部署完成")
+            AppLogger.d(TAG, "插件 $pluginId 部署完成")
             statusCallback(DeploymentStatus.Success(successMessage.toString()))
             deploySuccess = true
             return@withContext true
         } catch (e: Exception) {
-            Log.e(TAG, "执行部署命令时出错", e)
+            AppLogger.e(TAG, "执行部署命令时出错", e)
             statusCallback(DeploymentStatus.Error("部署出错: ${e.message}"))
             return@withContext false
         } finally {
@@ -382,9 +382,9 @@ class MCPDeployer(private val context: Context) {
                     val delayTime = if (deploySuccess) 2000L else 3000L
                     kotlinx.coroutines.delay(delayTime)
                     Terminal.getInstance(context).closeSession(it)
-                    Log.d(TAG, "部署${if (deploySuccess) "完成" else "失败"}，已关闭会话: $it")
+                    AppLogger.d(TAG, "部署${if (deploySuccess) "完成" else "失败"}，已关闭会话: $it")
                 } catch (e: Exception) {
-                    Log.e(TAG, "关闭部署会话时出错: ${e.message}")
+                    AppLogger.e(TAG, "关闭部署会话时出错: ${e.message}")
                 }
             }
         }
@@ -422,7 +422,7 @@ class MCPDeployer(private val context: Context) {
                     }
                 }
 
-                Log.d(TAG, "解析MCP配置 - 服务器: $serverName, 命令: $command, 参数: $args")
+                AppLogger.d(TAG, "解析MCP配置 - 服务器: $serverName, 命令: $command, 参数: $args")
 
                 // 保存到MCPLocalServer
                 mcpLocalServer.addOrUpdateMCPServer(
@@ -436,11 +436,11 @@ class MCPDeployer(private val context: Context) {
 
                 true
             } else {
-                Log.e(TAG, "MCP配置中没有找到服务器配置")
+                AppLogger.e(TAG, "MCP配置中没有找到服务器配置")
                 false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "解析和保存MCP配置失败", e)
+            AppLogger.e(TAG, "解析和保存MCP配置失败", e)
             false
         }
     }

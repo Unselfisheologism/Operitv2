@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.util
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFprobeKit
 import com.arthenica.ffmpegkit.MediaInformation
@@ -17,22 +17,22 @@ object FFmpegUtil {
      */
     fun executeCommand(command: String): Boolean {
         try {
-            Log.d(TAG, "Executing FFmpeg command: $command")
+            AppLogger.d(TAG, "Executing FFmpeg command: $command")
             val session = FFmpegKit.execute(command)
             val returnCode = session.returnCode
 
             if (ReturnCode.isSuccess(returnCode)) {
-                Log.d(TAG, "FFmpeg command executed successfully")
+                AppLogger.d(TAG, "FFmpeg command executed successfully")
                 return true
             } else {
-                Log.e(
+                AppLogger.e(
                     TAG,
                     "FFmpeg failed with return code: ${returnCode.value}, output: ${session.output}"
                 )
                 return false
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error executing FFmpeg command", e)
+            AppLogger.e(TAG, "Error executing FFmpeg command", e)
             return false
         }
     }
@@ -45,7 +45,7 @@ object FFmpegUtil {
             val mediaInfoSession = FFprobeKit.getMediaInformation(filePath)
             mediaInfoSession.mediaInformation
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting media info: ${e.message}")
+            AppLogger.e(TAG, "Error getting media info: ${e.message}")
             null
         }
     }

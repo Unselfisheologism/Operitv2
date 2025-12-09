@@ -3,7 +3,7 @@ package com.ai.assistance.operit.core.subpack
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import java.io.*
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
@@ -37,7 +37,7 @@ class ExeIconChanger(private val context: Context) {
      * @return 是否成功
      */
     fun changeIcon(exeFile: File, iconBitmap: Bitmap, outputFile: File): Boolean {
-        Log.d(TAG, "开始更换EXE图标: ${exeFile.absolutePath}")
+        AppLogger.d(TAG, "开始更换EXE图标: ${exeFile.absolutePath}")
         
         try {
             // 先将文件复制到输出位置
@@ -59,7 +59,7 @@ class ExeIconChanger(private val context: Context) {
             
             return success
         } catch (e: Exception) {
-            Log.e(TAG, "更换EXE图标失败", e)
+            AppLogger.e(TAG, "更换EXE图标失败", e)
             return false
         }
     }
@@ -107,9 +107,9 @@ class ExeIconChanger(private val context: Context) {
                 fos.write(imageBytes)
             }
             
-            Log.d(TAG, "临时ICO文件创建成功: ${outputFile.absolutePath}")
+            AppLogger.d(TAG, "临时ICO文件创建成功: ${outputFile.absolutePath}")
         } catch (e: Exception) {
-            Log.e(TAG, "创建ICO文件失败", e)
+            AppLogger.e(TAG, "创建ICO文件失败", e)
             throw e
         }
     }
@@ -120,8 +120,8 @@ class ExeIconChanger(private val context: Context) {
      * 在真实环境中，这需要使用Windows API或专用工具实现
      */
     private fun simulateResourceReplacement(exeFile: File, iconFile: File): Boolean {
-        Log.d(TAG, "模拟替换EXE资源: ${exeFile.absolutePath}")
-        Log.d(TAG, "图标文件: ${iconFile.absolutePath}")
+        AppLogger.d(TAG, "模拟替换EXE资源: ${exeFile.absolutePath}")
+        AppLogger.d(TAG, "图标文件: ${iconFile.absolutePath}")
         
         // 这里我们只是模拟成功，实际上我们无法修改EXE文件
         return true
@@ -155,7 +155,7 @@ class ExeIconChanger(private val context: Context) {
                 return true
             }
         } catch (e: Exception) {
-            Log.e(TAG, "检查PE文件格式失败", e)
+            AppLogger.e(TAG, "检查PE文件格式失败", e)
             return false
         }
     }
@@ -164,7 +164,7 @@ class ExeIconChanger(private val context: Context) {
     fun cleanup() {
         if (tempDir.exists()) {
             tempDir.deleteRecursively()
-            Log.d(TAG, "临时文件清理完成")
+            AppLogger.d(TAG, "临时文件清理完成")
         }
     }
 }

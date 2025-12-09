@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.standard
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.ADBResultData
 import com.ai.assistance.operit.core.tools.StringResultData
 import com.ai.assistance.operit.core.tools.system.AndroidShellExecutor
@@ -70,7 +70,7 @@ open class StandardShellToolExecutor(private val context: Context) {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error executing ADB command", e)
+            AppLogger.e(TAG, "Error executing ADB command", e)
             ToolResult(
                     toolName = tool.name,
                     success = false,

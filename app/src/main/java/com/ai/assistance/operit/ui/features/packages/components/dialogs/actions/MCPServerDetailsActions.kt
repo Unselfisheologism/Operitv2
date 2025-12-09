@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.features.packages.components.dialogs.actions
 
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +26,7 @@ import com.ai.assistance.operit.R
 import com.ai.assistance.operit.data.mcp.MCPLocalServer
 
 /**
- * Actions component for the MCP server details dialog.
+ * Actions component for the MCP server details diaAppLogger.
  * 
  * @param server The MCP server to display actions for
  * @param isInstalled Whether the server is installed
@@ -57,7 +57,7 @@ fun MCPServerDetailsActions(
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         context.startActivity(intent)
                     } catch (e: Exception) {
-                        Log.e("MCPServerDetailsDialog", "打开仓库链接失败", e)
+                        AppLogger.e("MCPServerDetailsDialog", "打开仓库链接失败", e)
                     }
                 },
                 modifier = Modifier.weight(1f)

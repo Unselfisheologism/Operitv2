@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.debugger
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.DirectoryListingData
 import com.ai.assistance.operit.core.tools.FileContentData
@@ -83,16 +83,16 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
             val normalizedPath = if (path.endsWith("/")) path else "$path/"
 
             // 使用ls -la命令获取详细的文件列表
-            Log.d(TAG, "Using ls -la command for path: $normalizedPath")
+            AppLogger.d(TAG, "Using ls -la command for path: $normalizedPath")
             val listResult = AndroidShellExecutor.executeShellCommand("ls -la '$normalizedPath'")
 
             if (listResult.success) {
-                Log.d(TAG, "ls -la command output: ${listResult.stdout}")
+                AppLogger.d(TAG, "ls -la command output: ${listResult.stdout}")
 
                 // 解析ls -la命令输出
                 val entries = parseDetailedDirectoryListing(listResult.stdout, normalizedPath)
 
-                Log.d(TAG, "Parsed ${entries.size} entries from ls -la output")
+                AppLogger.d(TAG, "Parsed ${entries.size} entries from ls -la output")
 
                 return ToolResult(
                         toolName = tool.name,
@@ -101,7 +101,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                         error = ""
                 )
             } else {
-                Log.w(TAG, "ls -la command failed: ${listResult.stderr}")
+                AppLogger.w(TAG, "ls -la command failed: ${listResult.stderr}")
 
                 return ToolResult(
                         toolName = tool.name,
@@ -111,7 +111,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error listing directory", e)
+            AppLogger.e(TAG, "Error listing directory", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -129,7 +129,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
         val lines = output.trim().split("\n")
         val entries = mutableListOf<DirectoryListingData.FileEntry>()
 
-        Log.d(TAG, "Parsing ${lines.size} lines from ls -la output")
+        AppLogger.d(TAG, "Parsing ${lines.size} lines from ls -la output")
 
         // 跳过第一行总计行
         val startIndex = if (lines.isNotEmpty() && lines[0].startsWith("total")) 1 else 0
@@ -143,7 +143,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 if (line.isBlank()) continue
 
                 // 打印每一行以便调试
-                Log.d(TAG, "Parsing line: $line")
+                AppLogger.d(TAG, "Parsing line: $line")
 
                 // Android上ls -la输出格式: crwxrw--- 2 u0_a425 media_rw 4056 2025-03-14
                 // 06:04 Android
@@ -168,7 +168,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     // 处理符号链接格式 "name -> target"
                     if (isSymlink && name.contains(" -> ")) {
                         name = name.substringBefore(" -> ")
-                        Log.d(TAG, "Found symlink: $name")
+                        AppLogger.d(TAG, "Found symlink: $name")
                     }
 
                     // 跳过 . 和 .. 条目
@@ -181,11 +181,11 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                                 val parsedDate = dateFormat.parse(dateTimeStr)
                                 parsedDate?.time?.toString() ?: "0"
                             } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing date: $dateTimeStr", e)
+                                AppLogger.e(TAG, "Error parsing date: $dateTimeStr", e)
                                 "0" // 解析失败时使用默认时间戳
                             }
 
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "Successfully parsed $name with date $dateTimeStr -> timestamp $timestamp"
                     )
@@ -218,7 +218,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     // 处理符号链接格式 "name -> target"
                     if (isSymlink && name.contains(" -> ")) {
                         name = name.substringBefore(" -> ")
-                        Log.d(TAG, "Found symlink (generic): $name")
+                        AppLogger.d(TAG, "Found symlink (generic): $name")
                     }
 
                     // 跳过 . 和 .. 条目
@@ -238,7 +238,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                                     System.currentTimeMillis().toString()
                                 }
                             } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing generic date: $dateTimeStr", e)
+                                AppLogger.e(TAG, "Error parsing generic date: $dateTimeStr", e)
                                 "0"
                             }
 
@@ -263,7 +263,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     val parts = line.substring(10).trim().split("\\s+".toRegex())
 
                     if (parts.size < 6) {
-                        Log.w(TAG, "Invalid ls -la format: $line")
+                        AppLogger.w(TAG, "Invalid ls -la format: $line")
                         continue
                     }
 
@@ -272,7 +272,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                             parts.indexOfFirst { it.matches("""^\d{4}-\d{2}-\d{2}$""".toRegex()) }
 
                     if (dateIndex < 0 || dateIndex + 1 >= parts.size) {
-                        Log.w(TAG, "Cannot find date in line: $line")
+                        AppLogger.w(TAG, "Cannot find date in line: $line")
                         continue
                     }
 
@@ -282,7 +282,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     // 时间后面的所有内容都是文件名
                     val nameStartIndex = timeIndex + 1
                     if (nameStartIndex >= parts.size) {
-                        Log.w(TAG, "Cannot find filename position: $line")
+                        AppLogger.w(TAG, "Cannot find filename position: $line")
                         continue
                     }
 
@@ -292,7 +292,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     // 处理符号链接格式 "name -> target"
                     if (isSymlink && name.contains(" -> ")) {
                         name = name.substringBefore(" -> ")
-                        Log.d(TAG, "Found symlink (fallback): $name")
+                        AppLogger.d(TAG, "Found symlink (fallback): $name")
                     }
 
                     // 跳过 . 和 .. 条目
@@ -309,7 +309,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                                 val parsedDate = dateFormat.parse(dateTimeStr)
                                 parsedDate?.time?.toString() ?: "0"
                             } catch (e: Exception) {
-                                Log.e(TAG, "Error parsing fallback date: $dateTimeStr", e)
+                                AppLogger.e(TAG, "Error parsing fallback date: $dateTimeStr", e)
                                 "0"
                             }
 
@@ -324,7 +324,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     )
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error parsing directory entry: ${lines[i]}", e)
+                AppLogger.e(TAG, "Error parsing directory entry: ${lines[i]}", e)
                 // 跳过这一行但继续处理其他行
             }
         }
@@ -355,7 +355,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
 
             return String(permChars)
         } catch (e: Exception) {
-            Log.e(TAG, "Error converting octal permission: $octalPerm", e)
+            AppLogger.e(TAG, "Error converting octal permission: $octalPerm", e)
             return "???"
         }
     }
@@ -471,7 +471,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
             }
 
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading file", e)
+            AppLogger.e(TAG, "Error reading file", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -582,7 +582,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading file", e)
+            AppLogger.e(TAG, "Error reading file", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -707,7 +707,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading file part", e)
+            AppLogger.e(TAG, "Error reading file part", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -734,7 +734,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
             return super.handleSpecialFileRead(tool, path, fileExt)
         }
 
-        Log.d(TAG, "File not directly readable (permission restricted), trying Shell copy for: $path")
+        AppLogger.d(TAG, "File not directly readable (permission restricted), trying Shell copy for: $path")
         
         // 创建临时文件用于中转
         val tempFile = File(context.cacheDir, "shell_copy_${System.currentTimeMillis()}.$fileExt")
@@ -745,14 +745,14 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
             val copyResult = AndroidShellExecutor.executeShellCommand("cat '$path' > '${tempFile.absolutePath}'")
             
             if (!copyResult.success) {
-                Log.w(TAG, "Shell copy failed: ${copyResult.stderr}")
+                AppLogger.w(TAG, "Shell copy failed: ${copyResult.stderr}")
                 // 复制失败，回退到父类逻辑（虽然很可能也失败，但能返回一致的错误信息）
                 return super.handleSpecialFileRead(tool, path, fileExt)
             }
             
             // 检查临时文件是否有效
             if (!tempFile.exists() || tempFile.length() == 0L) {
-                Log.w(TAG, "Temp file is empty or does not exist after copy")
+                AppLogger.w(TAG, "Temp file is empty or does not exist after copy")
                 return super.handleSpecialFileRead(tool, path, fileExt)
             }
 
@@ -772,7 +772,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
             tempToolResult
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error in shell copy strategy", e)
+            AppLogger.e(TAG, "Error in shell copy strategy", e)
             super.handleSpecialFileRead(tool, path, fileExt)
         } finally {
             // 清理临时文件
@@ -781,7 +781,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     tempFile.delete()
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to clean up temp file", e)
+                AppLogger.e(TAG, "Failed to clean up temp file", e)
             }
         }
     }
@@ -823,7 +823,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
             if (directory != null) {
                 val mkdirResult = AndroidShellExecutor.executeShellCommand("mkdir -p '$directory'")
                 if (!mkdirResult.success) {
-                    Log.w(TAG, "Warning: Failed to create parent directory: ${mkdirResult.stderr}")
+                    AppLogger.w(TAG, "Warning: Failed to create parent directory: ${mkdirResult.stderr}")
                 }
             }
 
@@ -844,7 +844,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     )
 
             if (!writeResult.success) {
-                Log.e(TAG, "Failed to write with base64 method: ${writeResult.stderr}")
+                AppLogger.e(TAG, "Failed to write with base64 method: ${writeResult.stderr}")
                 // 方法2: 尝试直接写入，无需base64
                 val fallbackResult =
                         AndroidShellExecutor.executeShellCommand(
@@ -928,7 +928,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error writing to file", e)
+            AppLogger.e(TAG, "Error writing to file", e)
 
             // 提供更具体的错误信息
             val errorMessage =
@@ -1023,7 +1023,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting file/directory", e)
+            AppLogger.e(TAG, "Error deleting file/directory", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -1108,7 +1108,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking file existence", e)
+            AppLogger.e(TAG, "Error checking file existence", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -1188,7 +1188,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error moving file", e)
+            AppLogger.e(TAG, "Error moving file", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -1354,7 +1354,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error copying file/directory", e)
+            AppLogger.e(TAG, "Error copying file/directory", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -1477,7 +1477,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating directory", e)
+            AppLogger.e(TAG, "Error creating directory", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -1568,7 +1568,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                     error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error searching for files", e)
+            AppLogger.e(TAG, "Error searching for files", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -1725,7 +1725,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting file information", e)
+            AppLogger.e(TAG, "Error getting file information", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -1916,7 +1916,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 }
 
                 // Log information about the temp ZIP file
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "Temp ZIP file created at: ${tempZipFile.absolutePath}, size: ${tempZipFile.length()} bytes"
                 )
@@ -1953,7 +1953,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 tempZipFile.delete()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error compressing files", e)
+            AppLogger.e(TAG, "Error compressing files", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -2029,7 +2029,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 }
 
                 // Log information about the temp ZIP file
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "Temp ZIP file loaded at: ${tempZipFile.absolutePath}, size: ${tempZipFile.length()} bytes"
                 )
@@ -2079,7 +2079,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                                         "cat '${newFile.absolutePath}' > '$filePath'"
                                 )
                         if (!pushResult.success) {
-                            Log.w(TAG, "Failed to copy extracted file: $fileName to $filePath")
+                            AppLogger.w(TAG, "Failed to copy extracted file: $fileName to $filePath")
                             // Continue with next file
                         }
 
@@ -2109,7 +2109,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 tempZipFile.delete()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error extracting zip file", e)
+            AppLogger.e(TAG, "Error extracting zip file", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -2203,7 +2203,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "打开文件时出错", e)
+            AppLogger.e(TAG, "打开文件时出错", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -2305,7 +2305,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "分享文件时出错", e)
+            AppLogger.e(TAG, "分享文件时出错", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -2467,7 +2467,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "下载文件时出错", e)
+            AppLogger.e(TAG, "下载文件时出错", e)
             return ToolResult(
                     toolName = tool.name,
                     success = false,
@@ -2488,7 +2488,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
             destPath: String,
             toolName: String
     ): ToolResult {
-        Log.d(TAG, "尝试使用OkHttp下载文件: $url -> $destPath")
+        AppLogger.d(TAG, "尝试使用OkHttp下载文件: $url -> $destPath")
 
         return try {
             // 创建OkHttpClient实例
@@ -2525,7 +2525,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
             if (directory != null) {
                 val mkdirResult = AndroidShellExecutor.executeShellCommand("mkdir -p '$directory'")
                 if (!mkdirResult.success) {
-                    Log.w(TAG, "警告: 创建目标目录失败: ${mkdirResult.stderr}")
+                    AppLogger.w(TAG, "警告: 创建目标目录失败: ${mkdirResult.stderr}")
                 }
             }
 
@@ -2604,7 +2604,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "使用OkHttp下载文件时出错", e)
+            AppLogger.e(TAG, "使用OkHttp下载文件时出错", e)
 
             // 提供更具体的错误信息
             val errorMessage =
@@ -2714,7 +2714,7 @@ open class DebuggerFileSystemTools(context: Context) : AccessibilityFileSystemTo
 //                     error = ""
 //             )
 //         } catch (e: Exception) {
-//             Log.e(TAG, "Error writing binary file", e)
+//             AppLogger.e(TAG, "Error writing binary file", e)
 //             return ToolResult(
 //                     toolName = tool.name,
 //                     success = false,

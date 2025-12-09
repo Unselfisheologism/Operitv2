@@ -1,6 +1,6 @@
 package com.ai.assistance.operit.ui.features.packages.dialogs
 
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,7 +35,7 @@ fun PackageDetailsDialog(
         try {
             packageManager.getAvailablePackages()[packageName]
         } catch (e: Exception) {
-            Log.e("PackageDetailsDialog", "Failed to load package details", e)
+            AppLogger.e("PackageDetailsDialog", "Failed to load package details", e)
             null
         }
     }
@@ -48,15 +48,15 @@ fun PackageDetailsDialog(
                 confirmButton = {
                     Button(
                             onClick = {
-                                Log.d("PackageDetailsDialog", "Delete button clicked for package: $packageName")
+                                AppLogger.d("PackageDetailsDialog", "Delete button clicked for package: $packageName")
                                 val deleted = packageManager.deletePackage(packageName)
-                                Log.d("PackageDetailsDialog", "packageManager.deletePackage returned: $deleted")
+                                AppLogger.d("PackageDetailsDialog", "packageManager.deletePackage returned: $deleted")
                                 if (deleted) {
-                                    Log.d("PackageDetailsDialog", "Deletion successful, closing dialog and calling onPackageDeleted.")
+                                    AppLogger.d("PackageDetailsDialog", "Deletion successful, closing dialog and calling onPackageDeleted.")
                                     showDeleteConfirmDialog = false
                                     onPackageDeleted()
                                 } else {
-                                    Log.e("PackageDetailsDialog", "Deletion failed. Closing confirm dialog.")
+                                    AppLogger.e("PackageDetailsDialog", "Deletion failed. Closing confirm diaAppLogger.")
                                     showDeleteConfirmDialog = false
                                 }
                             },

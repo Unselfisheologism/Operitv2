@@ -345,7 +345,7 @@ private fun copyDocumentTreeTo(context: Context, sourceDoc: DocumentFile, destDi
                 }
             } catch (e: Exception) {
                 // Log or handle error for a single file, but don't stop the whole process
-                android.util.Log.e("HtmlPackager", "Failed to copy file: ${docFile.name}", e)
+                com.ai.assistance.operit.util.AppLogger.e("HtmlPackager", "Failed to copy file: ${docFile.name}", e)
             }
         }
     }

@@ -3,7 +3,7 @@ package com.ai.assistance.operit.api.chat
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.enhance.ConversationMarkupManager
 import com.ai.assistance.operit.api.chat.enhance.ConversationRoundManager
 import com.ai.assistance.operit.api.chat.enhance.ConversationService
@@ -155,7 +155,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                         val service = instance.multiServiceManager.getServiceForFunction(type)
                         service.resetTokenCounts()
                     } catch (e: Exception) {
-                        Log.e(TAG, "重置${type}功能的token计数失败", e)
+                        AppLogger.e(TAG, "重置${type}功能的token计数失败", e)
                     }
                 }
             } else {
@@ -365,7 +365,7 @@ class EnhancedAIService private constructor(private val context: Context) {
         avatarUri: String? = null,
         stream: Boolean = true
     ): Stream<String> {
-        Log.d(
+        AppLogger.d(
                 TAG,
                 "sendMessage调用开始: 功能类型=$functionType, 提示词类型=$promptFunctionType, 思考引导=$thinkingGuidance"
         )
@@ -432,7 +432,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                     val availableTools = getAvailableToolsForFunction(functionType)
                     
                     // 使用新的Stream API
-                    Log.d(TAG, "调用AI服务，处理时间: ${System.currentTimeMillis() - startTime}ms, 流式输出: $stream")
+                    AppLogger.d(TAG, "调用AI服务，处理时间: ${System.currentTimeMillis() - startTime}ms, 流式输出: $stream")
                     val responseStream =
                             serviceForFunction.sendMessage(
                                     message = processedInput,
@@ -470,7 +470,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                                 }
                             }
                             isFirstChunk = false
-                            Log.d(TAG, "首次响应耗时: ${System.currentTimeMillis() - streamStartTime}ms")
+                            AppLogger.d(TAG, "首次响应耗时: ${System.currentTimeMillis() - streamStartTime}ms")
                         }
 
                         // 累计统计
@@ -480,7 +480,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                         // 周期性日志
                         val currentTime = System.currentTimeMillis()
                         if (currentTime - lastLogTime > 5000) { // 每5秒记录一次
-                            Log.d(TAG, "已接收 $chunkCount 个内容块，总计 $totalChars 个字符")
+                            AppLogger.d(TAG, "已接收 $chunkCount 个内容块，总计 $totalChars 个字符")
                             lastLogTime = currentTime
                         }
 
@@ -509,11 +509,11 @@ class EnhancedAIService private constructor(private val context: Context) {
                     // Update request count
                     apiPreferences.incrementRequestCountForProviderModel(serviceForFunction.providerModel)
 
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "Token count updated for $functionType. Input: $inputTokens, Output: $outputTokens. Turn Accumulated: $accumulatedInputTokenCount, $accumulatedOutputTokenCount"
                     )
-                    Log.d(
+                    AppLogger.d(
                             TAG,
                             "流收集完成，总计 $totalChars 字符，耗时: ${System.currentTimeMillis() - streamStartTime}ms"
                     )
@@ -521,16 +521,16 @@ class EnhancedAIService private constructor(private val context: Context) {
             } catch (e: Exception) {
                 // 对于协程取消异常，这是正常流程，应当向上抛出以停止流
                 if (e is kotlinx.coroutines.CancellationException) {
-                    Log.d(TAG, "sendMessage流被取消")
+                    AppLogger.d(TAG, "sendMessage流被取消")
                     throw e
                 }
 
                 // 用户取消导致的 Socket closed 是预期行为，不应作为错误处理
                 if (e.message?.contains("Socket closed", ignoreCase = true) == true) {
-                    Log.d(TAG, "Stream was cancelled by the user (Socket closed).")
+                    AppLogger.d(TAG, "Stream was cancelled by the user (Socket closed).")
                 } else {
                     // Handle any exceptions
-                    Log.e(TAG, "发送消息时发生错误: ${e.message}", e)
+                    AppLogger.e(TAG, "发送消息时发生错误: ${e.message}", e)
                     withContext(Dispatchers.Main) {
                         _inputProcessingState.value =
                                 InputProcessingState.Error(message = "错误: ${e.message}")
@@ -594,7 +594,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                             // 格式标准化，使其符合工具调用的正则表达式预期格式
                             val normalizedXml = normalizeToolXml(xml)
                             enhancedContent.append(normalizedXml)
-                            Log.d(TAG, "工具调用XML被增强流处理检测到并标准化")
+                            AppLogger.d(TAG, "工具调用XML被增强流处理检测到并标准化")
                         } else {
                             // 保留其他XML标签
                             enhancedContent.append(xml)
@@ -611,21 +611,21 @@ class EnhancedAIService private constructor(private val context: Context) {
                         val textContent = StringBuilder()
                         group.stream.collect { char -> textContent.append(char) }
                         enhancedContent.append(textContent.toString())
-                        Log.w(TAG, "未知标签类型: ${tag::class.java.simpleName}")
+                        AppLogger.w(TAG, "未知标签类型: ${tag::class.java.simpleName}")
                     }
                 }
             }
 
             // 如果找到了工具标签，返回增强的内容；否则返回原始内容
             return if (foundToolTag) {
-                Log.d(TAG, "增强的XML工具检测完成")
+                AppLogger.d(TAG, "增强的XML工具检测完成")
                 enhancedContent.toString()
             } else {
                 content
             }
         } catch (e: Exception) {
             // 如果流处理失败，返回原始内容并记录错误
-            Log.e(TAG, "增强工具检测失败: ${e.message}", e)
+            AppLogger.e(TAG, "增强工具检测失败: ${e.message}", e)
             return content
         }
     }
@@ -676,7 +676,7 @@ class EnhancedAIService private constructor(private val context: Context) {
             // If content is empty, it means an error likely occurred or the model returned nothing.
             // We must still finalize the conversation to reset the state correctly.
             if (content.isEmpty()) {
-                Log.d(TAG, "Stream content is empty. Finalizing conversation state.")
+                AppLogger.d(TAG, "Stream content is empty. Finalizing conversation state.")
                 // We call handleTaskCompletion to properly set the conversation as inactive and update the UI state.
                 // We pass enableMemoryQuery = false because there's no content to analyze or save.
                 handleWaitForUserNeed(context, content, isSubTask)
@@ -717,7 +717,7 @@ class EnhancedAIService private constructor(private val context: Context) {
             try {
                 context.conversationHistory.add(Pair("assistant", context.roundManager.getCurrentRoundContent()))
             } catch (e: Exception) {
-                Log.e(TAG, "添加助手消息到历史记录失败", e)
+                AppLogger.e(TAG, "添加助手消息到历史记录失败", e)
                 return
             }
 
@@ -738,7 +738,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                     try {
                         context.conversationHistory.add(Pair("tool", warning))
                     } catch (e: Exception) {
-                        Log.e(TAG, "添加任务完成跳过工具警告到历史记录失败", e)
+                        AppLogger.e(TAG, "添加任务完成跳过工具警告到历史记录失败", e)
                     }
                 }
 
@@ -753,13 +753,13 @@ class EnhancedAIService private constructor(private val context: Context) {
                     try {
                         context.conversationHistory.add(Pair("tool", userNeedContent))
                     } catch (e: Exception) {
-                        Log.e(TAG, "添加工具调用警告到历史记录失败", e)
+                        AppLogger.e(TAG, "添加工具调用警告到历史记录失败", e)
                     }
                 }
 
                 // Add current assistant message to conversation history
 
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "检测到 ${extractedToolInvocations.size} 个工具调用，处理时间: ${System.currentTimeMillis() - startTime}ms"
                 )
@@ -793,10 +793,10 @@ class EnhancedAIService private constructor(private val context: Context) {
 
             // 处理为等待用户输入模式
             handleWaitForUserNeed(context, userNeedContent, isSubTask, characterName, avatarUri)
-            Log.d(TAG, "流完成处理耗时: ${System.currentTimeMillis() - startTime}ms")
+            AppLogger.d(TAG, "流完成处理耗时: ${System.currentTimeMillis() - startTime}ms")
         } catch (e: Exception) {
             // Catch any exceptions in the processing flow
-            Log.e(TAG, "处理流完成时发生错误", e)
+            AppLogger.e(TAG, "处理流完成时发生错误", e)
             withContext(Dispatchers.Main) {
                 _inputProcessingState.value = InputProcessingState.Idle
             }
@@ -858,7 +858,7 @@ class EnhancedAIService private constructor(private val context: Context) {
             }
         }
 
-        Log.d(TAG, "Wait for user need - skipping problem library analysis")
+        AppLogger.d(TAG, "Wait for user need - skipping problem library analysis")
         if (!isSubTask) {
         // 在会话结束后停止服务（服务销毁时会自动发送通知）
         stopAiService(characterName, avatarUri)
@@ -900,7 +900,7 @@ class EnhancedAIService private constructor(private val context: Context) {
             )
 
             if (allToolResults.isNotEmpty()) {
-                Log.d(TAG, "所有工具结果收集完毕，准备最终处理。")
+                AppLogger.d(TAG, "所有工具结果收集完毕，准备最终处理。")
                 processToolResults(
                     allToolResults, context, functionType, collector, enableThinking,
                     enableMemoryQuery, onNonFatalError, onTokenLimitExceeded, maxTokens, tokenUsageThreshold, isSubTask,
@@ -939,7 +939,7 @@ class EnhancedAIService private constructor(private val context: Context) {
     ) {
         val startTime = System.currentTimeMillis()
         val toolNames = results.joinToString(", ") { it.toolName }
-        Log.d(TAG, "开始处理工具结果: $toolNames, 成功: ${results.all { it.success }}")
+        AppLogger.d(TAG, "开始处理工具结果: $toolNames, 成功: ${results.all { it.success }}")
 
         // Add transition state
         if (!isSubTask) {
@@ -997,7 +997,7 @@ class EnhancedAIService private constructor(private val context: Context) {
             val usageRatio = currentTokens.toDouble() / maxTokens.toDouble()
 
             if (usageRatio >= tokenUsageThreshold) {
-                Log.w(TAG, "Token usage ($usageRatio) exceeds threshold ($tokenUsageThreshold) after tool call. Triggering summary.")
+                AppLogger.w(TAG, "Token usage ($usageRatio) exceeds threshold ($tokenUsageThreshold) after tool call. Triggering summary.")
                 onTokenLimitExceeded?.invoke()
                 context.isConversationActive.set(false)
                 if (!isSubTask) {
@@ -1075,18 +1075,18 @@ class EnhancedAIService private constructor(private val context: Context) {
                 // Update request count
                 apiPreferences.incrementRequestCountForProviderModel(serviceForFunction.providerModel)
 
-                Log.d(
+                AppLogger.d(
                         TAG,
                         "Token count updated after tool result for $functionType. Input: $inputTokens, Output: $outputTokens."
                 )
 
                 val processingTime = System.currentTimeMillis() - aiStartTime
-                Log.d(TAG, "工具结果AI处理完成，收到 $totalChars 字符，耗时: ${processingTime}ms")
+                AppLogger.d(TAG, "工具结果AI处理完成，收到 $totalChars 字符，耗时: ${processingTime}ms")
 
                 // 流处理完成，处理完成逻辑
                 processStreamCompletion(context, functionType, collector, enableThinking, enableMemoryQuery, onNonFatalError, onTokenLimitExceeded, maxTokens, tokenUsageThreshold, isSubTask, characterName, avatarUri, stream)
             } catch (e: Exception) {
-                Log.e(TAG, "处理工具执行结果时出错", e)
+                AppLogger.e(TAG, "处理工具执行结果时出错", e)
                 withContext(Dispatchers.Main) {
                     _inputProcessingState.value =
                             InputProcessingState.Error("处理工具执行结果失败: ${e.message}")
@@ -1205,15 +1205,17 @@ class EnhancedAIService private constructor(private val context: Context) {
         // Set conversation inactive
         // isConversationActive.set(false) // This is now per-context, can't set a global one
 
-        // Cancel underlying AIService streaming
-        aiService.cancelStreaming()
+        // Cancel all underlying AIService streaming instances
+        runBlocking {
+            multiServiceManager.cancelAllStreaming()
+        }
 
         // Cancel all tool executions
         cancelAllToolExecutions()
 
         // Clean up current conversation content
         // roundManager.clearContent() // This is now per-context, can't clear a global one
-        Log.d(TAG, "Conversation canceled")
+        AppLogger.d(TAG, "Conversation canceled")
 
         // Reset input processing state
         _inputProcessingState.value = InputProcessingState.Idle
@@ -1228,7 +1230,7 @@ class EnhancedAIService private constructor(private val context: Context) {
         // 停止AI服务并关闭屏幕常亮
         stopAiService()
 
-        Log.d(TAG, "Conversation cancellation complete")
+        AppLogger.d(TAG, "Conversation cancellation complete")
     }
 
     /** Cancel all tool executions */
@@ -1274,10 +1276,10 @@ class EnhancedAIService private constructor(private val context: Context) {
             // 提取所有工具
             val allTools = categories.flatMap { it.tools }
             
-            Log.d(TAG, "Tool Call已启用，提供 ${allTools.size} 个工具")
+            AppLogger.d(TAG, "Tool Call已启用，提供 ${allTools.size} 个工具")
             allTools
         } catch (e: Exception) {
-            Log.e(TAG, "获取工具列表失败", e)
+            AppLogger.e(TAG, "获取工具列表失败", e)
             null
         }
     }
@@ -1287,14 +1289,14 @@ class EnhancedAIService private constructor(private val context: Context) {
     /** 启动前台服务以保持应用活跃 */
     private fun startAiService() {
         if (!AIForegroundService.isRunning.get()) {
-            Log.d(TAG, "请求启动AI前台服务...")
+            AppLogger.d(TAG, "请求启动AI前台服务...")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent)
             } else {
                 context.startService(serviceIntent)
             }
         } else {
-            Log.d(TAG, "AI前台服务已在运行，无需重复启动。")
+            AppLogger.d(TAG, "AI前台服务已在运行，无需重复启动。")
         }
         
         // 使用管理器来应用屏幕常亮设置
@@ -1304,7 +1306,7 @@ class EnhancedAIService private constructor(private val context: Context) {
     /** 停止前台服务 */
     private fun stopAiService(characterName: String? = null, avatarUri: String? = null) {
         if (AIForegroundService.isRunning.get()) {
-            Log.d(TAG, "请求停止AI前台服务...")
+            AppLogger.d(TAG, "请求停止AI前台服务...")
             
             // 准备通知数据
             runBlocking {
@@ -1316,7 +1318,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                         putExtra(AIForegroundService.EXTRA_AVATAR_URI, avatarUri)
                     }
                     
-                    Log.d(TAG, "传递通知数据 - 角色: $characterName, 内容长度: ${lastReplyContent?.length}, 头像: $avatarUri")
+                    AppLogger.d(TAG, "传递通知数据 - 角色: $characterName, 内容长度: ${lastReplyContent?.length}, 头像: $avatarUri")
                     
                     // 先发送更新的Intent，然后再停止服务
                     // 注意：这里使用 startService 而不是 startForegroundService
@@ -1327,13 +1329,13 @@ class EnhancedAIService private constructor(private val context: Context) {
                     delay(100)
                     context.stopService(serviceIntent)
                 } catch (e: Exception) {
-                    Log.e(TAG, "准备通知数据失败: ${e.message}", e)
+                    AppLogger.e(TAG, "准备通知数据失败: ${e.message}", e)
                     // 即使失败也要停止服务
                     context.stopService(serviceIntent)
                 }
             }
         } else {
-            Log.d(TAG, "AI前台服务未在运行，无需重复停止。")
+            AppLogger.d(TAG, "AI前台服务未在运行，无需重复停止。")
         }
         
         // 使用管理器来恢复屏幕常亮设置
@@ -1388,7 +1390,7 @@ class EnhancedAIService private constructor(private val context: Context) {
         conversationHistory: List<Pair<String, String>>,
         lastContent: String
     ) {
-            Log.d(TAG, "手动触发记忆更新...")
+            AppLogger.d(TAG, "手动触发记忆更新...")
             withContext(Dispatchers.IO) { // Use withContext to wait for completion
                 try {
                     com.ai.assistance.operit.api.chat.library.ProblemLibrary.saveProblemAsync(
@@ -1398,9 +1400,9 @@ class EnhancedAIService private constructor(private val context: Context) {
                         lastContent,
                         multiServiceManager.getServiceForFunction(FunctionType.PROBLEM_LIBRARY)
                     )
-                    Log.d(TAG, "手动记忆更新成功")
+                    AppLogger.d(TAG, "手动记忆更新成功")
                 } catch (e: Exception) {
-                    Log.e(TAG, "手动记忆更新失败", e)
+                    AppLogger.e(TAG, "手动记忆更新失败", e)
                     throw e
                 }
         }

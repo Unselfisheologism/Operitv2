@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.core.tools.defaultTool.standard
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.DirectoryListingData
 import com.ai.assistance.operit.core.tools.FileContentData
 import com.ai.assistance.operit.core.tools.FileExistsData
@@ -78,7 +78,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 )
             }
 
-            Log.d(TAG, "Listed ${entries.size} entries in directory $path")
+            AppLogger.d(TAG, "Listed ${entries.size} entries in directory $path")
 
             return ToolResult(
                 toolName = tool.name,
@@ -87,7 +87,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error listing directory", e)
+            AppLogger.e(TAG, "Error listing directory", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -179,7 +179,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading file (full)", e)
+            AppLogger.e(TAG, "Error reading file (full)", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -230,7 +230,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error checking file existence", e)
+            AppLogger.e(TAG, "Error checking file existence", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -318,7 +318,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 return readFileFull(tool)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading file", e)
+            AppLogger.e(TAG, "Error reading file", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -393,7 +393,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error reading file part", e)
+            AppLogger.e(TAG, "Error reading file part", e)
             ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -454,7 +454,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error writing to file", e)
+            AppLogger.e(TAG, "Error writing to file", e)
             val errorMessage = "Error writing to file: ${e.message}"
 
             return ToolResult(
@@ -536,7 +536,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error writing binary file", e)
+            AppLogger.e(TAG, "Error writing binary file", e)
             val errorMessage = "Error writing binary file: ${e.message}"
 
             return ToolResult(
@@ -616,7 +616,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error deleting file", e)
+            AppLogger.e(TAG, "Error deleting file", e)
             val errorMessage = "Error deleting file: ${e.message}"
 
             return ToolResult(
@@ -697,7 +697,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error moving file", e)
+            AppLogger.e(TAG, "Error moving file", e)
             val errorMessage = "Error moving file: ${e.message}"
 
             return ToolResult(
@@ -765,7 +765,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error copying file", e)
+            AppLogger.e(TAG, "Error copying file", e)
             val errorMessage = "Error copying file: ${e.message}"
 
             return ToolResult(
@@ -831,7 +831,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error creating directory", e)
+            AppLogger.e(TAG, "Error creating directory", e)
             val errorMessage = "Error creating directory: ${e.message}"
 
             return ToolResult(
@@ -902,7 +902,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error finding files", e)
+            AppLogger.e(TAG, "Error finding files", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,
@@ -953,7 +953,7 @@ class LinuxFileSystemTools(context: Context) : StandardFileSystemTools(context) 
                 error = ""
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting file info", e)
+            AppLogger.e(TAG, "Error getting file info", e)
             return ToolResult(
                 toolName = tool.name,
                 success = false,

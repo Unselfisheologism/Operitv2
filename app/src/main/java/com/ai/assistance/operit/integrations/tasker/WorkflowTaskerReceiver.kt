@@ -4,7 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.data.repository.WorkflowRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +38,7 @@ class WorkflowTaskerReceiver : BroadcastReceiver() {
             return
         }
 
-        Log.d(TAG, "Received generic workflow trigger request, checking for matching workflows.")
+        AppLogger.d(TAG, "Received generic workflow trigger request, checking for matching workflows.")
 
         // Use goAsync to allow async work
         val pendingResult = goAsync()
@@ -48,9 +48,9 @@ class WorkflowTaskerReceiver : BroadcastReceiver() {
                 val repository = WorkflowRepository(context.applicationContext)
                 // New method to find and trigger workflows based on the intent's content (action, extras, etc.)
                 repository.triggerWorkflowsByIntentEvent(intent)
-                Log.d(TAG, "Finished processing intent trigger.")
+                AppLogger.d(TAG, "Finished processing intent trigger.")
             } catch (e: Exception) {
-                Log.e(TAG, "Error processing intent trigger for workflows", e)
+                AppLogger.e(TAG, "Error processing intent trigger for workflows", e)
             } finally {
                 pendingResult.finish()
             }
@@ -74,7 +74,7 @@ class WorkflowBootReceiver : BroadcastReceiver() {
             return
         }
 
-        Log.d(TAG, "Device booted, rescheduling workflows")
+        AppLogger.d(TAG, "Device booted, rescheduling workflows")
 
         // Use goAsync to allow async work
         val pendingResult = goAsync()
@@ -87,11 +87,11 @@ class WorkflowBootReceiver : BroadcastReceiver() {
                 result.getOrNull()?.forEach { workflow ->
                     if (workflow.enabled) {
                         repository.scheduleWorkflow(workflow.id)
-                        Log.d(TAG, "Rescheduled workflow: ${workflow.name}")
+                        AppLogger.d(TAG, "Rescheduled workflow: ${workflow.name}")
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error rescheduling workflows after boot", e)
+                AppLogger.e(TAG, "Error rescheduling workflows after boot", e)
             } finally {
                 pendingResult.finish()
             }

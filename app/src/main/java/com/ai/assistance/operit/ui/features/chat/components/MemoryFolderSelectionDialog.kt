@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.chat.components
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -88,7 +88,7 @@ fun MemoryFolderSelectionDialog(
                 folderTree = buildFolderTree(folders)
                 isLoading = false
             } catch (e: Exception) {
-                Log.e("MemoryFolderDialog", "Failed to load folders", e)
+                AppLogger.e("MemoryFolderDialog", "Failed to load folders", e)
                 errorMessage = context.getString(R.string.load_folder_failed, e.message)
                 isLoading = false
             }
@@ -397,13 +397,13 @@ private fun getSubfolders(parentPath: String, allPaths: List<String>): Set<Strin
 private suspend fun loadFolderPaths(context: Context): List<String> = withContext(Dispatchers.IO) {
     try {
         val profileId = preferencesManager.activeProfileIdFlow.first()
-        Log.d("MemoryFolderDialog", "Loading folders for profileId: $profileId")
+        AppLogger.d("MemoryFolderDialog", "Loading folders for profileId: $profileId")
         val repository = MemoryRepository(context, profileId)
         val folders = repository.getAllFolderPaths()
-        Log.d("MemoryFolderDialog", "Loaded ${folders.size} folders: $folders")
+        AppLogger.d("MemoryFolderDialog", "Loaded ${folders.size} folders: $folders")
         folders
     } catch (e: Exception) {
-        Log.e("MemoryFolderDialog", "Error loading folder paths", e)
+        AppLogger.e("MemoryFolderDialog", "Error loading folder paths", e)
         throw e
     }
 }

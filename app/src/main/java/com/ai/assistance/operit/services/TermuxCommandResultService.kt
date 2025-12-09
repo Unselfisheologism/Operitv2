@@ -2,7 +2,7 @@ package com.ai.assistance.operit.services
 
 import android.app.IntentService
 import android.content.Intent
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.system.AndroidShellExecutor.CommandResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +28,7 @@ class TermuxCommandResultService : IntentService("TermuxCommandResultService") {
          */
         fun registerCallback(executionId: Int, callback: (CommandResult) -> Unit) {
             callbackMap[executionId] = callback
-            Log.d(TAG, "已注册回调，ID: $executionId, 当前回调数: ${callbackMap.size}")
+            AppLogger.d(TAG, "已注册回调，ID: $executionId, 当前回调数: ${callbackMap.size}")
         }
         
         /**
@@ -37,7 +37,7 @@ class TermuxCommandResultService : IntentService("TermuxCommandResultService") {
          */
         fun removeCallback(executionId: Int) {
             callbackMap.remove(executionId)
-            Log.d(TAG, "已移除回调，ID: $executionId, 当前回调数: ${callbackMap.size}")
+            AppLogger.d(TAG, "已移除回调，ID: $executionId, 当前回调数: ${callbackMap.size}")
         }
     }
     
@@ -48,17 +48,17 @@ class TermuxCommandResultService : IntentService("TermuxCommandResultService") {
         
         // 获取执行ID
         val executionId = intent.getIntExtra(EXTRA_EXECUTION_ID, -1)
-        // Log.d(TAG, "收到命令结果，执行ID: $executionId")
+        // AppLogger.d(TAG, "收到命令结果，执行ID: $executionId")
         
         if (executionId == -1) {
-            Log.e(TAG, "无效的执行ID")
+            AppLogger.e(TAG, "无效的执行ID")
             return
         }
         
         // 获取结果Bundle
         val resultBundle = intent.getBundleExtra("result")
         if (resultBundle == null) {
-            Log.e(TAG, "结果Bundle为空")
+            AppLogger.e(TAG, "结果Bundle为空")
             return
         }
         
@@ -68,7 +68,7 @@ class TermuxCommandResultService : IntentService("TermuxCommandResultService") {
         val exitCode = resultBundle.getInt("exitCode", -1)
         val errmsg = resultBundle.getString("errmsg", "")
         
-        // Log.d(TAG, "命令执行结果: stdout长度=${stdout.length}, stderr长度=${stderr.length}, exitCode=$exitCode")
+        // AppLogger.d(TAG, "命令执行结果: stdout长度=${stdout.length}, stderr长度=${stderr.length}, exitCode=$exitCode")
         
         // 构建结果对象
         val result = CommandResult(
@@ -87,7 +87,7 @@ class TermuxCommandResultService : IntentService("TermuxCommandResultService") {
                 removeCallback(executionId)
             }
         } else {
-            // Log.w(TAG, "未找到ID为 $executionId 的回调")
+            // AppLogger.w(TAG, "未找到ID为 $executionId 的回调")
         }
     }
 } 

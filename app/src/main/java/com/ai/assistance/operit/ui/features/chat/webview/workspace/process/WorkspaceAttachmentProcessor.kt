@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.ui.features.chat.webview.workspace.process
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.DirectoryListingData
 import com.ai.assistance.operit.core.tools.StringResultData
@@ -39,7 +39,7 @@ object WorkspaceAttachmentProcessor {
         try {
             val workspaceDir = File(workspacePath)
             if (!workspaceDir.exists() || !workspaceDir.isDirectory) {
-                Log.w(TAG, "工作区路径不存在或不是目录: $workspacePath")
+                AppLogger.w(TAG, "工作区路径不存在或不是目录: $workspacePath")
                 // 清除无效路径的缓存
                 workspaceStateCache.remove(workspacePath)
                 return@withContext generateEmptyWorkspaceXml()
@@ -68,7 +68,7 @@ object WorkspaceAttachmentProcessor {
             )
             
         } catch (e: Exception) {
-            Log.e(TAG, "生成工作区附着失败", e)
+            AppLogger.e(TAG, "生成工作区附着失败", e)
             generateErrorWorkspaceXml(e.message ?: "未知错误")
         }
     }
@@ -107,7 +107,7 @@ object WorkspaceAttachmentProcessor {
                 "暂无建议"
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取工作区建议失败", e)
+            AppLogger.e(TAG, "获取工作区建议失败", e)
             return "获取建议时发生异常: ${e.message}"
         }
     }
@@ -316,7 +316,7 @@ object WorkspaceAttachmentProcessor {
                 errorFiles.joinToString("\n")
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取工作区错误失败", e)
+            AppLogger.e(TAG, "获取工作区错误失败", e)
             "获取错误信息时发生异常: ${e.message}"
         }
     }
@@ -343,7 +343,7 @@ object WorkspaceAttachmentProcessor {
                 "最近修改的文件:\n${recentFiles.joinToString("\n")}"
             }
         } catch (e: Exception) {
-            Log.e(TAG, "获取用户改动记录失败", e)
+            AppLogger.e(TAG, "获取用户改动记录失败", e)
             "获取改动记录时发生异常: ${e.message}"
         }
     }
@@ -413,7 +413,7 @@ object WorkspaceAttachmentProcessor {
                     recentFiles.add("${file.name} ($timeAgo)")
                 }
         } catch (e: Exception) {
-            Log.e(TAG, "获取最近修改文件失败", e)
+            AppLogger.e(TAG, "获取最近修改文件失败", e)
         }
     }
     

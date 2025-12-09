@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -266,7 +266,7 @@ fun PermissionGuideScreen(
                                                             }
                                             context.startActivity(intent)
                                         } catch (e: Exception) {
-                                            Log.e("PermissionGuide", "无法直接打开应用存储权限页面", e)
+                                            AppLogger.e("PermissionGuide", "无法直接打开应用存储权限页面", e)
                                             // 回退到通用设置页面
                                             try {
                                                 val intent =

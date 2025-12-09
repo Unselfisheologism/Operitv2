@@ -1,7 +1,7 @@
 package com.ai.assistance.operit.api.chat.plan
 
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.EnhancedAIService
 import com.ai.assistance.operit.data.model.FunctionType
 import com.ai.assistance.operit.data.model.PromptFunctionType
@@ -84,7 +84,7 @@ class TaskExecutor(
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "执行子任务时发生错误", e)
+            AppLogger.e(TAG, "执行子任务时发生错误", e)
             emit("<error>❌ 执行子任务时发生错误: ${e.message}</error>\n")
         }
     }
@@ -113,7 +113,7 @@ class TaskExecutor(
                 emit(chunk)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "执行最终汇总时发生错误", e)
+            AppLogger.e(TAG, "执行最终汇总时发生错误", e)
         }
     }
 
@@ -236,10 +236,10 @@ class TaskExecutor(
         } catch (e: Exception) {
             // 捕获并处理异常，包括取消异常
             if (e is CancellationException) {
-                Log.d(TAG, "Task ${task.id} was cancelled.")
+                AppLogger.d(TAG, "Task ${task.id} was cancelled.")
                 onMessage("""<update id="${task.id}" status="FAILED" error="任务已取消"/>""" + "\n")
             } else {
-            Log.e(TAG, "执行任务 ${task.id} 时发生错误", e)
+            AppLogger.e(TAG, "执行任务 ${task.id} 时发生错误", e)
             val errorMessage = e.message ?: "Unknown error"
             val escapedError = errorMessage.replace("\"", "&quot;")
             onMessage("""<update id="${task.id}" status="FAILED" error="$escapedError"/>""" + "\n")
@@ -337,7 +337,7 @@ $graph.finalSummaryInstruction
             )
 
         } catch (e: Exception) {
-            Log.e(TAG, "执行最终汇总时发生错误", e)
+            AppLogger.e(TAG, "执行最终汇总时发生错误", e)
             return stream { emit("汇总执行失败: ${e.message}") }
         }
     }

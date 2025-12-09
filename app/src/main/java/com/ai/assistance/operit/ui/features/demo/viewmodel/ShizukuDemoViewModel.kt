@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.features.demo.viewmodel
 
 import android.app.Application
 import android.content.Context
-import android.util.Log
+import com.ai.assistance.operit.util.AppLogger
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
@@ -68,7 +68,7 @@ class ShizukuDemoViewModel(application: Application) : AndroidViewModel(applicat
                 // 调用stateManager的异步初始化方法
                 stateManager.initializeAsync()
             } catch (e: Exception) {
-                Log.e("ShizukuDemoViewModel", "初始化时出错: ${e.message}", e)
+                AppLogger.e("ShizukuDemoViewModel", "初始化时出错: ${e.message}", e)
             } finally {
                 // 完成后关闭加载指示器
                 withContext(Dispatchers.Main) { setLoading(false) }
@@ -89,7 +89,7 @@ class ShizukuDemoViewModel(application: Application) : AndroidViewModel(applicat
             val isDeviceRooted = RootAuthorizer.isDeviceRooted()
             val hasRootAccess = RootAuthorizer.checkRootStatus(context)
             stateManager.updateRootStatus(isDeviceRooted, hasRootAccess)
-            Log.d(
+            AppLogger.d(
                     "ShizukuDemoViewModel",
                     "Root状态更新: 设备已Root=$isDeviceRooted, 应用有Root权限=$hasRootAccess"
             )
@@ -179,7 +179,7 @@ class ShizukuDemoViewModel(application: Application) : AndroidViewModel(applicat
 
     /** Refresh all registered tools */
     fun refreshTools(context: Context) {
-        Log.d("ShizukuDemoViewModel", "Refreshing all registered tools")
+        AppLogger.d("ShizukuDemoViewModel", "Refreshing all registered tools")
         // First clear the current tool execution state
         toolHandler.reset()
 
