@@ -37,6 +37,8 @@
 -   `callToolAsync(callbackId: string, ...)`: 异步调用一个原生工具。
 -   `setResult(result: string): void`: 为脚本执行设置最终结果。`complete()` 函数是这个方法的更高级封装。
 -   `setError(error: string): void`: 报告一个错误。
+-   `registerImageFromBase64(base64: string, mimeType: string): string`: 将一段 base64 编码的图片数据注册到全局图片池中，并返回一个形如 `<link type="image" id="..."></link>` 的标签字符串，可直接嵌入到工具结果或对话内容中，供支持图片的模型读取。
+-   `registerImageFromPath(path: string): string`: 从设备上的图片文件路径注册图片（会自动推断并在必要时转换格式），并返回一个 `<link type="image" id="..."></link>` 标签字符串，适合在工具结果中引用本地截图或文件。
 -   `logInfo(message: string): void`: 记录一条信息日志。
 -   `logError(message: string): void`: 记录一条错误日志。
 -   `reportError(...)`: 报告一个详细的 JavaScript 运行时错误，包括错误类型、消息、行号和堆栈跟踪。

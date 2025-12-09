@@ -34,6 +34,7 @@ import java.util.zip.ZipOutputStream
 import com.ai.assistance.operit.util.FileUtils
 import com.ai.assistance.operit.util.SyntaxCheckUtil
 import com.ai.assistance.operit.util.PathMapper
+import com.ai.assistance.operit.util.ImagePoolManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
@@ -378,15 +379,42 @@ open class StandardFileSystemTools(protected val context: Context) {
             }
 
             "jpg", "jpeg", "png", "gif", "bmp" -> {
-                // 获取可选的intent参数
+                // 获取可选的intent参数和direct_image参数
                 val intent = tool.parameters.find { it.name == "intent" }?.value
+                val directImage = tool.parameters.find { it.name == "direct_image" }?.value?.toBoolean() ?: false
 
                 Log.d(
                     TAG,
-                    "Detected image file, intent=${intent ?: "无"}"
+                    "Detected image file, intent=${intent ?: "无"}, direct_image=$directImage"
                 )
 
-                // 如果提供了intent，使用识图模型
+                // 情况1：direct_image 为 true，直接返回图片链接，供支持识图的聊天模型自己查看
+                if (directImage) {
+                    try {
+                        val imageId = ImagePoolManager.addImage(path)
+                        if (imageId == "error") {
+                            Log.e(TAG, "Failed to register image for direct_image, falling back to intent/OCR: $path")
+                        } else {
+                            val link = "<link type=\"image\" id=\"$imageId\"></link>"
+                            Log.d(TAG, "Generated image link for direct_image: $link")
+                            return ToolResult(
+                                toolName = tool.name,
+                                success = true,
+                                result = FileContentData(
+                                    path = path,
+                                    content = link,
+                                    size = link.length.toLong()
+                                ),
+                                error = ""
+                            )
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error generating direct image link, falling back to intent/OCR", e)
+                    }
+                    // 如果生成图片链接失败，则继续走下面的 intent/OCR 逻辑
+                }
+
+                // 情况2：提供了 intent，使用后端识图模型
                 if (!intent.isNullOrBlank()) {
                     try {
                         val enhancedService =
@@ -411,7 +439,7 @@ open class StandardFileSystemTools(protected val context: Context) {
                     }
                 }
 
-                // 默认OCR处理
+                // 情况3：默认OCR处理
                 try {
                     val bitmap = android.graphics.BitmapFactory.decodeFile(path)
                     if (bitmap != null) {

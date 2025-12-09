@@ -134,6 +134,20 @@ export namespace NativeInterface {
     function logDebug(message: string, data: string): void;
 
     /**
+     * Register an image from base64-encoded data into the global image pool
+     * and return a `<link type="image" id="...">` tag string that can be
+     * embedded into tool results or messages.
+     */
+    function registerImageFromBase64(base64: string, mimeType: string): string;
+
+    /**
+     * Register an image from a file path on the device into the global image
+     * pool and return a `<link type="image" id="...">` tag string that can
+     * be embedded into tool results or messages.
+     */
+    function registerImageFromPath(path: string): string;
+
+    /**
      * Report detailed JavaScript error
      * @param errorType - Error type
      * @param errorMessage - Error message

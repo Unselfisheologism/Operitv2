@@ -9,6 +9,7 @@ import com.ai.assistance.operit.data.model.AITool
 import com.ai.assistance.operit.data.model.ToolResult
 import com.ai.assistance.operit.data.model.ToolValidationResult
 import com.ai.assistance.operit.data.preferences.ApiPreferences
+import com.ai.assistance.operit.util.ImagePoolManager
 import java.util.concurrent.ConcurrentHashMap
 import org.json.JSONObject
 
@@ -84,15 +85,38 @@ class MCPToolExecutor(private val context: Context, private val mcpManager: MCPM
                             "image" -> {
                                 val mimeType = contentItem.optString("mimeType", "image/png")
                                 val data = contentItem.optString("data", "")
-                                val dataSize = data.length
-                                extractedText.append("[图像: $mimeType, 大小: $dataSize bytes]")
+                                if (data.isNotEmpty()) {
+                                    val imageId = ImagePoolManager.addImageFromBase64(data, mimeType)
+                                    if (imageId != "error") {
+                                        extractedText.append("<link type=\"image\" id=\"$imageId\"></link>")
+                                    } else {
+                                        val dataSize = data.length
+                                        extractedText.append("[图像: $mimeType, 大小: $dataSize bytes]")
+                                    }
+                                } else {
+                                    extractedText.append("[图像: $mimeType, 大小: 0 bytes]")
+                                }
                             }
                             "resource" -> {
                                 val resource = contentItem.optJSONObject("resource")
                                 if (resource != null) {
                                     val uri = resource.optString("uri", "")
                                     val text = resource.optString("text")
-                                    if (text != null && text.isNotEmpty()) {
+                                    val mimeType = resource.optString("mimeType", "")
+                                    val blob = resource.optString("blob", "")
+                                    val data = if (blob.isNotEmpty()) blob else resource.optString("data", "")
+                                    val isImage = mimeType.startsWith("image/") && data.isNotEmpty()
+                                    if (isImage) {
+                                        val finalMimeType = if (mimeType.isNotEmpty()) mimeType else "image/png"
+                                        val imageId = ImagePoolManager.addImageFromBase64(data, finalMimeType)
+                                        if (imageId != "error") {
+                                            extractedText.append("<link type=\"image\" id=\"$imageId\"></link>")
+                                        } else if (text != null && text.isNotEmpty()) {
+                                            extractedText.append(text)
+                                        } else {
+                                            extractedText.append("[资源: $uri]")
+                                        }
+                                    } else if (text != null && text.isNotEmpty()) {
                                         extractedText.append(text)
                                     } else {
                                         extractedText.append("[资源: $uri]")

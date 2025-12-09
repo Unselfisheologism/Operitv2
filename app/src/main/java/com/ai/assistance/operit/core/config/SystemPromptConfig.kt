@@ -96,20 +96,28 @@ PACKAGE SYSTEM
 - 这将显示包中的所有工具及其使用方法
 - 只有在激活包后，才能直接使用其工具"""
 
-    private fun getAvailableToolsEn(hasImageRecognition: Boolean): String {
+    private fun getAvailableToolsEn(
+        hasImageRecognition: Boolean,
+        chatModelHasDirectImage: Boolean
+    ): String {
         return SystemToolPrompts.generateToolsPromptEn(
-            hasImageRecognition = hasImageRecognition,
-            includeMemoryTools = false
+            hasBackendImageRecognition = hasImageRecognition,
+            includeMemoryTools = false,
+            chatModelHasDirectImage = chatModelHasDirectImage
         )
     }
     
     private val MEMORY_TOOLS_EN: String
         get() = SystemToolPrompts.memoryTools.toString()
 
-    private fun getAvailableToolsCn(hasImageRecognition: Boolean): String {
+    private fun getAvailableToolsCn(
+        hasImageRecognition: Boolean,
+        chatModelHasDirectImage: Boolean
+    ): String {
         return SystemToolPrompts.generateToolsPromptCn(
-            hasImageRecognition = hasImageRecognition,
-            includeMemoryTools = false
+            hasBackendImageRecognition = hasImageRecognition,
+            includeMemoryTools = false,
+            chatModelHasDirectImage = chatModelHasDirectImage
         )
     }
     
@@ -247,7 +255,8 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
    * @param customSystemPromptTemplate Custom system prompt template (empty means use built-in)
    * @param enableTools Whether tools are enabled
    * @param enableMemoryQuery Whether the AI is allowed to query memories.
-   * @param hasImageRecognition Whether image recognition service is configured
+   * @param hasImageRecognition Whether a backend image recognition service is configured
+   * @param chatModelHasDirectImage Whether the chat model has direct image capability
    * @return The complete system prompt with package information
    */
   fun getSystemPrompt(
@@ -259,6 +268,7 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
           enableTools: Boolean = true,
           enableMemoryQuery: Boolean = true,
           hasImageRecognition: Boolean = false,
+          chatModelHasDirectImage: Boolean = false,
           useToolCallApi: Boolean = false
   ): String {
     val importedPackages = packageManager.getImportedPackages()
@@ -328,10 +338,12 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
     // Determine the available tools string based on memory query setting and image recognition
     // 当使用Tool Call API时，不在系统提示词中包含工具描述（工具已通过API的tools字段发送）
     val availableToolsEn = if (useToolCallApi) "" else (
-        if (enableMemoryQuery) MEMORY_TOOLS_EN + getAvailableToolsEn(hasImageRecognition) else getAvailableToolsEn(hasImageRecognition)
+        if (enableMemoryQuery) MEMORY_TOOLS_EN + getAvailableToolsEn(hasImageRecognition, chatModelHasDirectImage)
+        else getAvailableToolsEn(hasImageRecognition, chatModelHasDirectImage)
     )
     val availableToolsCn = if (useToolCallApi) "" else (
-        if (enableMemoryQuery) MEMORY_TOOLS_CN + getAvailableToolsCn(hasImageRecognition) else getAvailableToolsCn(hasImageRecognition)
+        if (enableMemoryQuery) MEMORY_TOOLS_CN + getAvailableToolsCn(hasImageRecognition, chatModelHasDirectImage)
+        else getAvailableToolsCn(hasImageRecognition, chatModelHasDirectImage)
     )
 
     // Handle tools disable/enable
@@ -432,6 +444,7 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
    * @param enableTools Whether tools are enabled
    * @param enableMemoryQuery Whether the AI is allowed to query memories.
    * @param hasImageRecognition Whether image recognition service is configured
+   * @param chatModelHasDirectImage Whether the chat model has direct image capability
    * @return The complete system prompt with custom prompts and package information
    */
   fun getSystemPromptWithCustomPrompts(
@@ -443,10 +456,22 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
           enableTools: Boolean = true,
           enableMemoryQuery: Boolean = true,
           hasImageRecognition: Boolean = false,
+          chatModelHasDirectImage: Boolean = false,
           useToolCallApi: Boolean = false
   ): String {
     // Get the base system prompt
-    val basePrompt = getSystemPrompt(packageManager, workspacePath, false, thinkingGuidance, customSystemPromptTemplate, enableTools, enableMemoryQuery, hasImageRecognition, useToolCallApi)
+    val basePrompt = getSystemPrompt(
+        packageManager,
+        workspacePath,
+        false,
+        thinkingGuidance,
+        customSystemPromptTemplate,
+        enableTools,
+        enableMemoryQuery,
+        hasImageRecognition,
+        chatModelHasDirectImage,
+        useToolCallApi
+    )
 
     // Apply custom prompts
     return applyCustomPrompts(basePrompt, customIntroPrompt)
@@ -454,6 +479,17 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
 
   /** Original method for backward compatibility */
   fun getSystemPrompt(packageManager: PackageManager): String {
-    return getSystemPrompt(packageManager, null, false, false, "", true, true, false)
+    return getSystemPrompt(
+        packageManager = packageManager,
+        workspacePath = null,
+        useEnglish = false,
+        thinkingGuidance = false,
+        customSystemPromptTemplate = "",
+        enableTools = true,
+        enableMemoryQuery = true,
+        hasImageRecognition = false,
+        chatModelHasDirectImage = false,
+        useToolCallApi = false
+    )
   }
 }

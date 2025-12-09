@@ -28,9 +28,17 @@ export namespace Files {
     /**
      * Read file contents (always reads complete file)
      * @param path - Path to file
-     * @param environment - Execution environment ("android" or "linux"), default "android"
      */
-    function read(path: string, environment?: FileEnvironment): Promise<FileContentData>;
+    function read(path: string): Promise<FileContentData>;
+
+    interface ReadFileOptions {
+        path: string;
+        environment?: FileEnvironment;
+        intent?: string;
+        direct_image?: boolean;
+    }
+
+    function read(options: ReadFileOptions): Promise<FileContentData>;
 
     /**
      * Read file content by line range

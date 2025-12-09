@@ -32,6 +32,7 @@ import androidx.compose.ui.window.PopupProperties
 import com.ai.assistance.operit.R
 import com.ai.assistance.operit.api.chat.llmprovider.AIServiceFactory
 import com.ai.assistance.operit.data.model.ModelConfigData
+import com.ai.assistance.operit.data.model.getModelByIndex
 import com.ai.assistance.operit.data.preferences.ApiPreferences
 import com.ai.assistance.operit.data.preferences.ModelConfigManager
 import com.ai.assistance.operit.ui.features.settings.sections.AdvancedSettingsSection
@@ -53,7 +54,7 @@ fun ModelConfigScreen(
 ) {
     val context = LocalContext.current
     val configManager = remember { ModelConfigManager(context) }
-            val apiPreferences = remember { ApiPreferences.getInstance(context) }
+    val apiPreferences = remember { ApiPreferences.getInstance(context) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
@@ -277,10 +278,12 @@ fun ModelConfigScreen(
                                             testResult = null
                                             try {
                                                 selectedConfig.value?.let { config ->
+                                                    val modelNameToTest = getModelByIndex(config.modelName, 0)
+                                                    val configForTest = config.copy(modelName = modelNameToTest)
                                                     val customHeadersJson = apiPreferences.getCustomHeaders()
                                                     val service =
                                                             AIServiceFactory.createService(
-                                                                    config = config,
+                                                                    config = configForTest,
                                                                     customHeadersJson = customHeadersJson,
                                                                     modelConfigManager = configManager,
                                                                     context = context

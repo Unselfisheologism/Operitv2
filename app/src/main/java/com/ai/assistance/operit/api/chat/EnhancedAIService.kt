@@ -1176,14 +1176,15 @@ class EnhancedAIService private constructor(private val context: Context) {
             isSubTask: Boolean = false,
             functionType: FunctionType = FunctionType.CHAT
     ): List<Pair<String, String>> {
-        // Check if image recognition service is configured
-        // For subtasks, always disable image recognition (only support OCR)
+        // Check if backend image recognition service is configured (for intent-based vision)
+        // For subtasks, always disable backend image recognition (only support OCR)
         val hasImageRecognition = if (isSubTask) false else multiServiceManager.hasImageRecognitionConfigured()
-        
-        // 检查是否启用Tool Call API
+
+        // 获取当前功能类型（通常是CHAT）的模型配置，用于判断聊天模型是否自带识图能力
         val config = multiServiceManager.getModelConfigForFunction(functionType)
         val useToolCallApi = config.enableToolCall
-        
+        val chatModelHasDirectImage = config.enableDirectImageProcessing
+
         return conversationService.prepareConversationHistory(
                 chatHistory,
                 processedInput,
@@ -1194,7 +1195,8 @@ class EnhancedAIService private constructor(private val context: Context) {
                 customSystemPromptTemplate,
                 enableMemoryQuery,
                 hasImageRecognition,
-                useToolCallApi
+                useToolCallApi,
+                chatModelHasDirectImage
         )
     }
 
@@ -1250,13 +1252,22 @@ class EnhancedAIService private constructor(private val context: Context) {
             
             // 获取所有工具分类
             val isEnglish = LocaleUtils.getCurrentLanguage(context) == "en"
+
+            // 后端识图服务是否可用（IMAGE_RECOGNITION 功能），用于 intent-based 视觉模型
+            val hasBackendImageRecognition = multiServiceManager.hasImageRecognitionConfigured()
+
+            // 当前功能模型（通常是聊天模型）是否支持直接看图
+            val chatModelHasDirectImage = config.enableDirectImageProcessing
+
             val categories = if (isEnglish) {
                 SystemToolPrompts.getAllCategoriesEn(
-                    hasImageRecognition = config.enableDirectImageProcessing
+                    hasBackendImageRecognition = hasBackendImageRecognition,
+                    chatModelHasDirectImage = chatModelHasDirectImage
                 )
             } else {
                 SystemToolPrompts.getAllCategoriesCn(
-                    hasImageRecognition = config.enableDirectImageProcessing
+                    hasBackendImageRecognition = hasBackendImageRecognition,
+                    chatModelHasDirectImage = chatModelHasDirectImage
                 )
             }
             

@@ -730,28 +730,51 @@ object SystemToolPrompts {
     
     /**
      * 获取所有英文工具分类
+     * @param hasBackendImageRecognition 是否配置了后端识图服务（IMAGE_RECOGNITION功能）
+     * @param chatModelHasDirectImage 当前聊天模型是否自带识图能力（可直接看图片）
      */
-    fun getAllCategoriesEn(hasImageRecognition: Boolean = false): List<SystemToolPromptCategory> {
-        val fileSystemToolsWithVision = if (hasImageRecognition) {
-            fileSystemTools.copy(
-                tools = fileSystemTools.tools.map { tool ->
-                    if (tool.name == "read_file") {
-                        tool.copy(
-                            description = "Read the content of a file. For image files (jpg, jpeg, png, gif, bmp), it automatically extracts text using OCR, or you can provide an 'intent' parameter to use vision model for analysis.",
-                            parameters = "path (file path), intent (optional, user's question about the image, e.g., \"What's in this image?\", \"Extract formulas from this image\")"
-                        )
-                    } else {
-                        tool
+    fun getAllCategoriesEn(
+        hasBackendImageRecognition: Boolean = false,
+        chatModelHasDirectImage: Boolean = false
+    ): List<SystemToolPromptCategory> {
+        val adjustedFileSystemTools = when {
+            // 情况1：聊天模型本身可识图 —— 只暴露 direct_image，不再提 intent
+            chatModelHasDirectImage -> {
+                fileSystemTools.copy(
+                    tools = fileSystemTools.tools.map { tool ->
+                        if (tool.name == "read_file") {
+                            tool.copy(
+                                description = "Read the content of a file. For image files (jpg, jpeg, png, gif, bmp), it automatically extracts text using OCR. Since your current model can directly see images, you may set 'direct_image' to true and inspect the image with your own vision capabilities instead of relying on this tool's text extraction.",
+                                parameters = "path (file path), direct_image (optional, boolean; when true and the current model supports vision, you may directly inspect the image instead of requesting textual extraction from this tool)"
+                            )
+                        } else {
+                            tool
+                        }
                     }
-                }
-            )
-        } else {
-            fileSystemTools
+                )
+            }
+            // 情况2：聊天模型不能识图，但有后端识图服务 —— 只暴露 intent
+            hasBackendImageRecognition -> {
+                fileSystemTools.copy(
+                    tools = fileSystemTools.tools.map { tool ->
+                        if (tool.name == "read_file") {
+                            tool.copy(
+                                description = "Read the content of a file. For image files (jpg, jpeg, png, gif, bmp), it automatically extracts text using OCR. You can also provide an 'intent' parameter to use a backend vision model for analysis.",
+                                parameters = "path (file path), intent (optional, user's question about the image, e.g., \"What's in this image?\", \"Extract formulas from this image\")"
+                            )
+                        } else {
+                            tool
+                        }
+                    }
+                )
+            }
+            // 情况3：既没有聊天模型识图，也没有后端识图服务 —— 保持原始OCR说明
+            else -> fileSystemTools
         }
-        
+
         return listOf(
             basicTools,
-            fileSystemToolsWithVision,
+            adjustedFileSystemTools,
             httpTools,
             memoryTools
         )
@@ -759,28 +782,51 @@ object SystemToolPrompts {
     
     /**
      * 获取所有中文工具分类
+     * @param hasBackendImageRecognition 是否配置了后端识图服务（IMAGE_RECOGNITION功能）
+     * @param chatModelHasDirectImage 当前聊天模型是否自带识图能力（可直接看图片）
      */
-    fun getAllCategoriesCn(hasImageRecognition: Boolean = false): List<SystemToolPromptCategory> {
-        val fileSystemToolsWithVision = if (hasImageRecognition) {
-            fileSystemToolsCn.copy(
-                tools = fileSystemToolsCn.tools.map { tool ->
-                    if (tool.name == "read_file") {
-                        tool.copy(
-                            description = "读取文件内容。对于图片文件(jpg, jpeg, png, gif, bmp)，默认使用OCR提取文本，也可提供'intent'参数使用视觉模型分析。",
-                            parameters = "path（文件路径），intent（可选，用户对图片的问题，如\"这个图片里面有什么\"、\"提取图片中的公式\"）"
-                        )
-                    } else {
-                        tool
+    fun getAllCategoriesCn(
+        hasBackendImageRecognition: Boolean = false,
+        chatModelHasDirectImage: Boolean = false
+    ): List<SystemToolPromptCategory> {
+        val adjustedFileSystemTools = when {
+            // 情况1：聊天模型本身可识图 —— 只暴露 direct_image，不再提 intent
+            chatModelHasDirectImage -> {
+                fileSystemToolsCn.copy(
+                    tools = fileSystemToolsCn.tools.map { tool ->
+                        if (tool.name == "read_file") {
+                            tool.copy(
+                                description = "读取文件内容。对于图片文件(jpg, jpeg, png, gif, bmp)，默认使用OCR提取文本。当前模型支持识图时，你可以通过设置'direct_image'为true，直接用你自己的视觉能力查看图片本身，而不是依赖本工具返回的文字描述。",
+                                parameters = "path（文件路径），direct_image（可选，布尔值；当当前模型支持识图时，设置为true表示直接查看图片本身，而不是让本工具做文字提取）"
+                            )
+                        } else {
+                            tool
+                        }
                     }
-                }
-            )
-        } else {
-            fileSystemToolsCn
+                )
+            }
+            // 情况2：聊天模型不能识图，但有后端识图服务 —— 只暴露 intent
+            hasBackendImageRecognition -> {
+                fileSystemToolsCn.copy(
+                    tools = fileSystemToolsCn.tools.map { tool ->
+                        if (tool.name == "read_file") {
+                            tool.copy(
+                                description = "读取文件内容。对于图片文件(jpg, jpeg, png, gif, bmp)，默认使用OCR提取文本。当前模型不具备直接识图能力时，你可以提供'intent'参数，请后端视觉模型帮你分析图片。",
+                                parameters = "path（文件路径），intent（可选，用户对图片的问题，如\"这个图片里面有什么\"、\"提取图片中的公式\"）"
+                            )
+                        } else {
+                            tool
+                        }
+                    }
+                )
+            }
+            // 情况3：既没有聊天模型识图，也没有后端识图服务 —— 保持原始OCR说明
+            else -> fileSystemToolsCn
         }
-        
+
         return listOf(
             basicToolsCn,
-            fileSystemToolsWithVision,
+            adjustedFileSystemTools,
             httpToolsCn,
             memoryToolsCn
         )
@@ -789,26 +835,36 @@ object SystemToolPrompts {
     /**
      * 生成完整的工具提示词文本（英文）
      */
-    fun generateToolsPromptEn(hasImageRecognition: Boolean = false, includeMemoryTools: Boolean = true): String {
+    fun generateToolsPromptEn(
+        hasBackendImageRecognition: Boolean = false,
+        includeMemoryTools: Boolean = true,
+        chatModelHasDirectImage: Boolean = false
+    ): String {
         val categories = if (includeMemoryTools) {
-            getAllCategoriesEn(hasImageRecognition)
+            getAllCategoriesEn(hasBackendImageRecognition, chatModelHasDirectImage)
         } else {
-            getAllCategoriesEn(hasImageRecognition).filter { it.categoryName != "Memory and Memory Library Tools" }
+            getAllCategoriesEn(hasBackendImageRecognition, chatModelHasDirectImage)
+                .filter { it.categoryName != "Memory and Memory Library Tools" }
         }
-        
+
         return categories.joinToString("\n\n") { it.toString() }
     }
     
     /**
      * 生成完整的工具提示词文本（中文）
      */
-    fun generateToolsPromptCn(hasImageRecognition: Boolean = false, includeMemoryTools: Boolean = true): String {
+    fun generateToolsPromptCn(
+        hasBackendImageRecognition: Boolean = false,
+        includeMemoryTools: Boolean = true,
+        chatModelHasDirectImage: Boolean = false
+    ): String {
         val categories = if (includeMemoryTools) {
-            getAllCategoriesCn(hasImageRecognition)
+            getAllCategoriesCn(hasBackendImageRecognition, chatModelHasDirectImage)
         } else {
-            getAllCategoriesCn(hasImageRecognition).filter { it.categoryName != "记忆与记忆库工具" }
+            getAllCategoriesCn(hasBackendImageRecognition, chatModelHasDirectImage)
+                .filter { it.categoryName != "记忆与记忆库工具" }
         }
-        
+
         return categories.joinToString("\n\n") { it.toString() }
     }
 }

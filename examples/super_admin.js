@@ -16,8 +16,8 @@ METADATA
                     "required": true
                 },
                 {
-                    "name": "sessionId",
-                    "description": "可选的会话ID，用于使用特定的终端会话",
+                    "name": "background",
+                    "description": "是否在后台运行命令，\"true\" 表示后台执行并立即返回，适合启动服务器等长时间运行的任务（AI 不会收到该命令的输出结果），\"false\" 或未提供则前台执行并等待并返回命令结果",
                     "type": "string",
                     "required": false
                 },
@@ -49,7 +49,7 @@ const superAdmin = (function () {
      * 在Ubuntu环境中执行终端命令并收集输出结果
      * 运行环境：完整的Ubuntu系统，已正确挂载sdcard和storage目录
      * @param command - 要执行的命令
-     * @param sessionId - 可选的会话ID，用于使用特定的终端会话
+     * @param background - 是否后台运行（"true" 为后台执行并立即返回，适合启动服务器等长时间运行任务，AI 不会收到该命令的输出结果）
      * @param timeoutMs - 可选的超时时间（毫秒）
      */
     async function terminal(params) {
@@ -58,16 +58,35 @@ const superAdmin = (function () {
                 throw new Error("命令不能为空");
             }
             const command = params.command;
-            let sessionId = params.sessionId;
+            const background = params.background;
             const timeoutMs = params.timeoutMs;
             console.log(`执行终端命令: ${command}`);
             // 将超时时间转换为数字类型
             const timeout = timeoutMs ? parseInt(timeoutMs, 10) : undefined;
-            // 如果没有提供会话ID，则创建或获取一个默认会话
-            if (!sessionId) {
-                const session = await Tools.System.terminal.create("super_admin_default_session");
-                sessionId = session.sessionId;
+            const isBackground = background === "true";
+            if (isBackground) {
+                const session = await Tools.System.terminal.create(`super_admin_background_${Date.now()}`);
+                const sessionId = session.sessionId;
+                // 调用系统工具执行终端命令
+                (async () => {
+                    try {
+                        await Tools.System.terminal.exec(sessionId, command);
+                    }
+                    catch (error) {
+                        console.error(`[terminal/background] 错误: ${error.message}`);
+                        console.error(error.stack);
+                    }
+                })();
+                return {
+                    command: command,
+                    background: true,
+                    sessionId: sessionId,
+                    started: true
+                };
             }
+            // 创建或获取一个默认会话
+            const session = await Tools.System.terminal.create("super_admin_default_session");
+            const sessionId = session.sessionId;
             // 调用系统工具执行终端命令
             const result = await Tools.System.terminal.exec(sessionId, command);
             return {

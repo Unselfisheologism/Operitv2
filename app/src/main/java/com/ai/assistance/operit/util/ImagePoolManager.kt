@@ -134,6 +134,21 @@ object ImagePoolManager {
         }
     }
 
+    @Synchronized
+    fun addImageFromBase64(base64: String, mimeType: String): String {
+        return try {
+            val id = UUID.randomUUID().toString()
+            val imageData = ImageData(base64, mimeType)
+            imagePool[id] = imageData
+            saveToDisk(id, imageData)
+            Log.d(TAG, "成功从base64添加图片到池子: $id, MIME类型: $mimeType, 大小: ${base64.length} 字符")
+            id
+        } catch (e: Exception) {
+            Log.e(TAG, "从base64添加图片时发生异常", e)
+            "error"
+        }
+    }
+
     /**
      * 获取图片的base64编码
      * @param id 图片ID

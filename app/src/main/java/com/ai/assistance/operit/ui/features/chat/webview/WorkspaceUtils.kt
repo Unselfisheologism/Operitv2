@@ -42,6 +42,9 @@ fun createAndGetDefaultWorkspace(context: Context, chatId: String, projectType: 
             copyTemplateFiles(context, webContentDir, "office")
             createProjectConfigIfNeeded(webContentDir, ProjectType.OFFICE)
         }
+        "blank" -> {
+            createProjectConfigIfNeeded(webContentDir, ProjectType.BLANK)
+        }
         else -> {
             copyTemplateFiles(context, webContentDir, "web")
             createProjectConfigIfNeeded(webContentDir, ProjectType.WEB)
@@ -77,8 +80,31 @@ fun ensureWorkspaceDirExists(path: String): File {
 }
 
 private enum class ProjectType {
-    WEB, NODE, TYPESCRIPT, PYTHON, JAVA, GO, OFFICE
+    WEB, NODE, TYPESCRIPT, PYTHON, JAVA, GO, OFFICE, BLANK
 }
+
+private const val DEFAULT_BLANK_PROJECT_CONFIG_JSON = """
+{
+    "projectType": "blank",
+    "title": "空白工作区",
+    "description": "这是一个空白工作区，只包含基础目录结构。你可以编辑 .operit/config.json 来配置项目类型、服务器和命令，例如：server.enabled、preview.type、commands 等。",
+    "server": {
+        "enabled": false,
+        "port": 8080,
+        "autoStart": false
+    },
+    "preview": {
+        "type": "terminal",
+        "url": "",
+        "showPreviewButton": false,
+        "previewButtonLabel": ""
+    },
+    "commands": [],
+    "export": {
+        "enabled": false
+    }
+}
+"""
 
 private const val DEFAULT_WEB_PROJECT_CONFIG_JSON = """
 {
@@ -513,6 +539,7 @@ private fun createProjectConfigIfNeeded(workspaceDir: File, projectType: Project
             ProjectType.JAVA -> DEFAULT_JAVA_PROJECT_CONFIG_JSON
             ProjectType.GO -> DEFAULT_GO_PROJECT_CONFIG_JSON
             ProjectType.OFFICE -> DEFAULT_OFFICE_PROJECT_CONFIG_JSON
+            ProjectType.BLANK -> DEFAULT_BLANK_PROJECT_CONFIG_JSON
         }
 
         try {

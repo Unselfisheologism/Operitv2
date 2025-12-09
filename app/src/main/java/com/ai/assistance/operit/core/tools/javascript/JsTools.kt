@@ -12,9 +12,17 @@ fun getJsToolsDefinition(): String {
                     if (environment) params.environment = environment;
                     return toolCall("list_files", params);
                 },
-                read: (path, environment) => {
-                    const params = { path };
-                    if (environment) params.environment = environment;
+                read: (pathOrOptions) => {
+                    let params;
+                    if (typeof pathOrOptions === 'string') {
+                        // Simple form: read(path)
+                        params = { path: pathOrOptions };
+                    } else if (pathOrOptions && typeof pathOrOptions === 'object') {
+                        // Options form: read({ path, environment?, intent? })
+                        params = { ...pathOrOptions };
+                    } else {
+                        params = {};
+                    }
                     return toolCall("read_file_full", params);
                 },
                 readPart: (path, startLine, endLine, environment) => {

@@ -22,6 +22,11 @@
             ]
         },
         {
+            "name": "get_page_screenshot_image",
+            "description": "获取当前屏幕内容的图片版本（截图），返回保存路径。",
+            "parameters": []
+        },
+        {
             "name": "tap",
             "description": "在特定坐标模拟点击。",
             "parameters": [
@@ -80,6 +85,40 @@ const UIAutomationTools = (function () {
     async function get_page_info(params: { format?: 'xml' | 'json', detail?: 'minimal' | 'summary' | 'full' }): Promise<ToolResponse> {
         const result = (await UINode.getCurrentPage()).toFormattedString!();
         return { success: true, message: '成功获取页面信息', data: result };
+    }
+
+    async function get_page_screenshot_image(params: {}): Promise<ToolResponse> {
+        try {
+            const screenshotDir = "/sdcard/Download/Operit/cleanOnExit";
+
+            // Ensure the directory exists
+            await Tools.Files.mkdir(screenshotDir, true);
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const filePath = `${screenshotDir}/ui_screenshot_${timestamp}.png`;
+
+            console.log(`截取当前UI屏幕并保存到: ${filePath}`);
+
+            const result = await Tools.System.shell(`screencap -p ${filePath}`);
+
+            const imageLink = NativeInterface.registerImageFromPath(filePath);
+
+            return {
+                success: true,
+                message: `截图已保存到 ${filePath}`,
+                data: {
+                    file_path: filePath,
+                    image_link: imageLink,
+                    raw_result: result,
+                },
+            };
+        } catch (error: any) {
+            console.error(`获取屏幕截图失败: ${error.message}`);
+            return {
+                success: false,
+                message: `获取屏幕截图失败: ${error.message}`,
+            };
+        }
     }
 
     async function tap(params: { x: number, y: number }): Promise<ToolResponse> {
@@ -203,6 +242,7 @@ const UIAutomationTools = (function () {
 
     return {
         get_page_info: (params: { format?: 'xml' | 'json', detail?: 'minimal' | 'summary' | 'full' }) => wrapToolExecution(get_page_info, params),
+        get_page_screenshot_image: () => wrapToolExecution(get_page_screenshot_image, {}),
         tap: (params: { x: number, y: number }) => wrapToolExecution(tap, params),
         click_element: (params: { resourceId?: string, className?: string, index?: number, partialMatch?: boolean, bounds?: string }) => wrapToolExecution(click_element, params),
         set_input_text: (params: { text: string }) => wrapToolExecution(set_input_text, params),
@@ -213,9 +253,10 @@ const UIAutomationTools = (function () {
 })();
 
 exports.get_page_info = UIAutomationTools.get_page_info;
+exports.get_page_screenshot_image = UIAutomationTools.get_page_screenshot_image;
 exports.tap = UIAutomationTools.tap;
 exports.click_element = UIAutomationTools.click_element;
 exports.set_input_text = UIAutomationTools.set_input_text;
 exports.press_key = UIAutomationTools.press_key;
 exports.swipe = UIAutomationTools.swipe;
-exports.main = UIAutomationTools.main; 
+exports.main = UIAutomationTools.main;

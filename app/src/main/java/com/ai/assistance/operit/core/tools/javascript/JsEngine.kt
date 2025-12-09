@@ -31,6 +31,7 @@ import android.graphics.Canvas
 import android.util.Base64
 import com.ai.assistance.operit.core.tools.BinaryResultData
 import com.ai.assistance.operit.core.tools.javascript.JsTimeoutConfig
+import com.ai.assistance.operit.util.ImagePoolManager
 import java.io.ByteArrayOutputStream
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -952,6 +953,37 @@ class JsEngine(private val context: Context) {
             } catch (e: Exception) {
                 Log.e(TAG, "Native decompress operation failed: ${e.message}", e)
                 "{\"nativeError\":\"${e.message?.replace("\"", "'")}\"}"
+            }
+        }
+
+        @JavascriptInterface
+        fun registerImageFromBase64(base64: String, mimeType: String): String {
+            return try {
+                val finalMime = if (mimeType.isNotBlank()) mimeType else "image/png"
+                val id = ImagePoolManager.addImageFromBase64(base64, finalMime)
+                if (id != "error") {
+                    "<link type=\"image\" id=\"$id\"></link>"
+                } else {
+                    "[image registration failed]"
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "registerImageFromBase64 failed: ${e.message}", e)
+                "[image registration failed: ${e.message}]"
+            }
+        }
+
+        @JavascriptInterface
+        fun registerImageFromPath(path: String): String {
+            return try {
+                val id = ImagePoolManager.addImage(path)
+                if (id != "error") {
+                    "<link type=\"image\" id=\"$id\"></link>"
+                } else {
+                    "[image registration failed]"
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "registerImageFromPath failed: ${e.message}", e)
+                "[image registration failed: ${e.message}]"
             }
         }
 

@@ -162,7 +162,7 @@ class ConversationService(
      * @param promptFunctionType 提示函数类型
      * @param thinkingGuidance 是否需要思考指导
      * @param enableMemoryQuery Whether the AI is allowed to query memories.
-     * @param hasImageRecognition Whether image recognition service is configured
+     * @param hasImageRecognition Whether a backend image recognition service is configured
      * @return 准备好的对话历史列表
      */
     suspend fun prepareConversationHistory(
@@ -175,7 +175,8 @@ class ConversationService(
             customSystemPromptTemplate: String? = null,
             enableMemoryQuery: Boolean = true,
             hasImageRecognition: Boolean = false,
-            useToolCallApi: Boolean = false
+            useToolCallApi: Boolean = false,
+            chatModelHasDirectImage: Boolean = false
     ): List<Pair<String, String>> {
         val preparedHistory = mutableListOf<Pair<String, String>>()
         conversationMutex.withLock {
@@ -207,17 +208,17 @@ class ConversationService(
                 val enableTools = apiPreferences.enableToolsFlow.first()
 
                 // 获取系统提示词，现在传入workspacePath和识图配置状态
-                val systemPrompt =
-                        SystemPromptConfig.getSystemPromptWithCustomPrompts(
-                        packageManager,
-                        workspacePath,
-                        introPrompt,
-                                thinkingGuidance,
-                                finalCustomSystemPromptTemplate,
-                                enableTools,
-                                enableMemoryQuery,
-                                hasImageRecognition,
-                                useToolCallApi
+                val systemPrompt = SystemPromptConfig.getSystemPromptWithCustomPrompts(
+                    packageManager,
+                    workspacePath,
+                    introPrompt,
+                    thinkingGuidance,
+                    finalCustomSystemPromptTemplate,
+                    enableTools,
+                    enableMemoryQuery,
+                    hasImageRecognition,
+                    useToolCallApi,
+                    chatModelHasDirectImage
                 )
 
                 // 构建waifu特殊规则
