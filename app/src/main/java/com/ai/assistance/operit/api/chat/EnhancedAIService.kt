@@ -21,6 +21,7 @@ import com.ai.assistance.operit.data.model.InputProcessingState
 import com.ai.assistance.operit.data.model.PromptFunctionType
 import com.ai.assistance.operit.data.model.ToolInvocation
 import com.ai.assistance.operit.data.model.ToolResult
+import com.ai.assistance.operit.data.model.ModelConfigData
 import com.ai.assistance.operit.data.preferences.ApiPreferences
 import com.ai.assistance.operit.util.stream.Stream
 import com.ai.assistance.operit.util.stream.StreamCollector
@@ -87,6 +88,13 @@ class EnhancedAIService private constructor(private val context: Context) {
                 functionType: FunctionType
         ): AIService {
             return getInstance(context).multiServiceManager.getServiceForFunction(functionType)
+        }
+
+        suspend fun getModelConfigForFunction(
+                context: Context,
+                functionType: FunctionType
+        ): ModelConfigData {
+            return getInstance(context).multiServiceManager.getModelConfigForFunction(functionType)
         }
 
         /**

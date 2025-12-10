@@ -5,13 +5,15 @@
     "tools": [
         {
             "name": "usage_advice",
-            "description": "UI自动化建议：\\n- 元素定位选项：\\n  • 列表：使用index参数（例如，“点击索引为2的列表项”）\\n  • 文本：使用bounds或partialMatch进行模糊匹配（例如，“点击包含‘登录’文字的按钮”）\\n- 操作链：组合多个操作以完成复杂任务（例如，“获取页面信息，然后点击元素”）\\n- 错误处理：如果操作失败，分析页面信息找出原因，并尝试其他方法。\\n- **并行调用**：建议在一次响应中进行并行调用，以减少批次数。例如，可以连续输出多个工具调用：点击按钮 → sleep → 获取屏幕内容，将这三个操作放在一个响应中执行，而不是分多次调用。",
+            "description": "UI自动化建议：\\n- 元素定位选项：\\n  • 列表：使用index参数（例如，“点击索引为2的列表项”）\\n  • 文本：使用bounds或partialMatch进行模糊匹配（例如，“点击包含‘登录’文字的按钮”）\\n- 操作链：组合多个操作以完成复杂任务（例如，“获取页面信息，然后点击元素”）\\n- 错误处理：如果操作失败，分析页面信息找出原因，并尝试其他方法。\\n- **组合调用（推荐）**：强烈建议在一次响应中组合调用2~3个真实存在的工具，例如依次调用tap → get_page_info，或 click_element → sleep → get_page_info，一次性输出完整的操作序列。软件会自动按顺序依次执行这些工具调用，无需等待上一轮结果再继续.",
             "parameters": []
         },
         {
-            "name": "app_launch_guide",
-            "description": "应用启动指南：想要启动应用时，请使用系统工具启动，而不是在桌面查找应用。应使用 Tools.System.startApp(packageName) 直接启动应用，这样更快速、可靠。",
-            "parameters": []
+            "name": "app_launch",
+            "description": "根据应用包名直接启动应用。如果未找到该包名对应的应用，则返回当前设备的软件安装列表，供你选择其他应用。",
+            "parameters": [
+                { "name": "package_name", "description": "应用包名，例如'com.tencent.mm'", "type": "string", "required": true }
+            ]
         },
         {
             "name": "get_page_info",
@@ -165,6 +167,54 @@ const UIAutomationTools = (function () {
         return { success: true, message: '滑动操作成功', data: result };
     }
 
+    async function app_launch(params: { package_name: string }): Promise<ToolResponse> {
+        if (!params.package_name) {
+            return { success: false, message: '必须提供package_name参数' };
+        }
+
+        try {
+            const startResult = await Tools.System.startApp(params.package_name);
+
+            if (startResult && startResult.success) {
+                return {
+                    success: true,
+                    message: '应用启动成功',
+                    data: {
+                        operation: startResult,
+                    },
+                };
+            }
+
+            const appList = await Tools.System.listApps(false);
+            return {
+                success: false,
+                message: '未能启动应用，可能未安装或无法找到启动入口。已返回当前安装的应用列表。',
+                data: {
+                    operation: startResult,
+                    installed_apps: appList,
+                },
+            };
+        } catch (error: any) {
+            console.error(`app_launch 执行失败: ${error.message}`);
+            try {
+                const appList = await Tools.System.listApps(false);
+                return {
+                    success: false,
+                    message: `启动应用时发生错误: ${error.message}。已返回当前安装的应用列表。`,
+                    data: {
+                        installed_apps: appList,
+                    },
+                };
+            } catch (listError: any) {
+                console.error(`获取应用列表失败: ${listError.message}`);
+                return {
+                    success: false,
+                    message: `启动应用失败且无法获取应用列表: ${listError.message}`,
+                };
+            }
+        }
+    }
+
     async function wrapToolExecution<P>(func: (params: P) => Promise<ToolResponse>, params: P) {
         try {
             const result = await func(params);
@@ -261,6 +311,7 @@ const UIAutomationTools = (function () {
 
     return {
         get_page_info: (params: { format?: 'xml' | 'json', detail?: 'minimal' | 'summary' | 'full' }) => wrapToolExecution(get_page_info, params),
+        app_launch: (params: { package_name: string }) => wrapToolExecution(app_launch, params),
         get_page_screenshot_image: () => wrapToolExecution(get_page_screenshot_image, {}),
         tap: (params: { x: number, y: number }) => wrapToolExecution(tap, params),
         double_tap: (params: { x: number, y: number }) => wrapToolExecution(double_tap, params),
@@ -274,6 +325,7 @@ const UIAutomationTools = (function () {
 })();
 
 exports.get_page_info = UIAutomationTools.get_page_info;
+exports.app_launch = UIAutomationTools.app_launch;
 exports.get_page_screenshot_image = UIAutomationTools.get_page_screenshot_image;
 exports.tap = UIAutomationTools.tap;
 exports.double_tap = UIAutomationTools.double_tap;

@@ -341,6 +341,18 @@ open class StandardUITools(protected val context: Context) {
             )
         }
 
+        val uiConfig =
+                EnhancedAIService.getModelConfigForFunction(context, FunctionType.UI_CONTROLLER)
+        if (!uiConfig.enableDirectImageProcessing) {
+            return ToolResult(
+                    toolName = tool.name,
+                    success = false,
+                    result = StringResultData(""),
+                    error =
+                            "当前 UI 控制器模型未启用识图能力，请在设置-功能模型中为 UI 控制器功能选择支持图片理解的模型后再试。"
+            )
+        }
+
         return try {
             val uiService =
                     EnhancedAIService.getAIServiceForFunction(context, FunctionType.UI_CONTROLLER)
