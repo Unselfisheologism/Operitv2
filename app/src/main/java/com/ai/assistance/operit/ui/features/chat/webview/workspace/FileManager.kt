@@ -284,6 +284,7 @@ fun FileBrowser(
                 Text(
                         text = currentPath,
                         style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, // 确保在深色模式下路径文字可见
                         maxLines = 1,
                         overflow = TextOverflow.Clip,
                         onTextLayout = { textLayoutResult = it },
@@ -569,7 +570,8 @@ private fun FileListItem(
                 name,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium // 使用更小的字号
+                style = MaterialTheme.typography.bodyMedium, // 使用更小的字号
+                color = MaterialTheme.colorScheme.onSurface // 确保在深色模式下文字可见
         )
     }
 }
