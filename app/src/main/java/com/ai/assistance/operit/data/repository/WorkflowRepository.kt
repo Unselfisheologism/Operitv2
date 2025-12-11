@@ -379,7 +379,7 @@ class WorkflowRepository(private val context: Context) {
     /**
      * Check if workflow is scheduled
      */
-    fun isWorkflowScheduled(id: String): Boolean {
+    suspend fun isWorkflowScheduled(id: String): Boolean {
         return try {
             scheduler.isWorkflowScheduled(id)
         } catch (e: Exception) {

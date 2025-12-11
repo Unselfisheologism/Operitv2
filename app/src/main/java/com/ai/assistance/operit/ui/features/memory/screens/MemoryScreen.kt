@@ -65,8 +65,10 @@ import com.ai.assistance.operit.ui.features.memory.screens.dialogs.EditEdgeDialo
 import com.ai.assistance.operit.ui.features.memory.screens.dialogs.ToolTestDialog
 import com.ai.assistance.operit.ui.features.memory.viewmodel.MemoryViewModel
 import com.ai.assistance.operit.ui.features.memory.viewmodel.MemoryViewModelFactory
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
@@ -167,36 +169,41 @@ fun MemoryScreen() {
                     var tempFile: File? = null
                     try {
                         // More robust file name extraction
-                        var fileName = "Untitled"
-                        context.contentResolver.query(fileUri, null, null, null, null)
-                            ?.use { cursor ->
-                                if (cursor.moveToFirst()) {
-                                    val displayNameIndex =
-                                        cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                                    if (displayNameIndex != -1) {
-                                        fileName = cursor.getString(displayNameIndex)
+                        val (fileName, mimeType) = withContext(Dispatchers.IO) {
+                            // Execute ContentResolver operations on IO thread
+                            var extractedFileName = "Untitled"
+                            context.contentResolver.query(fileUri, null, null, null, null)
+                                ?.use { cursor ->
+                                    if (cursor.moveToFirst()) {
+                                        val displayNameIndex =
+                                            cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                                        if (displayNameIndex != -1) {
+                                            extractedFileName = cursor.getString(displayNameIndex)
+                                        }
                                     }
                                 }
-                            }
 
-                        val mimeType = context.contentResolver.getType(fileUri)
-                        val content: String
+                            val extractedMimeType = context.contentResolver.getType(fileUri)
+                            Pair(extractedFileName, extractedMimeType)
+                        }
 
                         if (mimeType != null && mimeType.startsWith("text")) {
-                            val inputStream = context.contentResolver.openInputStream(fileUri)
-                            val reader = BufferedReader(InputStreamReader(inputStream))
-                            content = reader.readText()
+                            val content = withContext(Dispatchers.IO) {
+                                val inputStream = context.contentResolver.openInputStream(fileUri)
+                                val reader = BufferedReader(InputStreamReader(inputStream))
+                                reader.readText()
+                            }
                             viewModel.importDocument(fileName, fileUri.toString(), content)
                         } else {
                             // For binary files, use the tool
-                            val inputStream = context.contentResolver.openInputStream(fileUri)
                             tempFile = File(context.cacheDir, fileName)
-                            val outputStream = FileOutputStream(tempFile)
-                            inputStream?.use { input ->
-                                outputStream.use { output ->
-                                    input.copyTo(
-                                        output
-                                    )
+                            withContext(Dispatchers.IO) {
+                                val inputStream = context.contentResolver.openInputStream(fileUri)
+                                val outputStream = FileOutputStream(tempFile)
+                                inputStream?.use { input ->
+                                    outputStream.use { output ->
+                                        input.copyTo(output)
+                                    }
                                 }
                             }
 
@@ -210,7 +217,7 @@ fun MemoryScreen() {
                             if (result.success) {
                                 // Assuming result.result can be cast to StringResultData
                                 val resultData = result.result
-                                content = if (resultData is StringResultData) {
+                                val content = if (resultData is StringResultData) {
                                     resultData.value
                                 } else {
                                     resultData.toString()

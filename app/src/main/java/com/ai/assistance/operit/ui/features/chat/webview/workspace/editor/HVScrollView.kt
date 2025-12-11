@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.os.Handler
+import android.os.Looper
 import android.os.Parcel
 import android.os.Parcelable
 import android.util.AttributeSet
@@ -303,7 +304,7 @@ open class HVScrollView : FrameLayout {
         ta.duration = 200
         inner!!.startAnimation(ta)
         // 设置回到正常的布局位置
-        Handler().postDelayed({
+        Handler(Looper.getMainLooper()).postDelayed({
             inner!!.clearAnimation()
             inner!!.layout(normal.left, normal.top, normal.right, normal.bottom)
             normal.setEmpty()

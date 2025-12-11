@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import com.ai.assistance.operit.util.AppLogger
 import android.webkit.MimeTypeMap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -279,14 +281,14 @@ object FileUtils {
      * @param uniqueName A unique name or prefix for the file to prevent overwriting.
      * @return The URI of the copied file in internal storage, or null on failure.
      */
-    fun copyFileToInternalStorage(context: Context, uri: Uri, uniqueName: String): Uri? {
+    suspend fun copyFileToInternalStorage(context: Context, uri: Uri, uniqueName: String): Uri? = withContext(Dispatchers.IO) {
         var inputStream: InputStream? = null
         var outputStream: FileOutputStream? = null
         try {
             inputStream = context.contentResolver.openInputStream(uri)
             if (inputStream == null) {
                 AppLogger.e("FileUtils", "Failed to open input stream for URI: $uri")
-                return null
+                return@withContext null
             }
 
             // 获取原始文件的扩展名
@@ -304,10 +306,10 @@ object FileUtils {
             outputStream.flush()
             
             AppLogger.d("FileUtils", "File copied successfully to internal storage: ${file.absolutePath}")
-            return Uri.fromFile(file)
+            return@withContext Uri.fromFile(file)
         } catch (e: Exception) {
             AppLogger.e("FileUtils", "Error copying file to internal storage", e)
-            return null
+            return@withContext null
         } finally {
             try {
                 inputStream?.close()
@@ -324,13 +326,13 @@ object FileUtils {
      * @param uri The URI to get the extension from
      * @return The file extension or null if it couldn't be determined
      */
-    private fun getFileExtensionFromUri(context: Context, uri: Uri): String? {
+    private suspend fun getFileExtensionFromUri(context: Context, uri: Uri): String? = withContext(Dispatchers.IO) {
         // First try to get from the URI path itself
         val uriPath = uri.path
         if (uriPath != null) {
             val pathExtension = uriPath.substringAfterLast('.', "")
             if (pathExtension.isNotEmpty() && pathExtension.length <= 10 && !pathExtension.contains('/')) {
-                return pathExtension.lowercase()
+                return@withContext pathExtension.lowercase()
             }
         }
         
@@ -339,7 +341,7 @@ object FileUtils {
         if (mimeType != null) {
             val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
             if (extension != null) {
-                return extension.lowercase()
+                return@withContext extension.lowercase()
             }
         }
         
@@ -351,13 +353,13 @@ object FileUtils {
                     val fileName = cursor.getString(nameIndex)
                     val fileExtension = fileName?.substringAfterLast('.', "")
                     if (!fileExtension.isNullOrEmpty() && fileExtension.length <= 10) {
-                        return fileExtension.lowercase()
+                        return@withContext fileExtension.lowercase()
                     }
                 }
             }
         }
         
-        return null
+        return@withContext null
     }
 
     /**

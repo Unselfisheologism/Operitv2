@@ -5,6 +5,8 @@ import com.ai.assistance.operit.util.AppLogger
 import androidx.work.*
 import com.ai.assistance.operit.data.model.TriggerNode
 import com.ai.assistance.operit.data.model.Workflow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -272,9 +274,14 @@ class WorkflowScheduler(private val context: Context) {
     /**
      * Check if workflow is scheduled
      */
-    fun isWorkflowScheduled(workflowId: String): Boolean {
-        val workInfos = workManager.getWorkInfosForUniqueWork(getWorkName(workflowId)).get()
-        return workInfos.any { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }
+    suspend fun isWorkflowScheduled(workflowId: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val workInfos = workManager.getWorkInfosForUniqueWork(getWorkName(workflowId)).await()
+            workInfos.any { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Error checking workflow schedule status", e)
+            false
+        }
     }
 
     /**

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 /**
  * 工作流ViewModel
@@ -465,7 +466,9 @@ class WorkflowViewModel(application: Application) : AndroidViewModel(application
      * Check if workflow is scheduled
      */
     fun isWorkflowScheduled(workflowId: String): Boolean {
-        return repository.isWorkflowScheduled(workflowId)
+        return kotlinx.coroutines.runBlocking {
+            repository.isWorkflowScheduled(workflowId)
+        }
     }
     
     /**

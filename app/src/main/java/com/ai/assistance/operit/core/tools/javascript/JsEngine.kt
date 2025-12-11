@@ -609,22 +609,28 @@ class JsEngine(private val context: Context) {
         """.trimIndent()
 
         // 在 WebView 中执行初始化脚本
+        val initLatch = CountDownLatch(1)
         ContextCompat.getMainExecutor(context).execute {
             try {
                 webView?.evaluateJavascript(initScript) { result ->
                     AppLogger.d(TAG, "JS environment initialization completed: $result")
                     jsEnvironmentInitialized = true
+                    initLatch.countDown()
                 }
             } catch (e: Exception) {
                 AppLogger.e(TAG, "Failed to initialize JS environment: ${e.message}", e)
+                initLatch.countDown()
             }
         }
 
-        // 等待初始化完成
-        var retries = 0
-        while (!jsEnvironmentInitialized && retries < 10) {
-            Thread.sleep(100)
-            retries++
+        // 等待初始化完成，使用超时避免无限等待
+        try {
+            if (!initLatch.await(5, TimeUnit.SECONDS)) {
+                AppLogger.w(TAG, "JS environment initialization timeout after 5 seconds")
+            }
+        } catch (e: InterruptedException) {
+            AppLogger.e(TAG, "JS environment initialization interrupted", e)
+            Thread.currentThread().interrupt()
         }
     }
 

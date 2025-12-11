@@ -17,6 +17,7 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers as CoroutineDispatchers
 
 /** 基于Root权限的Shell命令执行器 实现ROOT权限级别的命令执行 */
@@ -310,13 +311,16 @@ private class LibSuShellProcess(command: String) : ShellProcess {
 
     override val stdout: Flow<String> = callbackFlow {
         try {
-            // Get the result from the future
-            val result = future.get()
+            // Get the result from the future with timeout
+            val result = future.get(30, TimeUnit.SECONDS)
             result.out.forEach { line ->
                 trySend(line)
             }
+        } catch (e: java.util.concurrent.TimeoutException) {
+            AppLogger.e("RootShellExecutor", "Shell command timeout after 30 seconds", e)
         } catch (e: Exception) {
             // Handle any execution errors
+            AppLogger.e("RootShellExecutor", "Error getting shell result", e)
         }
         close()
         awaitClose { }
@@ -325,13 +329,16 @@ private class LibSuShellProcess(command: String) : ShellProcess {
 
     override val stderr: Flow<String> = callbackFlow {
         try {
-            // Get the result from the future
-            val result = future.get()
+            // Get the result from the future with timeout
+            val result = future.get(30, TimeUnit.SECONDS)
             result.err.forEach { line ->
                 trySend(line)
             }
+        } catch (e: java.util.concurrent.TimeoutException) {
+            AppLogger.e("RootShellExecutor", "Shell command timeout after 30 seconds", e)
         } catch (e: Exception) {
             // Handle any execution errors
+            AppLogger.e("RootShellExecutor", "Error getting shell result", e)
         }
         close()
         awaitClose { }
@@ -348,9 +355,13 @@ private class LibSuShellProcess(command: String) : ShellProcess {
 
     override suspend fun waitFor(): Int = withContext(Dispatchers.IO) {
         try {
-            val result = future.get()
+            val result = future.get(30, TimeUnit.SECONDS)
             result.code
+        } catch (e: java.util.concurrent.TimeoutException) {
+            AppLogger.e("RootShellExecutor", "Shell command timeout after 30 seconds", e)
+            -1
         } catch (e: Exception) {
+            AppLogger.e("RootShellExecutor", "Error waiting for shell result", e)
             -1
         }
     }

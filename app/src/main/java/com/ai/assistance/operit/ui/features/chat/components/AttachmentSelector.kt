@@ -88,12 +88,14 @@ fun AttachmentSelectorPanel(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            uris.forEach { uri ->
-                getFilePathFromUri(context, uri)?.let { path ->
-                    onAttachImage(path)
+            coroutineScope.launch {
+                uris.forEach { uri ->
+                    getFilePathFromUri(context, uri)?.let { path ->
+                        onAttachImage(path)
+                    }
                 }
+                onDismiss()
             }
-            onDismiss()
         }
     }
 
@@ -101,12 +103,14 @@ fun AttachmentSelectorPanel(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            uris.forEach { uri ->
-                getFilePathFromUri(context, uri)?.let { path ->
-                    onAttachFile(path)
+            coroutineScope.launch {
+                uris.forEach { uri ->
+                    getFilePathFromUri(context, uri)?.let { path ->
+                        onAttachFile(path)
+                    }
                 }
+                onDismiss()
             }
-            onDismiss()
         }
     }
 
@@ -259,13 +263,13 @@ fun AttachmentSelectorPanel(
 }
 
 // 添加Uri转换为文件路径的工具函数
-private fun getFilePathFromUri(context: Context, uri: Uri): String? {
+private suspend fun getFilePathFromUri(context: Context, uri: Uri): String? = withContext(Dispatchers.IO) {
     // 使用ContentResolver获取真实文件路径
     val contentResolver = context.contentResolver
 
     // 文件URI直接返回路径
     if (uri.scheme == "file") {
-        return uri.path
+        return@withContext uri.path
     }
 
     // 处理content URI
@@ -278,7 +282,7 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
                     // 尝试获取_data列（真实路径）
                     val dataIndex = it.getColumnIndex("_data")
                     if (dataIndex != -1) {
-                        return it.getString(dataIndex)
+                        return@withContext it.getString(dataIndex)
                     }
                 }
             }
@@ -286,13 +290,13 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
             // 如果使用_data列无法获取路径，则直接返回URI的字符串表示
             // 这样应用可以通过ContentResolver直接使用这个URI访问文件
             AppLogger.d("AttachmentSelector", "使用URI字符串: ${uri.toString()}")
-            return uri.toString()
+            return@withContext uri.toString()
         } catch (e: Exception) {
             AppLogger.e("AttachmentSelector", "获取文件路径错误", e)
         }
     }
 
-    return null
+    return@withContext null
 }
 
 /** 简约的附件选项组件 */

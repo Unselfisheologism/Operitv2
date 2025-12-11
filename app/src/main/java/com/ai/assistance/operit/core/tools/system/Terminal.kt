@@ -135,7 +135,12 @@ class Terminal private constructor(private val context: Context) {
                 }
         }
 
-        collectorReady.await() // 等待收集器准备就绪
+        // 等待收集器准备就绪，添加超时避免无限等待
+        withTimeoutOrNull(5000) { // 5秒超时
+            collectorReady.await()
+        } ?: run {
+            AppLogger.w(TAG, "Collector ready timeout after 5 seconds")
+        }
         
         // 直接向指定会话发送命令，不切换当前会话
         terminalManager.sendCommandToSession(sessionId, command, commandId)

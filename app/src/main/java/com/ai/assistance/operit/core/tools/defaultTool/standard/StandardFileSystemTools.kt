@@ -35,9 +35,11 @@ import com.ai.assistance.operit.util.FileUtils
 import com.ai.assistance.operit.util.SyntaxCheckUtil
 import com.ai.assistance.operit.util.PathMapper
 import com.ai.assistance.operit.util.ImagePoolManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import androidx.core.content.FileProvider
@@ -441,7 +443,9 @@ open class StandardFileSystemTools(protected val context: Context) {
 
                 // 情况3：默认OCR处理
                 try {
-                    val bitmap = android.graphics.BitmapFactory.decodeFile(path)
+                    val bitmap = withContext(Dispatchers.IO) {
+                        android.graphics.BitmapFactory.decodeFile(path)
+                    }
                     if (bitmap != null) {
                         val ocrText =
                             kotlinx.coroutines.runBlocking {
@@ -769,84 +773,86 @@ open class StandardFileSystemTools(protected val context: Context) {
             )
         }
 
-        return try {
-            val file = File(path)
-            if (!file.exists() || !file.isFile) {
-                return ToolResult(
+        return withContext(Dispatchers.IO) {
+            try {
+                val file = File(path)
+                if (!file.exists() || !file.isFile) {
+                    return@withContext ToolResult(
+                        toolName = tool.name,
+                        success = false,
+                        result = StringResultData(""),
+                        error = "File does not exist or is not a regular file: $path"
+                    )
+                }
+
+                // 1. 准备数据源 & 获取总行数
+                // 如果是特殊文件，先提取所有文本到内存；如果是普通文件，只统计行数
+                val inMemoryLines: List<String>?
+                val totalLines: Int
+
+                if (isSpecialFileType(file.extension)) {
+                    val specialResult = handleSpecialFileRead(tool, path, file.extension.lowercase())
+                    if (specialResult != null && !specialResult.success) return@withContext specialResult
+
+                    if (specialResult != null) {
+                        val content = (specialResult.result as FileContentData).content
+                        inMemoryLines = content.lines()
+                        totalLines = inMemoryLines.size
+                    } else {
+                        // Fallback if handleSpecialFileRead returns null (shouldn't happen given check)
+                        inMemoryLines = null
+                        totalLines = 0
+                    }
+                } else {
+                    inMemoryLines = null
+                    totalLines = countFileLines(file)
+                }
+
+                // 2. 计算实际的行号范围（行号从1开始，转换为0-based索引）
+                val startLine = maxOf(1, startLineParam).coerceIn(1, maxOf(1, totalLines))
+                val endLine = (endLineParam ?: (startLine + 99)).coerceIn(startLine, maxOf(1, totalLines))
+                
+                // 转换为0-based索引
+                val startIndex = startLine - 1
+                val endIndex = endLine // endLine 本身就是最后一行的1-based行号，转成exclusive的end需要不减1
+
+                // 3. 获取分段内容
+                val partContent = if (inMemoryLines != null) {
+                    // 内存模式：直接切片
+                    if (totalLines > 0 && startIndex < totalLines) {
+                        inMemoryLines.subList(startIndex, minOf(endIndex, totalLines)).joinToString("\n")
+                    } else ""
+                } else {
+                    // 磁盘流模式：读取指定行
+                    if (totalLines > 0) readLinesFromFile(file, startIndex, endIndex) else ""
+                }
+
+                // 4. 封装返回结果
+                val contentWithLineNumbers = addLineNumbers(partContent, startIndex, totalLines)
+
+                ToolResult(
+                    toolName = tool.name,
+                    success = true,
+                    result = FilePartContentData(
+                        path = path,
+                        content = contentWithLineNumbers,
+                        partIndex = 0, // 保留兼容性，但不再使用
+                        totalParts = 1, // 保留兼容性，但不再使用
+                        startLine = startIndex,
+                        endLine = minOf(endIndex, totalLines),
+                        totalLines = totalLines
+                    ),
+                    error = ""
+                )
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Error reading file part", e)
+                return@withContext ToolResult(
                     toolName = tool.name,
                     success = false,
                     result = StringResultData(""),
-                    error = "File does not exist or is not a regular file: $path"
+                    error = "Error reading file part: ${e.message}"
                 )
             }
-
-            // 1. 准备数据源 & 获取总行数
-            // 如果是特殊文件，先提取所有文本到内存；如果是普通文件，只统计行数
-            val inMemoryLines: List<String>?
-            val totalLines: Int
-
-            if (isSpecialFileType(file.extension)) {
-                val specialResult = handleSpecialFileRead(tool, path, file.extension.lowercase())
-                if (specialResult != null && !specialResult.success) return specialResult
-
-                if (specialResult != null) {
-                    val content = (specialResult.result as FileContentData).content
-                    inMemoryLines = content.lines()
-                    totalLines = inMemoryLines.size
-                } else {
-                    // Fallback if handleSpecialFileRead returns null (shouldn't happen given check)
-                    inMemoryLines = null
-                    totalLines = 0
-                }
-            } else {
-                inMemoryLines = null
-                totalLines = countFileLines(file)
-            }
-
-            // 2. 计算实际的行号范围（行号从1开始，转换为0-based索引）
-            val startLine = maxOf(1, startLineParam).coerceIn(1, maxOf(1, totalLines))
-            val endLine = (endLineParam ?: (startLine + 99)).coerceIn(startLine, maxOf(1, totalLines))
-            
-            // 转换为0-based索引
-            val startIndex = startLine - 1
-            val endIndex = endLine // endLine 本身就是最后一行的1-based行号，转成exclusive的end需要不减1
-
-            // 3. 获取分段内容
-            val partContent = if (inMemoryLines != null) {
-                // 内存模式：直接切片
-                if (totalLines > 0 && startIndex < totalLines) {
-                    inMemoryLines.subList(startIndex, minOf(endIndex, totalLines)).joinToString("\n")
-                } else ""
-            } else {
-                // 磁盘流模式：读取指定行
-                if (totalLines > 0) readLinesFromFile(file, startIndex, endIndex) else ""
-            }
-
-            // 4. 封装返回结果
-            val contentWithLineNumbers = addLineNumbers(partContent, startIndex, totalLines)
-
-            ToolResult(
-                toolName = tool.name,
-                success = true,
-                result = FilePartContentData(
-                    path = path,
-                    content = contentWithLineNumbers,
-                    partIndex = 0, // 保留兼容性，但不再使用
-                    totalParts = 1, // 保留兼容性，但不再使用
-                    startLine = startIndex,
-                    endLine = minOf(endIndex, totalLines),
-                    totalLines = totalLines
-                ),
-                error = ""
-            )
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error reading file part", e)
-            return ToolResult(
-                toolName = tool.name,
-                success = false,
-                result = StringResultData(""),
-                error = "Error reading file part: ${e.message}"
-            )
         }
     }
 
@@ -879,108 +885,110 @@ open class StandardFileSystemTools(protected val context: Context) {
             )
         }
 
-        return try {
-            val file = File(path)
+        return withContext(Dispatchers.IO) {
+            try {
+                val file = File(path)
 
-            // Create parent directories if needed
-            val parentDir = file.parentFile
-            if (parentDir != null && !parentDir.exists()) {
-                if (!parentDir.mkdirs()) {
-                    AppLogger.w(
-                        TAG,
-                        "Failed to create parent directory: ${parentDir.absolutePath}"
+                // Create parent directories if needed
+                val parentDir = file.parentFile
+                if (parentDir != null && !parentDir.exists()) {
+                    if (!parentDir.mkdirs()) {
+                        AppLogger.w(
+                            TAG,
+                            "Failed to create parent directory: ${parentDir.absolutePath}"
+                        )
+                    }
+                }
+
+                // Write content to file
+                if (append && file.exists()) {
+                    file.appendText(content)
+                } else {
+                    file.writeText(content)
+                }
+
+                // Verify write was successful
+                if (!file.exists()) {
+                    return@withContext ToolResult(
+                        toolName = tool.name,
+                        success = false,
+                        result =
+                        FileOperationData(
+                            operation =
+                            if (append) "append" else "write",
+                            path = path,
+                            successful = false,
+                            details =
+                            "Write completed but file does not exist. Possible permission issue."
+                        ),
+                        error =
+                        "Write completed but file does not exist. Possible permission issue."
                     )
                 }
-            }
 
-            // Write content to file
-            if (append && file.exists()) {
-                file.appendText(content)
-            } else {
-                file.writeText(content)
-            }
-
-            // Verify write was successful
-            if (!file.exists()) {
-                return ToolResult(
-                    toolName = tool.name,
-                    success = false,
-                    result =
-                    FileOperationData(
-                        operation =
-                        if (append) "append" else "write",
-                        path = path,
-                        successful = false,
-                        details =
-                        "Write completed but file does not exist. Possible permission issue."
-                    ),
-                    error =
-                    "Write completed but file does not exist. Possible permission issue."
-                )
-            }
-
-            if (file.length() == 0L && content.isNotEmpty()) {
-                return ToolResult(
-                    toolName = tool.name,
-                    success = false,
-                    result =
-                    FileOperationData(
-                        operation =
-                        if (append) "append" else "write",
-                        path = path,
-                        successful = false,
-                        details =
+                if (file.length() == 0L && content.isNotEmpty()) {
+                    return@withContext ToolResult(
+                        toolName = tool.name,
+                        success = false,
+                        result =
+                        FileOperationData(
+                            operation =
+                            if (append) "append" else "write",
+                            path = path,
+                            successful = false,
+                            details =
+                            "File was created but appears to be empty. Possible write failure."
+                        ),
+                        error =
                         "File was created but appears to be empty. Possible write failure."
-                    ),
-                    error =
-                    "File was created but appears to be empty. Possible write failure."
-                )
-            }
-
-            val operation = if (append) "append" else "write"
-            val details =
-                if (append) "Content appended to $path"
-                else "Content written to $path"
-
-            return ToolResult(
-                toolName = tool.name,
-                success = true,
-                result =
-                FileOperationData(
-                    operation = operation,
-                    path = path,
-                    successful = true,
-                    details = details
-                ),
-                error = ""
-            )
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error writing to file", e)
-
-            val errorMessage =
-                when {
-                    e is IOException ->
-                        "File I/O error: ${e.message}. Please check if the path has write permissions."
-
-                    e.message?.contains("permission", ignoreCase = true) ==
-                            true ->
-                        "Permission denied, cannot write to file: ${e.message}. Please check if the app has proper permissions."
-
-                    else -> "Error writing to file: ${e.message}"
+                    )
                 }
 
-            return ToolResult(
-                toolName = tool.name,
-                success = false,
-                result =
-                FileOperationData(
-                    operation = if (append) "append" else "write",
-                    path = path,
-                    successful = false,
-                    details = errorMessage
-                ),
-                error = errorMessage
-            )
+                val operation = if (append) "append" else "write"
+                val details =
+                    if (append) "Content appended to $path"
+                    else "Content written to $path"
+
+                ToolResult(
+                    toolName = tool.name,
+                    success = true,
+                    result =
+                    FileOperationData(
+                        operation = operation,
+                        path = path,
+                        successful = true,
+                        details = details
+                    ),
+                    error = ""
+                )
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Error writing to file", e)
+
+                val errorMessage =
+                    when {
+                        e is IOException ->
+                            "File I/O error: ${e.message}. Please check if the path has write permissions."
+
+                        e.message?.contains("permission", ignoreCase = true) ==
+                                true ->
+                            "Permission denied, cannot write to file: ${e.message}. Please check if the app has proper permissions."
+
+                        else -> "Error writing to file: ${e.message}"
+                    }
+
+                ToolResult(
+                    toolName = tool.name,
+                    success = false,
+                    result =
+                    FileOperationData(
+                        operation = if (append) "append" else "write",
+                        path = path,
+                        successful = false,
+                        details = errorMessage
+                    ),
+                    error = errorMessage
+                )
+            }
         }
     }
 
@@ -3196,92 +3204,100 @@ open class StandardFileSystemTools(protected val context: Context) {
             )
         }
 
-        return try {
-            // 1. 使用 findFiles 查找所有匹配的文件
-            val findFilesResult = findFiles(
-                AITool(
-                    name = "find_files",
-                    parameters = listOf(
-                        ToolParameter("path", path),
-                        ToolParameter("pattern", filePattern),
-                        ToolParameter("use_path_pattern", "false"),
-                        ToolParameter("case_insensitive", "false"),
-                        ToolParameter("environment", environment ?: "")
-                    )
-                )
-            )
-
-            if (!findFilesResult.success) {
-                return ToolResult(
-                    toolName = tool.name,
-                    success = false,
-                    result = StringResultData(""),
-                    error = "Failed to find files: ${findFilesResult.error}"
-                )
-            }
-
-            val foundFiles = (findFilesResult.result as FindFilesResultData).files
-            AppLogger.d(TAG, "grep_code: Found ${foundFiles.size} files to search")
-
-            if (foundFiles.isEmpty()) {
-                AppLogger.d(TAG, "grep_code: No files found matching pattern")
-                return ToolResult(
-                    toolName = tool.name,
-                    success = true,
-                    result = GrepResultData(
-                        searchPath = path,
-                        pattern = pattern,
-                        matches = emptyList(),
-                        totalMatches = 0,
-                        filesSearched = 0
-                    ),
-                    error = ""
-                )
-            }
-
-            // 2. 创建正则表达式用于匹配
-            val regex = if (caseInsensitive) {
-                Regex(pattern, RegexOption.IGNORE_CASE)
-            } else {
-                Regex(pattern)
-            }
-
-            // 3. 遍历每个文件，搜索匹配的行
-            val fileMatches = mutableListOf<GrepResultData.FileMatch>()
-            var totalMatches = 0
-            var filesSearched = 0
-
-            for (filePath in foundFiles) {
-                if (totalMatches >= maxResults) {
-                    AppLogger.d(TAG, "grep_code: Reached max results limit ($maxResults), stopping search")
-                    break
-                }
-
-                filesSearched++
-                val fileStartTime = System.currentTimeMillis()
-
-                // 读取文件内容（启用 text_only 模式，跳过图片等非文本文件）
-                val readResult = readFileFull(
+        return withContext(Dispatchers.IO) {
+            try {
+                // 1. 使用 findFiles 查找所有匹配的文件
+                val findFilesResult = findFiles(
                     AITool(
-                        name = "read_file_full",
+                        name = "find_files",
                         parameters = listOf(
-                            ToolParameter("path", filePath),
-                            ToolParameter("text_only", "true")
+                            ToolParameter("path", path),
+                            ToolParameter("pattern", filePattern),
+                            ToolParameter("use_path_pattern", "false"),
+                            ToolParameter("case_insensitive", "false"),
+                            ToolParameter("environment", environment ?: "")
                         )
                     )
                 )
 
-                if (!readResult.success) {
-                    // 如果读取失败（可能是二进制文件或权限问题），跳过该文件
-                    AppLogger.d(TAG, "grep_code: Skipped file $filePath (${readResult.error})")
-                    continue
+                if (!findFilesResult.success) {
+                    return@withContext ToolResult(
+                        toolName = tool.name,
+                        success = false,
+                        result = StringResultData(""),
+                        error = "Failed to find files: ${findFilesResult.error}"
+                    )
                 }
 
-                val fileContent = (readResult.result as FileContentData).content
-                val lines = fileContent.lines()
-                
-                // 使用 regex.findAll 在整个文件内容上一次性找到所有匹配，比逐行遍历更高效
-                val matches = regex.findAll(fileContent)
+                val foundFiles = (findFilesResult.result as FindFilesResultData).files
+                AppLogger.d(TAG, "grep_code: Found ${foundFiles.size} files to search")
+
+                if (foundFiles.isEmpty()) {
+                    AppLogger.d(TAG, "grep_code: No files found matching pattern")
+                    return@withContext ToolResult(
+                        toolName = tool.name,
+                        success = true,
+                        result = GrepResultData(
+                            searchPath = path,
+                            pattern = pattern,
+                            matches = emptyList(),
+                            totalMatches = 0,
+                            filesSearched = 0
+                        ),
+                        error = ""
+                    )
+                }
+
+                // 2. 创建正则表达式用于匹配
+                val regex = if (caseInsensitive) {
+                    Regex(pattern, RegexOption.IGNORE_CASE)
+                } else {
+                    Regex(pattern)
+                }
+
+                // 3. 遍历每个文件，搜索匹配的行
+                val fileMatches = mutableListOf<GrepResultData.FileMatch>()
+                var totalMatches = 0
+                var filesSearched = 0
+
+                for (filePath in foundFiles) {
+                    if (totalMatches >= maxResults) {
+                        AppLogger.d(TAG, "grep_code: Reached max results limit ($maxResults), stopping search")
+                        break
+                    }
+
+                    filesSearched++
+                    val fileStartTime = System.currentTimeMillis()
+
+                    // 读取文件内容（启用 text_only 模式，跳过图片等非文本文件）
+                    val readResult = readFileFull(
+                        AITool(
+                            name = "read_file_full",
+                            parameters = listOf(
+                                ToolParameter("path", filePath),
+                                ToolParameter("text_only", "true")
+                            )
+                        )
+                    )
+
+                    if (!readResult.success) {
+                        // 如果读取失败（可能是二进制文件或权限问题），跳过该文件
+                        AppLogger.d(TAG, "grep_code: Skipped file $filePath (${readResult.error})")
+                        continue
+                    }
+
+                    val fileContent = (readResult.result as FileContentData).content
+                    val lines = fileContent.lines()
+                    
+                    // 使用 regex.findAll 在整个文件内容上一次性找到所有匹配，比逐行遍历更高效
+                    // 对于大文件，考虑限制处理大小或分块处理
+                    val matches = if (fileContent.length > 10_000_000) { // 10MB limit
+                        // 对于超大文件，只处理前10MB以避免ANR
+                        val limitedContent = fileContent.take(10_000_000)
+                        regex.findAll(limitedContent)
+                    } else {
+                        regex.findAll(fileContent)
+                    }
                 val matchedLineNumbers = matches
                     .map { match ->
                         // 通过计算匹配位置之前的换行符数量得到行号
@@ -3346,32 +3362,32 @@ open class StandardFileSystemTools(protected val context: Context) {
                 }
             }
 
-            // 4. 返回结果
-            val totalElapsed = System.currentTimeMillis() - startTime
-            AppLogger.d(TAG, "grep_code: Completed - Found $totalMatches matches in ${fileMatches.size} files (searched $filesSearched/${foundFiles.size} files, ${totalElapsed}ms total)")
-            
-            ToolResult(
-                toolName = tool.name,
-                success = true,
-                result = GrepResultData(
-                    searchPath = path,
-                    pattern = pattern,
-                    matches = fileMatches.take(20), // 最多显示20个文件
-                    totalMatches = totalMatches,
-                    filesSearched = filesSearched
-                ),
-                error = ""
-            )
-
-        } catch (e: Exception) {
-            val totalElapsed = System.currentTimeMillis() - startTime
-            AppLogger.e(TAG, "grep_code: Error after ${totalElapsed}ms - ${e.message}", e)
-            ToolResult(
-                toolName = tool.name,
-                success = false,
-                result = StringResultData(""),
-                error = "Error performing grep search: ${e.message}"
-            )
+                // 4. 返回结果
+                val totalElapsed = System.currentTimeMillis() - startTime
+                AppLogger.d(TAG, "grep_code: Completed - Found $totalMatches matches in ${fileMatches.size} files (searched $filesSearched/${foundFiles.size} files, ${totalElapsed}ms total)")
+                
+                ToolResult(
+                    toolName = tool.name,
+                    success = true,
+                    result = GrepResultData(
+                        searchPath = path,
+                        pattern = pattern,
+                        matches = fileMatches.take(20), // 最多显示20个文件
+                        totalMatches = totalMatches,
+                        filesSearched = filesSearched
+                    ),
+                    error = ""
+                )
+            } catch (e: Exception) {
+                val totalElapsed = System.currentTimeMillis() - startTime
+                AppLogger.e(TAG, "grep_code: Error after ${totalElapsed}ms - ${e.message}", e)
+                return@withContext ToolResult(
+                    toolName = tool.name,
+                    success = false,
+                    result = StringResultData(""),
+                    error = "Error performing grep search: ${e.message}"
+                )
+            }
         }
     }
 

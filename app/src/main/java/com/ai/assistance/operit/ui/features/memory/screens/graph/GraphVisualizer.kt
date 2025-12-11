@@ -118,9 +118,16 @@ fun GraphVisualizer(
                     graph.nodes.forEach { node -> velocities[node.id] = Offset.Zero }
 
                     val nodeArray = graph.nodes.toTypedArray() // 转换为数组，提高访问速度
+                    val nodeCount = graph.nodes.size
 
                     // Tuned parameters for a more stable and visually pleasing layout
-                    val iterations = 300
+                    // 根据节点数量动态调整迭代次数，避免节点过多时计算时间过长
+                    val iterations = when {
+                        nodeCount > 200 -> 150  // 大量节点时减少迭代次数
+                        nodeCount > 100 -> 200  // 中等数量节点
+                        nodeCount > 50 -> 250   // 少量节点
+                        else -> 300             // 很少节点，使用完整迭代
+                    }
                     val repulsionStrength = 150000f  // Stronger repulsion to prevent clumping
                     val attractionStrength = 0.15f   // Increased spring force to pull connected nodes closer
                     val idealEdgeLength = 200f       // Shorter ideal distance for edges to bring connected nodes closer

@@ -44,7 +44,9 @@ import com.ai.assistance.operit.ui.features.chat.webview.WebViewHandler
 import com.ai.assistance.operit.ui.features.chat.webview.workspace.editor.CodeEditor
 import com.ai.assistance.operit.ui.features.chat.webview.workspace.editor.CodeFormatter
 import com.ai.assistance.operit.ui.features.chat.webview.workspace.editor.LanguageDetector
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import kotlinx.serialization.Serializable
 
@@ -377,22 +379,49 @@ fun WorkspaceManager(
                         when {
                             // 图片文件：显示图片预览
                             fileInfo.isImage -> {
+                                // Decode bitmap in background thread
+                                var bitmap by remember(fileInfo.path) { mutableStateOf<android.graphics.Bitmap?>(null) }
+                                var isLoading by remember(fileInfo.path) { mutableStateOf(true) }
+                                
+                                LaunchedEffect(fileInfo.path) {
+                                    bitmap = withContext(Dispatchers.IO) {
+                                        try {
+                                            android.graphics.BitmapFactory.decodeFile(fileInfo.path)
+                                        } catch (e: Exception) {
+                                            AppLogger.e("WorkspaceManager", "Failed to decode bitmap: ${fileInfo.path}", e)
+                                            null
+                                        }
+                                    }
+                                    isLoading = false
+                                }
+                                
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(Color.Black),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    AndroidView(
-                                        factory = { context ->
-                                            android.widget.ImageView(context).apply {
-                                                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-                                                val bitmap = android.graphics.BitmapFactory.decodeFile(fileInfo.path)
-                                                setImageBitmap(bitmap)
-                                            }
-                                        },
-                                        modifier = Modifier.fillMaxSize()
-                                    )
+                                    if (isLoading) {
+                                        CircularProgressIndicator(color = Color.White)
+                                    } else {
+                                        bitmap?.let { decodedBitmap ->
+                                            AndroidView(
+                                                factory = { context ->
+                                                    android.widget.ImageView(context).apply {
+                                                        scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                                                        setImageBitmap(decodedBitmap)
+                                                    }
+                                                },
+                                                modifier = Modifier.fillMaxSize()
+                                            )
+                                        } ?: run {
+                                            Text(
+                                                text = "Failed to load image",
+                                                color = Color.White,
+                                                style = MaterialTheme.typography.bodyMedium
+                                            )
+                                        }
+                                    }
                                     
                                     // 图片信息叠加层
                                     Surface(
