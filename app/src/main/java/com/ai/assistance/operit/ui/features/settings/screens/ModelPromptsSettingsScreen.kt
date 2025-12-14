@@ -336,6 +336,7 @@ fun ModelPromptsSettingsScreen(
                 isDefault = false
             )
             val newCardId = characterCardManager.createCharacterCard(duplicatedCard)
+            characterCardManager.cloneBindingsFromCharacterCard(card.id, newCardId)
             userPreferencesManager.saveCustomChatTitleForCharacterCard(newCardId, duplicatedCard.name.ifEmpty { null })
             showDuplicateSuccessMessage = true
             refreshTrigger++

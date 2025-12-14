@@ -180,6 +180,37 @@ class WaifuPreferences private constructor(private val context: Context) {
         }
     }
 
+    suspend fun cloneWaifuSettingsBetweenCharacterCards(sourceCharacterCardId: String, targetCharacterCardId: String) {
+        context.waifuDataStore.edit { preferences ->
+            val sourcePrefix = getCharacterCardWaifuPrefix(sourceCharacterCardId)
+            val targetPrefix = getCharacterCardWaifuPrefix(targetCharacterCardId)
+
+            getAllBooleanWaifuKeys().forEach { key ->
+                val sourceKey = booleanPreferencesKey("${sourcePrefix}${key.name}")
+                preferences[sourceKey]?.let { value ->
+                    val targetKey = booleanPreferencesKey("${targetPrefix}${key.name}")
+                    preferences[targetKey] = value
+                }
+            }
+
+            getAllIntWaifuKeys().forEach { key ->
+                val sourceKey = intPreferencesKey("${sourcePrefix}${key.name}")
+                preferences[sourceKey]?.let { value ->
+                    val targetKey = intPreferencesKey("${targetPrefix}${key.name}")
+                    preferences[targetKey] = value
+                }
+            }
+
+            getAllStringWaifuKeys().forEach { key ->
+                val sourceKey = stringPreferencesKey("${sourcePrefix}${key.name}")
+                preferences[sourceKey]?.let { value ->
+                    val targetKey = stringPreferencesKey("${targetPrefix}${key.name}")
+                    preferences[targetKey] = value
+                }
+            }
+        }
+    }
+
     /**
      * 切换到指定角色卡的Waifu模式配置
      */

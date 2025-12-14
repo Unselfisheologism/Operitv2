@@ -1005,6 +1005,45 @@ class UserPreferencesManager private constructor(private val context: Context) {
         }
     }
 
+    suspend fun cloneThemeBetweenCharacterCards(sourceCharacterCardId: String, targetCharacterCardId: String) {
+        context.userPreferencesDataStore.edit { preferences ->
+            val sourcePrefix = getCharacterCardThemePrefix(sourceCharacterCardId)
+            val targetPrefix = getCharacterCardThemePrefix(targetCharacterCardId)
+
+            getAllStringThemeKeys().forEach { key ->
+                val sourceKey = stringPreferencesKey("${sourcePrefix}${key.name}")
+                preferences[sourceKey]?.let { value ->
+                    val targetKey = stringPreferencesKey("${targetPrefix}${key.name}")
+                    preferences[targetKey] = value
+                }
+            }
+
+            getAllBooleanThemeKeys().forEach { key ->
+                val sourceKey = booleanPreferencesKey("${sourcePrefix}${key.name}")
+                preferences[sourceKey]?.let { value ->
+                    val targetKey = booleanPreferencesKey("${targetPrefix}${key.name}")
+                    preferences[targetKey] = value
+                }
+            }
+
+            getAllIntThemeKeys().forEach { key ->
+                val sourceKey = intPreferencesKey("${sourcePrefix}${key.name}")
+                preferences[sourceKey]?.let { value ->
+                    val targetKey = intPreferencesKey("${targetPrefix}${key.name}")
+                    preferences[targetKey] = value
+                }
+            }
+
+            getAllFloatThemeKeys().forEach { key ->
+                val sourceKey = floatPreferencesKey("${sourcePrefix}${key.name}")
+                preferences[sourceKey]?.let { value ->
+                    val targetKey = floatPreferencesKey("${targetPrefix}${key.name}")
+                    preferences[targetKey] = value
+                }
+            }
+        }
+    }
+
     /**
      * 切换到指定角色卡的主题配置
      */

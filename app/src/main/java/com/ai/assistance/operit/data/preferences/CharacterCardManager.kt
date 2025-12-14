@@ -133,7 +133,20 @@ class CharacterCardManager private constructor(private val context: Context) {
     }
 
 
-    
+    suspend fun cloneBindingsFromCharacterCard(sourceCharacterCardId: String, targetCharacterCardId: String) {
+        try {
+            userPreferencesManager.cloneThemeBetweenCharacterCards(sourceCharacterCardId, targetCharacterCardId)
+        } catch (e: Exception) {
+            AppLogger.e("CharacterCardManager", "克隆角色卡主题配置失败", e)
+        }
+
+        try {
+            waifuPreferences.cloneWaifuSettingsBetweenCharacterCards(sourceCharacterCardId, targetCharacterCardId)
+        } catch (e: Exception) {
+            AppLogger.e("CharacterCardManager", "克隆角色卡Waifu配置失败", e)
+        }
+    }
+
     // 创建角色卡
     suspend fun createCharacterCard(card: CharacterCard): String {
         val id = if (card.isDefault) DEFAULT_CHARACTER_CARD_ID else UUID.randomUUID().toString()
