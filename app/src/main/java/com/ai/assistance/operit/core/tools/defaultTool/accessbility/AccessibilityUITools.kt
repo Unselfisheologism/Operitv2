@@ -717,7 +717,7 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
         }
     }
 
-    override suspend fun captureScreenshot(tool: AITool): Pair<String?, Pair<Int, Int>?> {
+    override suspend fun captureScreenshotToFile(tool: AITool): Pair<String?, Pair<Int, Int>?> {
         return try {
             val screenshotDir = File("/sdcard/Download/Operit/cleanOnExit")
             if (!screenshotDir.exists()) {
@@ -733,12 +733,6 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 return Pair(null, null)
             }
 
-            val imageId = ImagePoolManager.addImage(file.absolutePath)
-            if (imageId == "error") {
-                AppLogger.e(TAG, "captureScreenshotForAgent: failed to register image: ${file.absolutePath}")
-                return Pair(null, null)
-            }
-
             val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(file.absolutePath, options)
             val dimensions = if (options.outWidth > 0 && options.outHeight > 0) {
@@ -747,11 +741,15 @@ open class AccessibilityUITools(context: Context) : StandardUITools(context) {
                 null
             }
 
-            Pair("<link type=\"image\" id=\"$imageId\"></link>", dimensions)
+            Pair(file.absolutePath, dimensions)
         } catch (e: Exception) {
             AppLogger.e(TAG, "captureScreenshot via accessibility failed", e)
             Pair(null, null)
         }
+    }
+
+    override suspend fun captureScreenshot(tool: AITool): Pair<String?, Pair<Int, Int>?> {
+        return captureScreenshotToFile(tool)
     }
 
     private fun parseBounds(boundsString: String): android.graphics.Rect {

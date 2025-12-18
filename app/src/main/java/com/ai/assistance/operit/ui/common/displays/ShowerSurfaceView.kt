@@ -28,6 +28,8 @@ class ShowerSurfaceView @JvmOverloads constructor(
     private var attachJob: Job? = null
 
     init {
+        setZOrderOnTop(true)
+        holder.setFormat(android.graphics.PixelFormat.TRANSPARENT)
         holder.addCallback(this)
     }
 

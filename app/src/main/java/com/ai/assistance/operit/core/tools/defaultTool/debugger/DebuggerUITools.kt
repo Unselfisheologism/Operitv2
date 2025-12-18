@@ -1,5 +1,6 @@
 package com.ai.assistance.operit.core.tools.defaultTool.debugger
 
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -481,7 +482,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
     override suspend fun captureScreenshot(tool: AITool): Pair<String?, Pair<Int, Int>?> {
         // For debugger/ADB-level tools, reuse the standard shell-based screenshot implementation.
-        return captureScreenshotInternal(tool)
+        return captureScreenshotToFile(tool)
     }
 
     /** 使用Shell命令获取页面信息 */
@@ -1029,6 +1030,7 @@ open class DebuggerUITools(context: Context) : AccessibilityUITools(context) {
 
 
     /** 使用uiautomator点击元素 */
+    @SuppressLint("SuspiciousIndentation")
     private suspend fun clickElementWithUiautomator(tool: AITool): ToolResult {
         AppLogger.d(TAG, "Using uiautomator to click element")
 

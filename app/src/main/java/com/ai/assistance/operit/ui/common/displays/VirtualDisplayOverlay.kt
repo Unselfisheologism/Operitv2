@@ -320,121 +320,109 @@ class VirtualDisplayOverlay private constructor(private val context: Context) {
         var overlaySize by remember { mutableStateOf(IntSize.Zero) }
         val snapped = isSnapped
 
-        if (snapped) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(id) {
-                        detectDragGestures { change, dragAmount ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .onSizeChanged { size -> overlaySize = size }
+                .pointerInput(id, isFullscreen, snapped) {
+                    if (snapped) {
+                        // Minimized: only drag and tap to restore are available
+                        detectDragGestures {
+                            change, dragAmount ->
                             change.consume()
                             moveWindowBy(dragAmount.x, dragAmount.y)
                         }
-                    }
-                    .pointerInput(id) {
-                        detectTapGestures(
-                            onTap = {
-                                isSnapped = false
-                                updateLayoutParams()
+                    } else if (isFullscreen) {
+                        var lastPoint: Pair<Int, Int>? = null
+                        detectDragGestures(
+                            onDragStart = { start ->
+                                val pt = mapOffsetToRemote(start, overlaySize, ShowerController.getVideoSize())
+                                if (pt != null) {
+                                    lastPoint = pt
+                                    kotlinx.coroutines.runBlocking { ShowerController.touchDown(pt.first, pt.second) }
+                                }
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                val pt = mapOffsetToRemote(change.position, overlaySize, ShowerController.getVideoSize())
+                                if (pt != null && pt != lastPoint) {
+                                    lastPoint = pt
+                                    kotlinx.coroutines.runBlocking { ShowerController.touchMove(pt.first, pt.second) }
+                                }
+                            },
+                            onDragEnd = {
+                                lastPoint?.let { pt ->
+                                    kotlinx.coroutines.runBlocking { ShowerController.touchUp(pt.first, pt.second) }
+                                }
+                                lastPoint = null
+                            },
+                            onDragCancel = {
+                                lastPoint?.let { pt ->
+                                    kotlinx.coroutines.runBlocking { ShowerController.touchUp(pt.first, pt.second) }
+                                }
+                                lastPoint = null
                             }
                         )
-                    },
+                    } else {
+                         detectDragGestures(
+                            onDragStart = { controlsVisible = true },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                moveWindowBy(dragAmount.x, dragAmount.y)
+                            }
+                        )
+                    }
+                }
+                .pointerInput(id, isFullscreen, overlaySize, snapped) {
+                    detectTapGestures(
+                        onTap = { offset ->
+                            if (snapped) {
+                                isSnapped = false
+                                updateLayoutParams()
+                            } else if (isFullscreen) {
+                                val pt = mapOffsetToRemote(offset, overlaySize, ShowerController.getVideoSize())
+                                if (pt != null) {
+                                    kotlinx.coroutines.runBlocking {
+                                        ShowerController.touchDown(pt.first, pt.second)
+                                        ShowerController.touchUp(pt.first, pt.second)
+                                    }
+                                }
+                            } else {
+                                controlsVisible = true
+                            }
+                        }
+                    )
+                }
+                .clip(if (snapped) CircleShape else RoundedCornerShape(0.dp))
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                ShowerSiriBall(
-                    onMove = { dx, dy -> moveWindowBy(dx, dy) },
-                    onClick = {
-                        isSnapped = false
-                        updateLayoutParams()
+                    var hasShowerDisplay by remember { mutableStateOf(ShowerController.getVideoSize() != null) }
+                    LaunchedEffect(Unit) {
+                        while (true) {
+                            val ready = ShowerController.getVideoSize() != null
+                            if (hasShowerDisplay != ready) {
+                                hasShowerDisplay = ready
+                            }
+                            delay(500)
+                        }
                     }
-                )
-            }
-        } else {
-            Card(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onSizeChanged { size -> overlaySize = size }
-                    .pointerInput(id, isFullscreen) {
-                        if (isFullscreen) {
-                            var lastPoint: Pair<Int, Int>? = null
-                            detectDragGestures(
-                                onDragStart = { start ->
-                                    val pt = mapOffsetToRemote(start, overlaySize, ShowerController.getVideoSize())
-                                    if (pt != null) {
-                                        lastPoint = pt
-                                        kotlinx.coroutines.runBlocking { ShowerController.touchDown(pt.first, pt.second) }
-                                    }
-                                },
-                                onDrag = { change, _ ->
-                                    change.consume()
-                                    val pt = mapOffsetToRemote(change.position, overlaySize, ShowerController.getVideoSize())
-                                    if (pt != null && pt != lastPoint) {
-                                        lastPoint = pt
-                                        kotlinx.coroutines.runBlocking { ShowerController.touchMove(pt.first, pt.second) }
-                                    }
-                                },
-                                onDragEnd = {
-                                    lastPoint?.let { pt ->
-                                        kotlinx.coroutines.runBlocking { ShowerController.touchUp(pt.first, pt.second) }
-                                    }
-                                    lastPoint = null
-                                },
-                                onDragCancel = {
-                                    lastPoint?.let { pt ->
-                                        kotlinx.coroutines.runBlocking { ShowerController.touchUp(pt.first, pt.second) }
-                                    }
-                                    lastPoint = null
+                    if (id == 0 && hasShowerDisplay) {
+                        AndroidView(
+                            modifier = if (snapped) Modifier.size(1.dp) else Modifier.fillMaxSize(),
+                            factory = { ctx -> ShowerSurfaceView(ctx) }
+                        )
+                        if (snapped) {
+                            ShowerSiriBall(
+                                onMove = { dx, dy -> moveWindowBy(dx, dy) },
+                                onClick = {
+                                    isSnapped = false
+                                    updateLayoutParams()
                                 }
                             )
                         } else {
-                             detectDragGestures(
-                                onDragStart = { controlsVisible = true },
-                                onDrag = { change, dragAmount ->
-                                    change.consume()
-                                    moveWindowBy(dragAmount.x, dragAmount.y)
-                                }
-                            )
-                        }
-                    }
-                    .pointerInput(id, isFullscreen, overlaySize) {
-                        detectTapGestures(
-                            onTap = { offset ->
-                                if (isFullscreen) {
-                                    val pt = mapOffsetToRemote(offset, overlaySize, ShowerController.getVideoSize())
-                                    if (pt != null) {
-                                        kotlinx.coroutines.runBlocking {
-                                            ShowerController.touchDown(pt.first, pt.second)
-                                            ShowerController.touchUp(pt.first, pt.second)
-                                        }
-                                    }
-                                } else {
-                                    controlsVisible = true
-                                }
-                            }
-                        )
-                    },
-                shape = RoundedCornerShape(0.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                        var hasShowerDisplay by remember { mutableStateOf(ShowerController.getVideoSize() != null) }
-                        LaunchedEffect(Unit) {
-                            while (true) {
-                                val ready = ShowerController.getVideoSize() != null
-                                if (hasShowerDisplay != ready) {
-                                    hasShowerDisplay = ready
-                                }
-                                delay(500)
-                            }
-                        }
-                        if (id == 0 && hasShowerDisplay) {
-                            AndroidView(
-                                modifier = Modifier.fillMaxSize(),
-                                factory = { ctx -> ShowerSurfaceView(ctx) }
-                            )
                             LaunchedEffect(controlsVisible) {
                                 if (controlsVisible) {
                                     delay(3000)
@@ -538,15 +526,15 @@ class VirtualDisplayOverlay private constructor(private val context: Context) {
                                     }
                                 }
                             }
-                        } else {
-                            Text(
-                                text = "Shower 虚拟屏尚未就绪",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                            )
                         }
+                    } else {
+                        Text(
+                            text = "Shower 虚拟屏尚未就绪",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
                     }
-            }
+                }
         }
     }
 
@@ -584,7 +572,8 @@ private fun RainbowStatusBorderOverlay() {
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val strokeWidth = size.minDimension * 0.025f
-            val innerCornerRadius = androidx.compose.ui.geometry.CornerRadius(0f, 0f)
+            // Match FloatingWindowManager.FullscreenRainbowStatusIndicator: outer rect + rounded inner rect
+            val innerCornerRadius = androidx.compose.ui.geometry.CornerRadius(strokeWidth * 1.5f, strokeWidth * 1.5f)
 
             val phase = animatedProgress * size.maxDimension
             val borderBrush = Brush.linearGradient(
@@ -629,7 +618,10 @@ private fun RainbowStatusBorderOverlay() {
                     val bandBottom = innerRoundRect.bottom - inset
                     if (bandRight <= bandLeft || bandBottom <= bandTop) break
 
-                    val bandCornerRadius = androidx.compose.ui.geometry.CornerRadius(0f, 0f)
+                    val bandCornerRadius = androidx.compose.ui.geometry.CornerRadius(
+                        (innerCornerRadius.x - inset).coerceAtLeast(0f),
+                        (innerCornerRadius.y - inset).coerceAtLeast(0f)
+                    )
 
                     drawRoundRect(
                         brush = borderBrush,

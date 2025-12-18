@@ -2,6 +2,7 @@ package com.ai.assistance.operit.core.application
 
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeUnit
 import com.ai.assistance.operit.BuildConfig
 import com.ai.assistance.operit.R
 import com.ai.assistance.operit.core.chat.AIMessageManager
+import com.ai.assistance.operit.api.chat.AIForegroundService
 import com.ai.assistance.operit.core.config.SystemPromptConfig
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.system.AndroidShellExecutor
@@ -95,6 +97,9 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
         // Initialize AIMessageManager
         AIMessageManager.initialize(this)
         AppLogger.d(TAG, "【启动计时】AIMessageManager初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+
+        startGlobalAIForegroundService()
+        AppLogger.d(TAG, "【启动计时】AIForegroundService 启动完成 - ${System.currentTimeMillis() - startTime}ms")
 
         // Initialize Embedding Service asynchronously in background
         // Using ONNX-based multilingual model for better Chinese support
@@ -257,6 +262,23 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
             .setMinimumLoggingLevel(if (BuildConfig.DEBUG) AppLogger.DEBUG else AppLogger.INFO)
             .build()
 
+    private fun startGlobalAIForegroundService() {
+        try {
+            if (!AIForegroundService.isRunning.get()) {
+                val intent = Intent(this, AIForegroundService::class.java).apply {
+                    putExtra(AIForegroundService.EXTRA_STATE, AIForegroundService.STATE_IDLE)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+            }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "启动 AIForegroundService 失败: ${e.message}", e)
+        }
+    }
+
     /** 初始化应用语言设置 */
     private fun initializeAppLanguage() {
         try {
@@ -337,6 +359,16 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
     override fun onTerminate() {
         super.onTerminate()
         
+        try {
+            if (AIForegroundService.isRunning.get()) {
+                val intent = Intent(applicationContext, AIForegroundService::class.java)
+                stopService(intent)
+                AppLogger.d(TAG, "应用终止，已停止 AIForegroundService")
+            }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "终止时停止 AIForegroundService 失败: ${e.message}", e)
+        }
+
         // 清理终端管理器和SSH连接
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -40,12 +40,16 @@ class AIForegroundService : Service() {
         const val EXTRA_CHARACTER_NAME = "extra_character_name"
         const val EXTRA_REPLY_CONTENT = "extra_reply_content"
         const val EXTRA_AVATAR_URI = "extra_avatar_uri"
+        const val EXTRA_STATE = "extra_state"
+        const val STATE_RUNNING = "running"
+        const val STATE_IDLE = "idle"
     }
     
     // 存储通知信息
     private var characterName: String? = null
     private var replyContent: String? = null
     private var avatarUri: String? = null
+    private var isAiBusy: Boolean = false
 
     override fun onCreate() {
         super.onCreate()
@@ -64,6 +68,16 @@ class AIForegroundService : Service() {
             replyContent = it.getStringExtra(EXTRA_REPLY_CONTENT)
             avatarUri = it.getStringExtra(EXTRA_AVATAR_URI)
             AppLogger.d(TAG, "收到通知数据 - 角色: $characterName, 内容长度: ${replyContent?.length}, 头像: $avatarUri")
+
+            val state = it.getStringExtra(EXTRA_STATE)
+            if (state != null) {
+                isAiBusy = state == STATE_RUNNING
+                val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                manager.notify(NOTIFICATION_ID, createNotification())
+                if (!isAiBusy) {
+                    sendReplyNotificationIfEnabled()
+                }
+            }
         }
         
         // 返回 START_NOT_STICKY 表示如果服务被杀死，系统不需要尝试重启它。
@@ -75,9 +89,6 @@ class AIForegroundService : Service() {
         super.onDestroy()
         isRunning.set(false)
         AppLogger.d(TAG, "AI 前台服务已销毁。")
-        
-        // 检查是否需要发送回复完成通知
-        sendReplyNotificationIfEnabled()
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -104,9 +115,14 @@ class AIForegroundService : Service() {
     private fun createNotification(): Notification {
         // 为了简单起见，使用一个安卓内置图标。
         // 在实际项目中，应替换为应用的自定义图标。
+        val contentText = if (isAiBusy) {
+            "AI 正在处理..."
+        } else {
+            "AI 处理完成"
+        }
         return NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("AI 助手")
-                .setContentText("正在处理您的请求...")
+                .setContentText(contentText)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setOngoing(true) // 使通知不可被用户清除

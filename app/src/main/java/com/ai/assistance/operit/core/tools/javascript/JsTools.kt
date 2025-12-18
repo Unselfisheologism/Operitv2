@@ -25,6 +25,11 @@ fun getJsToolsDefinition(): String {
                     }
                     return toolCall("read_file_full", params);
                 },
+                readBinary: (path, environment) => {
+                    const params = { path };
+                    if (environment) params.environment = environment;
+                    return toolCall("read_file_binary", params);
+                },
                 readPart: (path, startLine, endLine, environment) => {
                     const params = { path };
                     if (startLine !== undefined) params.start_line = String(startLine);

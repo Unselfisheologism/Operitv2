@@ -67,6 +67,13 @@ export namespace Files {
     function writeBinary(path: string, base64Content: string, environment?: FileEnvironment): Promise<FileOperationData>;
 
     /**
+     * Read binary file content as base64 string
+     * @param path - Path to file
+     * @param environment - Execution environment ("android" or "linux"), default "android"
+     */
+    function readBinary(path: string, environment?: FileEnvironment): Promise<string>;
+
+    /**
      * Delete a file or directory
      * @param path - Path to file or directory
      * @param recursive - Delete recursively

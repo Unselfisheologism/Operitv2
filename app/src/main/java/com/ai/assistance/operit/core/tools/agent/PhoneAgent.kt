@@ -19,6 +19,7 @@ import com.ai.assistance.operit.util.ImagePoolManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import java.util.Locale
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.view.KeyEvent
 import java.io.File
@@ -74,6 +75,7 @@ class PhoneAgent(
         }
     }
 
+
     /**
      * Run the agent to complete a task.
      *
@@ -102,14 +104,9 @@ class PhoneAgent(
             // Setup UI for agent run: hide window, then choose indicator based on whether Shower virtual display is active
             floatingService?.setFloatingWindowVisible(false)
             if (hasShowerDisplayAtStart) {
-                try {
-                    val overlay = VirtualDisplayOverlay.getInstance(context)
-                    overlay.setShowerBorderVisible(true)
-                } catch (e: Exception) {
-                    AppLogger.e("PhoneAgent", "Error enabling virtual display border indicator at start", e)
-                }
+                useShowerIndicatorForAgent(context)
             } else {
-                floatingService?.setStatusIndicatorVisible(true)
+                useFullscreenStatusIndicatorForAgent()
             }
             progressOverlay.show(
                 config.maxSteps,
@@ -147,13 +144,7 @@ class PhoneAgent(
             // Restore UI after agent run: show window, hide any indicators, hide progress
             pauseFlow = null
             floatingService?.setFloatingWindowVisible(true)
-            try {
-                val overlay = VirtualDisplayOverlay.getInstance(context)
-                overlay.setShowerBorderVisible(false)
-            } catch (e: Exception) {
-                AppLogger.e("PhoneAgent", "Error disabling virtual display border indicator", e)
-            }
-            floatingService?.setStatusIndicatorVisible(false)
+            clearAgentIndicators(context)
             progressOverlay.hide()
         }
     }
@@ -315,11 +306,38 @@ class PhoneAgent(
     }
 }
 
+private suspend fun useFullscreenStatusIndicatorForAgent() {
+    val floatingService = FloatingChatService.getInstance()
+    floatingService?.setStatusIndicatorVisible(true)
+}
+
+private suspend fun useShowerIndicatorForAgent(context: Context) {
+    try {
+        val overlay = VirtualDisplayOverlay.getInstance(context)
+        overlay.setShowerBorderVisible(true)
+    } catch (e: Exception) {
+        AppLogger.e("PhoneAgent", "Error enabling Shower border indicator", e)
+    }
+    val floatingService = FloatingChatService.getInstance()
+    floatingService?.setStatusIndicatorVisible(false)
+}
+
+private suspend fun clearAgentIndicators(context: Context) {
+    try {
+        val overlay = VirtualDisplayOverlay.getInstance(context)
+        overlay.setShowerBorderVisible(false)
+    } catch (e: Exception) {
+        AppLogger.e("PhoneAgent", "Error disabling Shower border indicator", e)
+    }
+    val floatingService = FloatingChatService.getInstance()
+    floatingService?.setStatusIndicatorVisible(false)
+}
+
 /** Handles the execution of parsed actions. */
 class ActionHandler(
     private val context: Context,
-    private var screenWidth: Int, // Changed to var
-    private var screenHeight: Int, // Changed to var,
+    private var screenWidth: Int,
+    private var screenHeight: Int,
     private val toolImplementations: ToolImplementations
 ) {
     data class ActionExecResult(
@@ -356,17 +374,18 @@ class ActionHandler(
         return ShowerUsageContext(isAdbOrHigher = isAdbOrHigher, showerDisplayId = showerId)
     }
 
-        suspend fun captureScreenshotForAgent(): String? {
+    suspend fun captureScreenshotForAgent(): String? {
         val floatingService = FloatingChatService.getInstance()
         val progressOverlay = UIAutomationProgressOverlay.getInstance(context)
+
+        val showerCtx = resolveShowerUsageContext()
 
         try {
             // Hide UI elements for the screenshot
             floatingService?.setStatusIndicatorVisible(false)
             progressOverlay.setOverlayVisible(false)
-            delay(50) // Give UI time to update
+            delay(200) // Give UI time to update
 
-            val showerCtx = resolveShowerUsageContext()
             var screenshotLink: String? = null
             var dimensions: Pair<Int, Int>? = null
 
@@ -380,9 +399,20 @@ class ActionHandler(
             // 如果 Shower 截图不可用，则回退到工具层的通用截图实现
             if (screenshotLink == null) {
                 val screenshotTool = buildScreenshotTool()
-                val (fallbackLink, fallbackDims) = toolImplementations.captureScreenshot(screenshotTool)
-                screenshotLink = fallbackLink
-                dimensions = fallbackDims
+                val (filePath, fallbackDims) = toolImplementations.captureScreenshot(screenshotTool)
+                if (filePath != null) {
+                    val bitmap = BitmapFactory.decodeFile(filePath)
+                    if (bitmap != null) {
+                        val (compressedLink, _) = saveCompressedScreenshotFromBitmap(bitmap)
+                        screenshotLink = compressedLink
+                        dimensions = fallbackDims
+                        bitmap.recycle()
+                    } else {
+                        AppLogger.e("ActionHandler", "Failed to decode screenshot file: $filePath")
+                    }
+                } else {
+                    AppLogger.e("ActionHandler", "Fallback screenshot tool returned no file path")
+                }
             }
 
             if (dimensions != null) {
@@ -393,7 +423,9 @@ class ActionHandler(
             return screenshotLink
         } finally {
             // Restore UI elements after the screenshot
-            floatingService?.setStatusIndicatorVisible(true)
+            if (!showerCtx.hasShowerDisplay) {
+                floatingService?.setStatusIndicatorVisible(true)
+            }
             progressOverlay.setOverlayVisible(true)
         }
     }
@@ -412,32 +444,52 @@ class ActionHandler(
                 AppLogger.w("ActionHandler", "Shower WS screenshot returned no data")
                 Pair(null, null)
             } else {
-                val screenshotDir = File("/sdcard/Download/Operit/cleanOnExit")
-                if (!screenshotDir.exists()) {
-                    screenshotDir.mkdirs()
-                }
-
-                val shortName = System.currentTimeMillis().toString().takeLast(4)
-                val file = File(screenshotDir, "$shortName.png")
-                FileOutputStream(file).use { it.write(pngBytes) }
-
-                val imageId = ImagePoolManager.addImage(file.absolutePath)
-                if (imageId == "error") {
-                    AppLogger.e("ActionHandler", "Shower screenshot: failed to register image: ${file.absolutePath}")
+                val bitmap = BitmapFactory.decodeByteArray(pngBytes, 0, pngBytes.size)
+                if (bitmap == null) {
+                    AppLogger.e("ActionHandler", "Shower screenshot: failed to decode PNG bytes")
                     Pair(null, null)
                 } else {
-                    val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeFile(file.absolutePath, options)
-                    val dimensions = if (options.outWidth > 0 && options.outHeight > 0) {
-                        Pair(options.outWidth, options.outHeight)
-                    } else {
-                        null
-                    }
-                    Pair("<link type=\"image\" id=\"$imageId\"></link>", dimensions)
+                    val result = saveCompressedScreenshotFromBitmap(bitmap)
+                    bitmap.recycle()
+                    result
                 }
             }
         } catch (e: Exception) {
             AppLogger.e("ActionHandler", "Shower screenshot failed", e)
+            Pair(null, null)
+        }
+    }
+
+    private fun saveCompressedScreenshotFromBitmap(bitmap: Bitmap): Pair<String?, Pair<Int, Int>?> {
+        return try {
+            val width = bitmap.width
+            val height = bitmap.height
+
+            val screenshotDir = File("/sdcard/Download/Operit/cleanOnExit")
+            if (!screenshotDir.exists()) {
+                screenshotDir.mkdirs()
+            }
+
+            val shortName = System.currentTimeMillis().toString().takeLast(4)
+            val file = File(screenshotDir, "$shortName.jpg")
+
+            FileOutputStream(file).use { outputStream ->
+                val ok = bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                if (!ok) {
+                    AppLogger.e("ActionHandler", "Shower screenshot: JPEG compression failed for ${file.absolutePath}")
+                    return Pair(null, null)
+                }
+            }
+
+            val imageId = ImagePoolManager.addImage(file.absolutePath)
+            if (imageId == "error") {
+                AppLogger.e("ActionHandler", "Shower screenshot: failed to register image: ${file.absolutePath}")
+                Pair(null, null)
+            } else {
+                Pair("<link type=\"image\" id=\"$imageId\"></link>", Pair(width, height))
+            }
+        } catch (e: Exception) {
+            AppLogger.e("ActionHandler", "Error saving compressed screenshot", e)
             Pair(null, null)
         }
     }
@@ -454,51 +506,54 @@ class ActionHandler(
         }
     }
 
-        suspend fun executeAgentAction(parsed: ParsedAgentAction): ActionExecResult {
+    suspend fun executeAgentAction(parsed: ParsedAgentAction): ActionExecResult {
         val actionName = parsed.actionName ?: return fail(message = "Missing action name")
         val fields = parsed.fields
 
         val showerCtx = resolveShowerUsageContext()
         return when (actionName) {
-                "Launch" -> {
-                    val app = fields["app"]?.takeIf { it.isNotBlank() } ?: return fail(message = "No app name specified for Launch")
-                    val packageName = resolveAppPackageName(app)
-                    try {
-                        if (showerCtx.isAdbOrHigher) {
-                            // High-privilege path: use Shower server + virtual display.
-                            ensureVirtualDisplayIfAdbOrHigher()
+            "Launch" -> {
+                val app = fields["app"]?.takeIf { it.isNotBlank() } ?: return fail(message = "No app name specified for Launch")
+                val packageName = resolveAppPackageName(app)
+                try {
+                    if (showerCtx.isAdbOrHigher) {
+                        // High-privilege path: use Shower server + virtual display.
+                        ensureVirtualDisplayIfAdbOrHigher()
 
-                            val metrics = context.resources.displayMetrics
-                            val width = metrics.widthPixels
-                            val height = metrics.heightPixels
-                            val dpi = metrics.densityDpi
+                        val metrics = context.resources.displayMetrics
+                        val width = metrics.widthPixels
+                        val height = metrics.heightPixels
+                        val dpi = metrics.densityDpi
 
-                            // 提升 Shower 虚拟屏幕的视频码率，改善画质与文字清晰度
-                            val created = ShowerController.ensureDisplay(width, height, dpi, bitrateKbps = 6000)
-                            val launched = if (created) ShowerController.launchApp(packageName) else false
+                        // 提升 Shower 虚拟屏幕的视频码率，改善画质与文字清晰度
+                        val created = ShowerController.ensureDisplay(width, height, dpi, bitrateKbps = 6000)
+                        val launched = if (created) ShowerController.launchApp(packageName) else false
 
-                            if (created && launched) {
-                                ok()
-                            } else {
-                                fail(message = "Failed to launch app on Shower virtual display: $packageName")
-                            }
+                        if (created && launched) {
+                            // 成功在虚拟屏小窗启动后，切换到 Shower 边框指示并关闭全屏指示
+                            useShowerIndicatorForAgent(context)
+                            ok()
                         } else {
-                            // Fallback: legacy startApp on main display.
-                            val systemTools = ToolGetter.getSystemOperationTools(context)
-                            val result = systemTools.startApp(AITool("start_app", listOf(ToolParameter("package_name", packageName))))
-                            if (result.success) {
-                                ok()
-                            } else {
-                                fail(message = result.error ?: "Failed to launch app: $packageName")
-                            }
+                            fail(message = "Failed to launch app on Shower virtual display: $packageName")
                         }
-                    } catch (e: Exception) {
-                        fail(message = "Exception while launching app $packageName: ${e.message}")
+                    } else {
+                        // Fallback: legacy startApp on main display.
+                        val systemTools = ToolGetter.getSystemOperationTools(context)
+                        val result = systemTools.startApp(AITool("start_app", listOf(ToolParameter("package_name", packageName))))
+                        if (result.success) {
+                            ok()
+                        } else {
+                            fail(message = result.error ?: "Failed to launch app: $packageName")
+                        }
                     }
+                } catch (e: Exception) {
+                    fail(message = "Exception while launching app $packageName: ${e.message}")
                 }
-                "Tap" -> {
-                    val element = fields["element"] ?: return fail(message = "No element for Tap")
-                    val (x, y) = parseRelativePoint(element) ?: return fail(message = "Invalid coordinates for Tap: $element")
+            }
+            "Tap" -> {
+                val element = fields["element"] ?: return fail(message = "No element for Tap")
+                val (x, y) = parseRelativePoint(element) ?: return fail(message = "Invalid coordinates for Tap: $element")
+                withAgentUiHiddenForAction(showerCtx) {
                     if (showerCtx.canUseShowerForInput) {
                         val okTap = ShowerController.tap(x, y)
                         if (okTap) ok() else fail(message = "Shower TAP failed at ($x,$y)")
@@ -513,17 +568,21 @@ class ActionHandler(
                         if (result.success) ok() else fail(message = result.error ?: "Tap failed at ($x,$y)")
                     }
                 }
-                "Type" -> {
-                    val text = fields["text"] ?: ""
+            }
+            "Type" -> {
+                val text = fields["text"] ?: ""
+                withAgentUiHiddenForAction(showerCtx) {
                     val params = withDisplayParam(listOf(ToolParameter("text", text)))
                     val result = toolImplementations.setInputText(AITool("set_input_text", params))
                     if (result.success) ok() else fail(message = result.error ?: "Set input text failed")
                 }
-                "Swipe" -> {
-                    val start = fields["start"] ?: return fail(message = "Missing swipe start")
-                    val end = fields["end"] ?: return fail(message = "Missing swipe end")
-                    val (sx, sy) = parseRelativePoint(start) ?: return fail(message = "Invalid swipe start: $start")
-                    val (ex, ey) = parseRelativePoint(end) ?: return fail(message = "Invalid swipe end: $end")
+            }
+            "Swipe" -> {
+                val start = fields["start"] ?: return fail(message = "Missing swipe start")
+                val end = fields["end"] ?: return fail(message = "Missing swipe end")
+                val (sx, sy) = parseRelativePoint(start) ?: return fail(message = "Invalid swipe start: $start")
+                val (ex, ey) = parseRelativePoint(end) ?: return fail(message = "Invalid swipe end: $end")
+                withAgentUiHiddenForAction(showerCtx) {
                     if (showerCtx.canUseShowerForInput) {
                         val okSwipe = ShowerController.swipe(sx, sy, ex, ey)
                         if (okSwipe) ok() else fail(message = "Shower SWIPE failed")
@@ -540,7 +599,9 @@ class ActionHandler(
                         if (result.success) ok() else fail(message = result.error ?: "Swipe failed")
                     }
                 }
-                "Back" -> {
+            }
+            "Back" -> {
+                withAgentUiHiddenForAction(showerCtx) {
                     if (showerCtx.canUseShowerForInput) {
                         val okKey = ShowerController.key(KeyEvent.KEYCODE_BACK)
                         if (okKey) ok() else fail(message = "Shower BACK key failed")
@@ -550,7 +611,9 @@ class ActionHandler(
                         if (result.success) ok() else fail(message = result.error ?: "Back key failed")
                     }
                 }
-                "Home" -> {
+            }
+            "Home" -> {
+                withAgentUiHiddenForAction(showerCtx) {
                     if (showerCtx.canUseShowerForInput) {
                         val okKey = ShowerController.key(KeyEvent.KEYCODE_HOME)
                         if (okKey) ok() else fail(message = "Shower HOME key failed")
@@ -560,14 +623,34 @@ class ActionHandler(
                         if (result.success) ok() else fail(message = result.error ?: "Home key failed")
                     }
                 }
-                "Wait" -> {
-                    val seconds = fields["duration"]?.replace("seconds", "")?.trim()?.toDoubleOrNull() ?: 1.0
-                    delay((seconds * 1000).toLong().coerceAtLeast(0L))
-                    ok()
-                }
-                "Take_over" -> ok(shouldFinish = true, message = fields["message"] ?: "User takeover required")
-                else -> fail(message = "Unknown action: $actionName")
             }
+            "Wait" -> {
+                val seconds = fields["duration"]?.replace("seconds", "")?.trim()?.toDoubleOrNull() ?: 1.0
+                delay((seconds * 1000).toLong().coerceAtLeast(0L))
+                ok()
+            }
+            "Take_over" -> ok(shouldFinish = true, message = fields["message"] ?: "User takeover required")
+            else -> fail(message = "Unknown action: $actionName")
+        }
+    }
+
+    private suspend fun withAgentUiHiddenForAction(
+        showerCtx: ShowerUsageContext,
+        block: suspend () -> ActionExecResult
+    ): ActionExecResult {
+        val floatingService = FloatingChatService.getInstance()
+        val progressOverlay = UIAutomationProgressOverlay.getInstance(context)
+        try {
+            floatingService?.setStatusIndicatorVisible(false)
+            progressOverlay.setOverlayVisible(false)
+            delay(200)
+            return block()
+        } finally {
+            if (!showerCtx.hasShowerDisplay) {
+                floatingService?.setStatusIndicatorVisible(true)
+            }
+            progressOverlay.setOverlayVisible(true)
+        }
     }
 
     private suspend fun ensureVirtualDisplayIfAdbOrHigher() {
@@ -588,20 +671,12 @@ class ActionHandler(
             val ok = ShowerServerManager.ensureServerStarted(context)
             if (ok) {
                 // We do not know the concrete display id from here yet, but we still show the overlay
-                // to indicate that a virtual display session is active, and switch indicators to the
-                // virtual display border instead of the fullscreen floating window indicator.
+                // to indicate that a virtual display session is active.
                 try {
                     val overlay = VirtualDisplayOverlay.getInstance(context)
                     overlay.show(0)
-                    overlay.setShowerBorderVisible(true)
                 } catch (e: Exception) {
                     AppLogger.e("ActionHandler", "Error showing Shower virtual display overlay", e)
-                }
-                try {
-                    val floatingService = FloatingChatService.getInstance()
-                    floatingService?.setStatusIndicatorVisible(false)
-                } catch (e: Exception) {
-                    AppLogger.e("ActionHandler", "Error hiding fullscreen status indicator after starting Shower virtual display", e)
                 }
                 AppLogger.d("ActionHandler", "Shower virtual display server started via AndroidShellExecutor")
             } else {
@@ -653,5 +728,5 @@ interface ToolImplementations {
     suspend fun setInputText(tool: AITool): ToolResult
     suspend fun swipe(tool: AITool): ToolResult
     suspend fun pressKey(tool: AITool): ToolResult
-    suspend fun captureScreenshot(tool: AITool): Pair<String?, Pair<Int, Int>?>
+    suspend fun captureScreenshot(tool: AITool): Pair<String?, Pair<Int, Int>?> // Returns filePath, not link
 }

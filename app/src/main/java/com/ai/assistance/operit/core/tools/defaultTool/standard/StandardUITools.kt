@@ -502,7 +502,7 @@ open class StandardUITools(protected val context: Context) : ToolImplementations
         return FunctionalPrompts.UI_AUTOMATION_AGENT_PROMPT.replace("{{current_date}}", formattedDate)
     }
 
-    protected suspend fun captureScreenshotInternal(tool: AITool): Pair<String?, Pair<Int, Int>?> {
+    protected open suspend fun captureScreenshotToFile(tool: AITool): Pair<String?, Pair<Int, Int>?> {
         return try {
             // Keep path consistent with automatic_ui_base.* so cleanup logic can be shared.
             val screenshotDir = File("/sdcard/Download/Operit/cleanOnExit")
@@ -536,28 +536,22 @@ open class StandardUITools(protected val context: Context) : ToolImplementations
                 }
             }
 
-            val imageId = ImagePoolManager.addImage(file.absolutePath)
-            if (imageId == "error") {
-                AppLogger.e(TAG, "captureScreenshotForAgent: failed to register image: ${file.absolutePath}")
-                return Pair(null, null)
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeFile(file.absolutePath, options)
+            val dimensions = if (options.outWidth > 0 && options.outHeight > 0) {
+                Pair(options.outWidth, options.outHeight)
             } else {
-                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeFile(file.absolutePath, options)
-                val dimensions = if (options.outWidth > 0 && options.outHeight > 0) {
-                    Pair(options.outWidth, options.outHeight)
-                } else {
-                    null
-                }
-                return Pair("<link type=\"image\" id=\"$imageId\"></link>", dimensions)
+                null
             }
+            Pair(file.absolutePath, dimensions)
         } catch (e: Exception) {
-            AppLogger.e(TAG, "captureScreenshot failed", e)
-            return Pair(null, null)
+            AppLogger.e(TAG, "captureScreenshotToFile failed", e)
+            Pair(null, null)
         }
     }
 
     override suspend fun captureScreenshot(tool: AITool): Pair<String?, Pair<Int, Int>?> {
-        return captureScreenshotInternal(tool)
+        return captureScreenshotToFile(tool)
     }
 
 }

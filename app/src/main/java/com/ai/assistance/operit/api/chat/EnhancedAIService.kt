@@ -285,9 +285,6 @@ class EnhancedAIService private constructor(private val context: Context) {
     // private val conversationHistory = mutableListOf<Pair<String, String>>() // Moved to MessageExecutionContext
     // private val conversationMutex = Mutex() // Moved to MessageExecutionContext
 
-    // 为服务管理创建独立的Intent实例，避免重复创建
-    private val serviceIntent by lazy { Intent(context, AIForegroundService::class.java) }
-
     private var accumulatedInputTokenCount = 0
     private var accumulatedOutputTokenCount = 0
 
@@ -385,9 +382,9 @@ class EnhancedAIService private constructor(private val context: Context) {
             try {
                 // 确保所有操作都在IO线程上执行
                 withContext(Dispatchers.IO) {
-                    // 仅当会话首次启动时开启服务
+                    // 仅当会话首次启动时开启服务，并更新前台通知为“运行中”
                     if (!isSubTask) {
-                    startAiService()
+                        startAiService(characterName, avatarUri)
                     }
 
                     // Process the input message for any conversation markup (e.g., for AI planning)
@@ -1294,58 +1291,55 @@ class EnhancedAIService private constructor(private val context: Context) {
 
     // --- Service Lifecycle Management ---
 
-    /** 启动前台服务以保持应用活跃 */
-    private fun startAiService() {
-        if (!AIForegroundService.isRunning.get()) {
-            AppLogger.d(TAG, "请求启动AI前台服务...")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
+    /** 启动或更新前台服务为“AI 正在运行”状态，以保持应用活跃 */
+    private fun startAiService(characterName: String? = null, avatarUri: String? = null) {
+        runBlocking {
+            try {
+                val updateIntent = Intent(context, AIForegroundService::class.java).apply {
+                    putExtra(AIForegroundService.EXTRA_STATE, AIForegroundService.STATE_RUNNING)
+                    if (characterName != null) {
+                        putExtra(AIForegroundService.EXTRA_CHARACTER_NAME, characterName)
+                    }
+                    if (avatarUri != null) {
+                        putExtra(AIForegroundService.EXTRA_AVATAR_URI, avatarUri)
+                    }
+                }
+                context.startService(updateIntent)
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "更新AI前台服务为运行中状态失败: ${e.message}", e)
             }
-        } else {
-            AppLogger.d(TAG, "AI前台服务已在运行，无需重复启动。")
         }
-        
-        // 使用管理器来应用屏幕常亮设置
+
         ActivityLifecycleManager.checkAndApplyKeepScreenOn(true)
     }
 
-    /** 停止前台服务 */
+    /** 将前台服务更新为“空闲/已完成”状态，但不真正停止服务 */
     private fun stopAiService(characterName: String? = null, avatarUri: String? = null) {
         if (AIForegroundService.isRunning.get()) {
-            AppLogger.d(TAG, "请求停止AI前台服务...")
-            
-            // 准备通知数据
+            AppLogger.d(TAG, "更新AI前台服务为闲置状态...")
+
+            // 准备通知数据并切换为 IDLE 状态
             runBlocking {
                 try {
-                    // 将数据传递给服务
                     val stopIntent = Intent(context, AIForegroundService::class.java).apply {
                         putExtra(AIForegroundService.EXTRA_CHARACTER_NAME, characterName)
                         putExtra(AIForegroundService.EXTRA_REPLY_CONTENT, lastReplyContent)
                         putExtra(AIForegroundService.EXTRA_AVATAR_URI, avatarUri)
+                        putExtra(AIForegroundService.EXTRA_STATE, AIForegroundService.STATE_IDLE)
                     }
-                    
-                    AppLogger.d(TAG, "传递通知数据 - 角色: $characterName, 内容长度: ${lastReplyContent?.length}, 头像: $avatarUri")
-                    
-                    // 先发送更新的Intent，然后再停止服务
-                    // 注意：这里使用 startService 而不是 startForegroundService
-                    // 因为服务已经在前台运行，只需要更新数据，不需要重新调用 startForeground()
+
+                    AppLogger.d(TAG, "传递通知数据(空闲) - 角色: $characterName, 内容长度: ${lastReplyContent?.length}, 头像: $avatarUri")
+
+                    // 仅发送更新，不再真正停止前台服务
                     context.startService(stopIntent)
-                    
-                    // 稍微延迟后停止服务，确保数据已被接收
-                    delay(100)
-                    context.stopService(serviceIntent)
                 } catch (e: Exception) {
-                    AppLogger.e(TAG, "准备通知数据失败: ${e.message}", e)
-                    // 即使失败也要停止服务
-                    context.stopService(serviceIntent)
+                    AppLogger.e(TAG, "更新AI前台服务为闲置状态失败: ${e.message}", e)
                 }
             }
         } else {
-            AppLogger.d(TAG, "AI前台服务未在运行，无需重复停止。")
+            AppLogger.d(TAG, "AI前台服务未在运行，无需更新闲置状态。")
         }
-        
+
         // 使用管理器来恢复屏幕常亮设置
         ActivityLifecycleManager.checkAndApplyKeepScreenOn(false)
     }
