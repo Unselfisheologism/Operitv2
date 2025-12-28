@@ -194,4 +194,16 @@ class MultiServiceManager(private val context: Context) {
         return config.enableDirectImageProcessing
     }
 
+    suspend fun hasAudioRecognitionConfigured(): Boolean {
+        val configMapping = functionalConfigManager.getConfigMappingForFunction(FunctionType.AUDIO_RECOGNITION)
+        val config = modelConfigManager.getModelConfigFlow(configMapping.configId).first()
+        return config.enableDirectAudioProcessing
+    }
+
+    suspend fun hasVideoRecognitionConfigured(): Boolean {
+        val configMapping = functionalConfigManager.getConfigMappingForFunction(FunctionType.VIDEO_RECOGNITION)
+        val config = modelConfigManager.getModelConfigFlow(configMapping.configId).first()
+        return config.enableDirectVideoProcessing
+    }
+
 }

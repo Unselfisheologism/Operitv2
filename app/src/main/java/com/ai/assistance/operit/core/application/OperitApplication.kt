@@ -39,6 +39,7 @@ import com.ai.assistance.operit.ui.features.chat.webview.workspace.editor.langua
 import com.ai.assistance.operit.util.GlobalExceptionHandler
 import com.ai.assistance.operit.util.ImagePoolManager
 import com.ai.assistance.operit.util.LocaleUtils
+import com.ai.assistance.operit.util.MediaPoolManager
 import com.ai.assistance.operit.util.SerializationSetup
 import com.ai.assistance.operit.util.TextSegmenter
 import com.ai.assistance.operit.util.WaifuMessageProcessor
@@ -112,7 +113,7 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
         }
 
         // Initialize ANR monitor
-        // AnrMonitor.start() // This line was removed from the new_code, so it's removed here.
+        // AnrMonitor.start()
 
         // 在所有其他初始化之前设置全局异常处理器
         Thread.setDefaultUncaughtExceptionHandler(GlobalExceptionHandler(this))
@@ -222,6 +223,10 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
         // 初始化图片池管理器，支持本地持久化缓存
         ImagePoolManager.initialize(filesDir)
         AppLogger.d(TAG, "【启动计时】图片池管理器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
+
+        // 初始化媒体池管理器（音频/视频），支持本地持久化缓存
+        MediaPoolManager.initialize(filesDir)
+        AppLogger.d(TAG, "【启动计时】媒体池管理器初始化完成 - ${System.currentTimeMillis() - startTime}ms")
         
         // 初始化AIToolHandler并注册默认工具
         val toolHandler = AIToolHandler.getInstance(this)

@@ -116,6 +116,10 @@ fun ModelApiSettingsSection(
     
     // 图片处理配置状态
     var enableDirectImageProcessingInput by remember(config.id) { mutableStateOf(config.enableDirectImageProcessing) }
+
+    var enableDirectAudioProcessingInput by remember(config.id) { mutableStateOf(config.enableDirectAudioProcessing) }
+
+    var enableDirectVideoProcessingInput by remember(config.id) { mutableStateOf(config.enableDirectVideoProcessing) }
     
     // Google Search Grounding 配置状态 (仅Gemini)
     var enableGoogleSearchInput by remember(config.id) { mutableStateOf(config.enableGoogleSearch) }
@@ -152,6 +156,16 @@ fun ModelApiSettingsSection(
             configManager.updateDirectImageProcessing(
                     configId = config.id,
                     enableDirectImageProcessing = enableDirectImageProcessingInput
+            )
+
+            configManager.updateDirectAudioProcessing(
+                configId = config.id,
+                enableDirectAudioProcessing = enableDirectAudioProcessingInput
+            )
+
+            configManager.updateDirectVideoProcessing(
+                configId = config.id,
+                enableDirectVideoProcessing = enableDirectVideoProcessingInput
             )
             
             // 更新 Google Search Grounding 配置 (仅Gemini)
@@ -549,6 +563,21 @@ fun ModelApiSettingsSection(
                             checked = enableDirectImageProcessingInput,
                             onCheckedChange = { enableDirectImageProcessingInput = it }
                     )
+            }
+
+            if (selectedApiProvider != ApiProviderType.MNN) {
+                SettingsSwitchRow(
+                    title = stringResource(R.string.enable_direct_audio_processing),
+                    subtitle = stringResource(R.string.enable_direct_audio_processing_desc),
+                    checked = enableDirectAudioProcessingInput,
+                    onCheckedChange = { enableDirectAudioProcessingInput = it }
+                )
+                SettingsSwitchRow(
+                    title = stringResource(R.string.enable_direct_video_processing),
+                    subtitle = stringResource(R.string.enable_direct_video_processing_desc),
+                    checked = enableDirectVideoProcessingInput,
+                    onCheckedChange = { enableDirectVideoProcessingInput = it }
+                )
             }
             
             // Google Search Grounding 开关 (仅Gemini支持)

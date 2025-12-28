@@ -37,7 +37,9 @@ import com.ai.assistance.operit.util.FileUtils
 import com.ai.assistance.operit.util.SyntaxCheckUtil
 import com.ai.assistance.operit.util.PathMapper
 import com.ai.assistance.operit.util.ImagePoolManager
+import com.ai.assistance.operit.util.MediaPoolManager
 import com.ai.assistance.operit.util.HttpMultiPartDownloader
+import com.ai.assistance.operit.util.FFmpegUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -69,7 +71,9 @@ open class StandardFileSystemTools(protected val context: Context) {
             "doc", "docx",      // Word documents
             "pdf",              // PDF documents
             "jpg", "jpeg",      // Image files
-            "png", "gif", "bmp"
+            "png", "gif", "bmp",
+            "mp3", "wav", "m4a", "aac", "flac", "ogg", "opus",
+            "mp4", "mkv", "mov", "webm", "avi", "m4v"
         )
     }
 
@@ -536,6 +540,180 @@ open class StandardFileSystemTools(protected val context: Context) {
                         error = ""
                     )
                 }
+            }
+
+            "mp3", "wav", "m4a", "aac", "flac", "ogg", "opus" -> {
+                val intent = tool.parameters.find { it.name == "intent" }?.value
+                val directAudio = tool.parameters.find { it.name == "direct_audio" }?.value?.toBoolean() ?: false
+
+                AppLogger.d(TAG, "Detected audio file, intent=${intent ?: "无"}, direct_audio=$directAudio")
+
+                if (directAudio) {
+                    try {
+                        val derivedMimeType =
+                            MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExt)
+                                ?: "audio/*"
+                        val audioId = MediaPoolManager.addMedia(path, derivedMimeType)
+                        if (audioId == "error") {
+                            AppLogger.e(TAG, "Failed to register audio for direct_audio, falling back to intent/info: $path")
+                        } else {
+                            val link = "<link type=\"audio\" id=\"$audioId\"></link>"
+                            AppLogger.d(TAG, "Generated audio link for direct_audio: $link")
+                            return ToolResult(
+                                toolName = tool.name,
+                                success = true,
+                                result = FileContentData(
+                                    path = path,
+                                    content = link,
+                                    size = link.length.toLong()
+                                ),
+                                error = ""
+                            )
+                        }
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "Error generating direct audio link, falling back to intent/info", e)
+                    }
+                }
+
+                if (!intent.isNullOrBlank()) {
+                    try {
+                        val enhancedService = com.ai.assistance.operit.api.chat.EnhancedAIService.getInstance(context)
+                        val analysisResult = kotlinx.coroutines.runBlocking {
+                            enhancedService.analyzeAudioWithIntent(path, intent)
+                        }
+
+                        return ToolResult(
+                            toolName = tool.name,
+                            success = true,
+                            result = FileContentData(
+                                path = path,
+                                content = analysisResult,
+                                size = analysisResult.length.toLong()
+                            ),
+                            error = ""
+                        )
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "音频识别模型调用失败，回退到媒体信息", e)
+                    }
+                }
+
+                val file = File(path)
+                val mediaInfo = FFmpegUtil.getMediaInfo(path)
+                val infoText = buildString {
+                    appendLine("Audio file info:")
+                    appendLine("- path: $path")
+                    appendLine("- size_bytes: ${file.length()}")
+                    appendLine("- extension: $fileExt")
+                    if (mediaInfo != null) {
+                        appendLine("- format: ${mediaInfo.format}")
+                        appendLine("- duration: ${mediaInfo.duration}")
+                        appendLine("- bitrate: ${mediaInfo.bitrate}")
+                        val streams = mediaInfo.streams
+                        if (!streams.isNullOrEmpty()) {
+                            val audioStreams = streams.filter { it.type.equals("audio", ignoreCase = true) }
+                            appendLine("- audio_streams: ${audioStreams.size}")
+                        }
+                    }
+                }.trim()
+
+                ToolResult(
+                    toolName = tool.name,
+                    success = true,
+                    result = FileContentData(
+                        path = path,
+                        content = infoText,
+                        size = infoText.length.toLong()
+                    ),
+                    error = ""
+                )
+            }
+
+            "mp4", "mkv", "mov", "webm", "avi", "m4v" -> {
+                val intent = tool.parameters.find { it.name == "intent" }?.value
+                val directVideo = tool.parameters.find { it.name == "direct_video" }?.value?.toBoolean() ?: false
+
+                AppLogger.d(TAG, "Detected video file, intent=${intent ?: "无"}, direct_video=$directVideo")
+
+                if (directVideo) {
+                    try {
+                        val derivedMimeType =
+                            MimeTypeMap.getSingleton().getMimeTypeFromExtension(fileExt)
+                                ?: "video/*"
+                        val videoId = MediaPoolManager.addMedia(path, derivedMimeType)
+                        if (videoId == "error") {
+                            AppLogger.e(TAG, "Failed to register video for direct_video, falling back to intent/info: $path")
+                        } else {
+                            val link = "<link type=\"video\" id=\"$videoId\"></link>"
+                            AppLogger.d(TAG, "Generated video link for direct_video: $link")
+                            return ToolResult(
+                                toolName = tool.name,
+                                success = true,
+                                result = FileContentData(
+                                    path = path,
+                                    content = link,
+                                    size = link.length.toLong()
+                                ),
+                                error = ""
+                            )
+                        }
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "Error generating direct video link, falling back to intent/info", e)
+                    }
+                }
+
+                if (!intent.isNullOrBlank()) {
+                    try {
+                        val enhancedService = com.ai.assistance.operit.api.chat.EnhancedAIService.getInstance(context)
+                        val analysisResult = kotlinx.coroutines.runBlocking {
+                            enhancedService.analyzeVideoWithIntent(path, intent)
+                        }
+
+                        return ToolResult(
+                            toolName = tool.name,
+                            success = true,
+                            result = FileContentData(
+                                path = path,
+                                content = analysisResult,
+                                size = analysisResult.length.toLong()
+                            ),
+                            error = ""
+                        )
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "视频识别模型调用失败，回退到媒体信息", e)
+                    }
+                }
+
+                val file = File(path)
+                val mediaInfo = FFmpegUtil.getMediaInfo(path)
+                val infoText = buildString {
+                    appendLine("Video file info:")
+                    appendLine("- path: $path")
+                    appendLine("- size_bytes: ${file.length()}")
+                    appendLine("- extension: $fileExt")
+                    if (mediaInfo != null) {
+                        appendLine("- format: ${mediaInfo.format}")
+                        appendLine("- duration: ${mediaInfo.duration}")
+                        appendLine("- bitrate: ${mediaInfo.bitrate}")
+                        val streams = mediaInfo.streams
+                        if (!streams.isNullOrEmpty()) {
+                            val videoStreams = streams.filter { it.type.equals("video", ignoreCase = true) }
+                            val audioStreams = streams.filter { it.type.equals("audio", ignoreCase = true) }
+                            appendLine("- video_streams: ${videoStreams.size}")
+                            appendLine("- audio_streams: ${audioStreams.size}")
+                        }
+                    }
+                }.trim()
+
+                ToolResult(
+                    toolName = tool.name,
+                    success = true,
+                    result = FileContentData(
+                        path = path,
+                        content = infoText,
+                        size = infoText.length.toLong()
+                    ),
+                    error = ""
+                )
             }
 
             else -> null

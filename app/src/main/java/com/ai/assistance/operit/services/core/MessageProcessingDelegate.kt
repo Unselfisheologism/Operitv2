@@ -173,6 +173,8 @@ class MessageProcessingDelegate(
             val configId = functionalConfigManager.getConfigIdForFunction(FunctionType.CHAT)
             val currentModelConfig = modelConfigManager.getModelConfigFlow(configId).first()
             val enableDirectImageProcessing = currentModelConfig.enableDirectImageProcessing
+            val enableDirectAudioProcessing = currentModelConfig.enableDirectAudioProcessing
+            val enableDirectVideoProcessing = currentModelConfig.enableDirectVideoProcessing
             AppLogger.d(TAG, "直接图片处理状态: $enableDirectImageProcessing (配置ID: $configId)")
 
             // 1. 使用 AIMessageManager 构建最终消息
@@ -183,7 +185,9 @@ class MessageProcessingDelegate(
                 enableWorkspaceAttachment,
                 workspacePath,
                 replyToMessage,
-                enableDirectImageProcessing
+                enableDirectImageProcessing,
+                enableDirectAudioProcessing,
+                enableDirectVideoProcessing
             )
 
             // 自动继续且原本消息为空时，不添加到聊天历史（虽然会发送"继续"给AI）

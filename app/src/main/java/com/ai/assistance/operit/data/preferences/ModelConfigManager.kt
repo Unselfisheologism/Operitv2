@@ -383,6 +383,20 @@ class ModelConfigManager(private val context: Context) {
         return updatedConfig
     }
 
+    suspend fun updateDirectAudioProcessing(configId: String, enableDirectAudioProcessing: Boolean): ModelConfigData {
+        val config = getModelConfigFlow(configId).first()
+        val updatedConfig = config.copy(enableDirectAudioProcessing = enableDirectAudioProcessing)
+        saveConfigToDataStore(updatedConfig)
+        return updatedConfig
+    }
+
+    suspend fun updateDirectVideoProcessing(configId: String, enableDirectVideoProcessing: Boolean): ModelConfigData {
+        val config = getModelConfigFlow(configId).first()
+        val updatedConfig = config.copy(enableDirectVideoProcessing = enableDirectVideoProcessing)
+        saveConfigToDataStore(updatedConfig)
+        return updatedConfig
+    }
+
     // 更新 Google Search Grounding 配置 (仅Gemini支持)
     suspend fun updateGoogleSearch(configId: String, enableGoogleSearch: Boolean): ModelConfigData {
         val config = getModelConfigFlow(configId).first()

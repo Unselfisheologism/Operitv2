@@ -22,6 +22,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import com.ai.assistance.operit.api.chat.llmprovider.MediaLinkParser
 
 /**
  * OpenAI API格式的实现，支持标准OpenAI接口和兼容此格式的其他提供商
@@ -70,6 +71,8 @@ open class OpenAIProvider(
     private val customHeaders: Map<String, String> = emptyMap(),
     private val providerType: ApiProviderType = ApiProviderType.OPENAI,
     protected val supportsVision: Boolean = false, // 是否支持图片处理
+    protected val supportsAudio: Boolean = false, // 是否支持音频输入
+    protected val supportsVideo: Boolean = false, // 是否支持视频输入
     val enableToolCall: Boolean = false // 是否启用Tool Call接口
 ) : AIService {
     // private val client: OkHttpClient = HttpClientFactory.instance
@@ -162,6 +165,12 @@ open class OpenAIProvider(
                     is String -> {
                         if (value.startsWith("data:") && value.contains(";base64,")) {
                             obj.put(key, "[image base64 omitted, length=${value.length}]")
+                        } else if (
+                            key == "data" &&
+                                value.length > 256 &&
+                                value.all { it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' || it == '\n' || it == '\r' }
+                        ) {
+                            obj.put(key, "[base64 omitted, length=${value.length}]")
                         }
                     }
                 }
@@ -355,27 +364,90 @@ open class OpenAIProvider(
      * @return 纯文本字符串或包含图片和文本的JSONArray
      */
     fun buildContentField(text: String): Any {
-        // 如果模型不支持图片，移除所有图片链接，只保留文本
-        if (!supportsVision) {
-            if (ImageLinkParser.hasImageLinks(text)) {
-                val textWithoutLinks = ImageLinkParser.removeImageLinks(text).trim()
-                AppLogger.w(
-                    "AIService",
-                    "模型不支持图片处理，已移除图片链接。原始文本长度: ${text.length}, 处理后: ${textWithoutLinks.length}"
-                )
-                return if (textWithoutLinks.isEmpty()) "[图片内容已省略，当前模型不支持图片处理]" else textWithoutLinks
-            }
-            return text
+        val hasImages = ImageLinkParser.hasImageLinks(text)
+        val hasMedia = MediaLinkParser.hasMediaLinks(text)
+
+        val mediaLinks = if (hasMedia) MediaLinkParser.extractMediaLinks(text) else emptyList()
+        val imageLinks = if (hasImages) ImageLinkParser.extractImageLinks(text) else emptyList()
+
+        val audioLinks = mediaLinks.filter { it.type == "audio" }
+        val videoLinks = mediaLinks.filter { it.type == "video" }
+
+        val hasSupportedMedia =
+            (supportsAudio && audioLinks.isNotEmpty()) || (supportsVideo && videoLinks.isNotEmpty())
+
+        var textWithoutLinks = text
+        if (hasMedia) {
+            textWithoutLinks = MediaLinkParser.removeMediaLinks(textWithoutLinks)
+        }
+        if (hasImages) {
+            textWithoutLinks = ImageLinkParser.removeImageLinks(textWithoutLinks)
+        }
+        textWithoutLinks = textWithoutLinks.trim()
+
+        if (audioLinks.isNotEmpty() && !supportsAudio) {
+            AppLogger.w("AIService", "检测到音频链接，但当前Provider不支持音频多模态输入，已移除音频。原始文本长度: ${text.length}, 处理后: ${textWithoutLinks.length}")
+        }
+        if (videoLinks.isNotEmpty() && !supportsVideo) {
+            AppLogger.w("AIService", "检测到视频链接，但当前Provider不支持视频多模态输入，已移除视频。原始文本长度: ${text.length}, 处理后: ${textWithoutLinks.length}")
+        }
+        if (imageLinks.isNotEmpty() && !supportsVision) {
+            AppLogger.w("AIService", "检测到图片链接，但当前Provider不支持图片处理，已移除图片。原始文本长度: ${text.length}, 处理后: ${textWithoutLinks.length}")
         }
 
-        // 模型支持图片，正常处理图片链接
-        if (ImageLinkParser.hasImageLinks(text)) {
-            val imageLinks = ImageLinkParser.extractImageLinks(text)
-            val textWithoutLinks = ImageLinkParser.removeImageLinks(text).trim()
+        val hasAnySupportedRichContent = hasSupportedMedia || (supportsVision && imageLinks.isNotEmpty())
+        if (!hasAnySupportedRichContent) {
+            if (textWithoutLinks.isNotEmpty()) return textWithoutLinks
 
-            val contentArray = JSONArray()
+            return when {
+                audioLinks.isNotEmpty() || videoLinks.isNotEmpty() -> "[音视频内容已省略，当前模型不支持音视频处理]"
+                imageLinks.isNotEmpty() -> "[图片内容已省略，当前模型不支持图片处理]"
+                else -> "[Empty]"
+            }
+        }
 
-            // 添加图片
+        val contentArray = JSONArray()
+
+        fun audioFormatFromMime(mimeType: String): String {
+            return when (mimeType.lowercase()) {
+                "audio/wav", "audio/x-wav" -> "wav"
+                "audio/mpeg", "audio/mp3" -> "mp3"
+                "audio/ogg" -> "ogg"
+                "audio/webm" -> "webm"
+                else -> mimeType.substringAfter("/", "wav")
+            }
+        }
+
+        if (supportsAudio) {
+            audioLinks.forEach { link ->
+                contentArray.put(JSONObject().apply {
+                    put("type", "input_audio")
+                    put(
+                        "input_audio",
+                        JSONObject().apply {
+                            put("data", link.base64Data)
+                            put("format", audioFormatFromMime(link.mimeType))
+                        }
+                    )
+                })
+            }
+        }
+
+        if (supportsVideo) {
+            videoLinks.forEach { link ->
+                contentArray.put(JSONObject().apply {
+                    put("type", "video_url")
+                    put(
+                        "video_url",
+                        JSONObject().apply {
+                            put("url", "data:${link.mimeType};base64,${link.base64Data}")
+                        }
+                    )
+                })
+            }
+        }
+
+        if (supportsVision) {
             imageLinks.forEach { link ->
                 contentArray.put(JSONObject().apply {
                     put("type", "image_url")
@@ -384,20 +456,16 @@ open class OpenAIProvider(
                     })
                 })
             }
-
-            // 添加文本（如果有）
-            if (textWithoutLinks.isNotEmpty()) {
-                contentArray.put(JSONObject().apply {
-                    put("type", "text")
-                    put("text", textWithoutLinks)
-                })
-            }
-
-            return contentArray
-        } else {
-            // 纯文本消息
-            return text
         }
+
+        if (textWithoutLinks.isNotEmpty()) {
+            contentArray.put(JSONObject().apply {
+                put("type", "text")
+                put("text", textWithoutLinks)
+            })
+        }
+
+        return contentArray
     }
 
     /**

@@ -20,7 +20,9 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.automirrored.filled.Reply
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ScreenshotMonitor
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -413,8 +415,31 @@ private fun parseMessageContent(content: String): MessageParseResult {
             }
         }
     }
-    // Remove image link tags from content
     cleanedContent = cleanedContent.replace(imageLinkRegex, "").trim()
+
+    val mediaLinkRegex =
+        Regex(
+            """<link\s+type="(audio|video)"\s+id="([^"]+)"\s*>.*?</link>""",
+            RegexOption.DOT_MATCHES_ALL
+        )
+
+    val mediaLinkAttachments = mutableListOf<AttachmentData>()
+    mediaLinkRegex.findAll(cleanedContent).forEach { match ->
+        val type = match.groupValues[1]
+        val id = match.groupValues[2]
+        if (id != "error") {
+            mediaLinkAttachments.add(
+                AttachmentData(
+                    id = "media_pool:$id",
+                    filename = if (type == "audio") "Audio" else "Video",
+                    type = if (type == "audio") "audio/*" else "video/*",
+                    size = 0L,
+                    content = ""
+                )
+            )
+        }
+    }
+    cleanedContent = cleanedContent.replace(mediaLinkRegex, "").trim()
 
     // Extract reply information
     val replyRegex = Regex("<reply_to\\s+sender=\"([^\"]+)\"\\s+timestamp=\"([^\"]+)\">([^<]*)</reply_to>")
@@ -465,7 +490,7 @@ private fun parseMessageContent(content: String): MessageParseResult {
 
     // 先用简单的分割方式检测有没有附件标签
     if (!cleanedContent.contains("<attachment")) {
-        return MessageParseResult(cleanedContent, workspaceAttachments, replyInfo, imageLinks)
+        return MessageParseResult(cleanedContent, workspaceAttachments + mediaLinkAttachments, replyInfo, imageLinks)
     }
 
     try {
@@ -499,7 +524,7 @@ private fun parseMessageContent(content: String): MessageParseResult {
         }
         
         if (matches.isEmpty()) {
-                return MessageParseResult(cleanedContent, workspaceAttachments, replyInfo, imageLinks)
+                return MessageParseResult(cleanedContent, workspaceAttachments + mediaLinkAttachments, replyInfo, imageLinks)
         }
 
         // Determine which attachments form a contiguous block at the end
@@ -578,6 +603,7 @@ private fun parseMessageContent(content: String): MessageParseResult {
                 messageText.append(cleanedContent.substring(lastIndex))
         }
 
+        trailingAttachments.addAll(0, mediaLinkAttachments)
         trailingAttachments.addAll(0, workspaceAttachments)
         return MessageParseResult(messageText.toString(), trailingAttachments, replyInfo, imageLinks)
     } catch (e: Exception) {
@@ -609,6 +635,8 @@ private fun AttachmentTag(
     val icon: ImageVector =
         when {
             attachment.type.startsWith("image/") -> Icons.Default.Image
+            attachment.type.startsWith("audio/") -> Icons.Default.VolumeUp
+            attachment.type.startsWith("video/") -> Icons.Default.PlayArrow
             attachment.type == "text/json" && attachment.filename == "screen_content.json" ->
                 Icons.Default.ScreenshotMonitor
             attachment.type == "application/vnd.workspace-context+xml" -> Icons.Default.Code
@@ -633,6 +661,7 @@ private fun AttachmentTag(
                             attachment.id.startsWith("/") ||
                             attachment.id.startsWith("content://") ||
                             attachment.id.startsWith("file://") ||
+                            attachment.id.startsWith("media_pool:") ||
                             attachment.type.startsWith("image/"),
                     onClick = { onClick(attachment) }
                 ),

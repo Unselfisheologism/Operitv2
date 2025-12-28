@@ -104,6 +104,7 @@ class ApiPreferences private constructor(private val context: Context) {
         val MAX_TEXT_RESULT_LENGTH = intPreferencesKey("max_text_result_length")
         val MAX_HTTP_RESPONSE_LENGTH = intPreferencesKey("max_http_response_length")
         val MAX_IMAGE_HISTORY_USER_TURNS = intPreferencesKey("max_image_history_user_turns")
+        val MAX_MEDIA_HISTORY_USER_TURNS = intPreferencesKey("max_media_history_user_turns")
 
         // Default values for Thinking Mode and Thinking Guidance
         const val DEFAULT_ENABLE_THINKING_MODE = false
@@ -133,6 +134,7 @@ class ApiPreferences private constructor(private val context: Context) {
         const val DEFAULT_MAX_TEXT_RESULT_LENGTH = 5000  // 通用文本结果的最大字符数限制
         const val DEFAULT_MAX_HTTP_RESPONSE_LENGTH = 5000000  // 网络请求响应的最大字符数限制（5MB）
         const val DEFAULT_MAX_IMAGE_HISTORY_USER_TURNS = 2
+        const val DEFAULT_MAX_MEDIA_HISTORY_USER_TURNS = 1
 
         // 自定义参数存储键
         val CUSTOM_PARAMETERS = stringPreferencesKey("custom_parameters")
@@ -252,6 +254,11 @@ class ApiPreferences private constructor(private val context: Context) {
     val maxImageHistoryUserTurnsFlow: Flow<Int> =
         context.apiDataStore.data.map { preferences ->
             preferences[MAX_IMAGE_HISTORY_USER_TURNS] ?: DEFAULT_MAX_IMAGE_HISTORY_USER_TURNS
+        }
+
+    val maxMediaHistoryUserTurnsFlow: Flow<Int> =
+        context.apiDataStore.data.map { preferences ->
+            preferences[MAX_MEDIA_HISTORY_USER_TURNS] ?: DEFAULT_MAX_MEDIA_HISTORY_USER_TURNS
         }
 
     // Save AI Planning setting
@@ -642,6 +649,12 @@ class ApiPreferences private constructor(private val context: Context) {
         }
     }
 
+    suspend fun saveMaxMediaHistoryUserTurns(turns: Int) {
+        context.apiDataStore.edit { preferences ->
+            preferences[MAX_MEDIA_HISTORY_USER_TURNS] = turns
+        }
+    }
+
     // 获取文件读取最大字节数
     suspend fun getMaxFileSizeBytes(): Int {
         val preferences = context.apiDataStore.data.first()
@@ -671,6 +684,11 @@ class ApiPreferences private constructor(private val context: Context) {
         return preferences[MAX_IMAGE_HISTORY_USER_TURNS] ?: DEFAULT_MAX_IMAGE_HISTORY_USER_TURNS
     }
 
+    suspend fun getMaxMediaHistoryUserTurns(): Int {
+        val preferences = context.apiDataStore.data.first()
+        return preferences[MAX_MEDIA_HISTORY_USER_TURNS] ?: DEFAULT_MAX_MEDIA_HISTORY_USER_TURNS
+    }
+
     // 重置截断设置为默认值
     suspend fun resetTruncationSettings() {
         context.apiDataStore.edit { preferences ->
@@ -679,6 +697,7 @@ class ApiPreferences private constructor(private val context: Context) {
             preferences[MAX_TEXT_RESULT_LENGTH] = DEFAULT_MAX_TEXT_RESULT_LENGTH
             preferences[MAX_HTTP_RESPONSE_LENGTH] = DEFAULT_MAX_HTTP_RESPONSE_LENGTH
             preferences[MAX_IMAGE_HISTORY_USER_TURNS] = DEFAULT_MAX_IMAGE_HISTORY_USER_TURNS
+            preferences[MAX_MEDIA_HISTORY_USER_TURNS] = DEFAULT_MAX_MEDIA_HISTORY_USER_TURNS
         }
     }
 

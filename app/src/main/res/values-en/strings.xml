@@ -2009,7 +2009,10 @@
     <string name="test">Test</string>
     <string name="expand_desc">Expand</string>
     <string name="selected_desc">Selected</string>
-    
+    <string name="functional_config_warning_image_unsupported">Warning: the selected model is not marked as “supports vision”, so image recognition may not work. Switch to a model that supports vision and enable “Model supports vision”.</string>
+    <string name="functional_config_warning_audio_unsupported">Warning: the selected model is not marked as “supports audio”, so audio recognition/transcription may not work. Switch to a model that supports audio and enable “Model supports audio”.</string>
+    <string name="functional_config_warning_video_unsupported">Warning: the selected model is not marked as “supports video”, so video understanding may not work. Switch to a model that supports video and enable “Model supports video”.</string>
+
     <!-- Function Types -->
     <string name="function_type_chat">Chat Function</string>
     <string name="function_type_summary">Conversation Summary</string>
@@ -2556,6 +2559,10 @@
     <string name="default_config_model_restriction">When using default configuration, only deepseek-chat model can be used</string>
     <string name="enable_direct_image_processing">Model supports vision</string>
     <string name="enable_direct_image_processing_desc">When enabled, images will be sent directly to the AI for processing instead of using OCR tools to read them</string>
+    <string name="enable_direct_audio_processing">Model supports audio</string>
+    <string name="enable_direct_audio_processing_desc">When enabled, audio will be sent directly to the AI for processing instead of returning tool-based transcription/description</string>
+    <string name="enable_direct_video_processing">Model supports video</string>
+    <string name="enable_direct_video_processing_desc">When enabled, video will be sent directly to the AI for processing instead of tool-based frame extraction/analysis</string>
     <string name="enable_google_search">Enable Google Search</string>
     <string name="enable_google_search_desc">When enabled, Gemini will use Google Search to enhance responses (may incur additional charges)</string>
     <string name="enable_tool_call">Model supports ToolCall</string>
@@ -2860,10 +2867,15 @@
     <!-- Function Types -->
     <string name="function_type_translation">Translation Function</string>
     <string name="function_type_image_recognition">Image Recognition</string>
+    <string name="function_type_audio_recognition">Audio Recognition</string>
+    <string name="function_type_video_recognition">Video Recognition</string>
 
     <!-- Function Descriptions -->
     <string name="function_desc_translation">Provides multi-language translation functionality, supporting language conversion of text content. It is recommended to use models that support multiple languages.</string>
     <string name="function_desc_image_recognition">Used for image content recognition and analysis, supports intent parameter when calling read_file tool for deep understanding. Recommend using multimodal models with vision capabilities.</string>
+    <string name="function_desc_audio_recognition">Used for audio content recognition and analysis. When calling read_file for audio, you can pass an intent for deeper understanding (e.g., transcription, summarization, speaker content). Recommend using models that support audio input or high-quality transcription.</string>
+    <string name="function_desc_video_recognition">Used for video content recognition and analysis. When calling read_file for video, you can pass an intent for deeper understanding (e.g., frame-based understanding, scene description, dialogue summary). Recommend using multimodal models that support video/image input.</string>
+
     <!-- Model Configuration -->
     <string name="overseas_provider_warning">Detected that you are in mainland China but selected an overseas service provider. Please confirm whether you have enabled proxy tools</string>
 

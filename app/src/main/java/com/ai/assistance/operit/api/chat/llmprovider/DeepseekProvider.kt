@@ -24,9 +24,22 @@ class DeepseekProvider(
     customHeaders: Map<String, String> = emptyMap(),
     providerType: com.ai.assistance.operit.data.model.ApiProviderType = com.ai.assistance.operit.data.model.ApiProviderType.DEEPSEEK,
     supportsVision: Boolean = false,
+    supportsAudio: Boolean = false,
+    supportsVideo: Boolean = false,
     enableToolCall: Boolean = false,
     private val enableReasoning: Boolean = false // 是否启用推理模式
-) : OpenAIProvider(apiEndpoint, apiKeyProvider, modelName, client, customHeaders, providerType, supportsVision, enableToolCall) {
+) : OpenAIProvider(
+        apiEndpoint = apiEndpoint,
+        apiKeyProvider = apiKeyProvider,
+        modelName = modelName,
+        client = client,
+        customHeaders = customHeaders,
+        providerType = providerType,
+        supportsVision = supportsVision,
+        supportsAudio = supportsAudio,
+        supportsVideo = supportsVideo,
+        enableToolCall = enableToolCall
+    ) {
 
     /**
      * 重写创建请求体的方法，以支持DeepSeek的`reasoning_content`参数。

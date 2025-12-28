@@ -97,6 +97,36 @@ object SystemToolPrompts {
                         type = "string",
                         description = "file path",
                         required = true
+                    ),
+                    ToolParameterSchema(
+                        name = "environment",
+                        type = "string",
+                        description = "optional, execution environment: \"android\" (default) or \"linux\"",
+                        required = false
+                    ),
+                    ToolParameterSchema(
+                        name = "intent",
+                        type = "string",
+                        description = "optional, your question about the media/file (used for backend recognition)",
+                        required = false
+                    ),
+                    ToolParameterSchema(
+                        name = "direct_image",
+                        type = "boolean",
+                        description = "optional, when true: return an <link type=\"image\"> tag for models that support vision",
+                        required = false
+                    ),
+                    ToolParameterSchema(
+                        name = "direct_audio",
+                        type = "boolean",
+                        description = "optional, when true: return an <link type=\"audio\"> tag for models that support audio",
+                        required = false
+                    ),
+                    ToolParameterSchema(
+                        name = "direct_video",
+                        type = "boolean",
+                        description = "optional, when true: return an <link type=\"video\"> tag for models that support video",
+                        required = false
                     )
                 )
             ),
@@ -300,7 +330,37 @@ object SystemToolPrompts {
                 name = "read_file",
                 description = "读取文件内容。对于图片文件(jpg, jpeg, png, gif, bmp)，自动使用OCR提取文本。",
                 parametersStructured = listOf(
-                    ToolParameterSchema(name = "path", type = "string", description = "文件路径", required = true)
+                    ToolParameterSchema(name = "path", type = "string", description = "文件路径", required = true),
+                    ToolParameterSchema(
+                        name = "environment",
+                        type = "string",
+                        description = "可选，执行环境：\"android\"（默认）或\"linux\"",
+                        required = false
+                    ),
+                    ToolParameterSchema(
+                        name = "intent",
+                        type = "string",
+                        description = "可选，用户对媒体/文件的问题（用于后端识别模型）",
+                        required = false
+                    ),
+                    ToolParameterSchema(
+                        name = "direct_image",
+                        type = "boolean",
+                        description = "可选，为true时：返回<link type=\"image\">标签供支持识图的模型直接查看",
+                        required = false
+                    ),
+                    ToolParameterSchema(
+                        name = "direct_audio",
+                        type = "boolean",
+                        description = "可选，为true时：返回<link type=\"audio\">标签供支持音频的模型直接处理",
+                        required = false
+                    ),
+                    ToolParameterSchema(
+                        name = "direct_video",
+                        type = "boolean",
+                        description = "可选，为true时：返回<link type=\"video\">标签供支持视频的模型直接处理",
+                        required = false
+                    )
                 )
             ),
             ToolPrompt(
@@ -735,42 +795,44 @@ object SystemToolPrompts {
      */
     fun getAllCategoriesEn(
         hasBackendImageRecognition: Boolean = false,
-        chatModelHasDirectImage: Boolean = false
+        chatModelHasDirectImage: Boolean = false,
+        hasBackendAudioRecognition: Boolean = false,
+        hasBackendVideoRecognition: Boolean = false,
+        chatModelHasDirectAudio: Boolean = false,
+        chatModelHasDirectVideo: Boolean = false
     ): List<SystemToolPromptCategory> {
-        val adjustedFileSystemTools = when {
-            // 情况1：聊天模型本身可识图 —— 只暴露 direct_image，不再提 intent
-            chatModelHasDirectImage -> {
-                fileSystemTools.copy(
-                    tools = fileSystemTools.tools.map { tool ->
-                        if (tool.name == "read_file") {
-                            tool.copy(
-                                description = "Read the content of a file. For image files (jpg, jpeg, png, gif, bmp), it automatically extracts text using OCR. Since your current model can directly see images, you may set 'direct_image' to true and inspect the image with your own vision capabilities instead of relying on this tool's text extraction.",
-                                parameters = "path (file path), direct_image (optional, boolean; when true and the current model supports vision, you may directly inspect the image instead of requesting textual extraction from this tool)"
-                            )
-                        } else {
-                            tool
-                        }
+        val shouldExposeIntent =
+            (hasBackendImageRecognition && !chatModelHasDirectImage) ||
+                (hasBackendAudioRecognition && !chatModelHasDirectAudio) ||
+                (hasBackendVideoRecognition && !chatModelHasDirectVideo)
+
+        val adjustedFileSystemTools = fileSystemTools.copy(
+            tools = fileSystemTools.tools.map { tool ->
+                if (tool.name != "read_file") return@map tool
+
+                val filteredParams = (tool.parametersStructured ?: emptyList()).filter { param ->
+                    when (param.name) {
+                        "direct_image" -> false
+                        "direct_audio" -> false
+                        "direct_video" -> false
+                        "intent" -> shouldExposeIntent
+                        else -> true
                     }
+                }
+
+                val adjustedDescription =
+                    if (shouldExposeIntent) {
+                        "Read the content of a file. For media files, you can also provide an 'intent' parameter to use a backend recognition model for analysis."
+                    } else {
+                        tool.description
+                    }
+
+                tool.copy(
+                    description = adjustedDescription,
+                    parametersStructured = filteredParams
                 )
             }
-            // 情况2：聊天模型不能识图，但有后端识图服务 —— 只暴露 intent
-            hasBackendImageRecognition -> {
-                fileSystemTools.copy(
-                    tools = fileSystemTools.tools.map { tool ->
-                        if (tool.name == "read_file") {
-                            tool.copy(
-                                description = "Read the content of a file. For image files (jpg, jpeg, png, gif, bmp), it automatically extracts text using OCR. You can also provide an 'intent' parameter to use a backend vision model for analysis.",
-                                parameters = "path (file path), intent (optional, user's question about the image, e.g., \"What's in this image?\", \"Extract formulas from this image\")"
-                            )
-                        } else {
-                            tool
-                        }
-                    }
-                )
-            }
-            // 情况3：既没有聊天模型识图，也没有后端识图服务 —— 保持原始OCR说明
-            else -> fileSystemTools
-        }
+        )
 
         return listOf(
             basicTools,
@@ -787,42 +849,44 @@ object SystemToolPrompts {
      */
     fun getAllCategoriesCn(
         hasBackendImageRecognition: Boolean = false,
-        chatModelHasDirectImage: Boolean = false
+        chatModelHasDirectImage: Boolean = false,
+        hasBackendAudioRecognition: Boolean = false,
+        hasBackendVideoRecognition: Boolean = false,
+        chatModelHasDirectAudio: Boolean = false,
+        chatModelHasDirectVideo: Boolean = false
     ): List<SystemToolPromptCategory> {
-        val adjustedFileSystemTools = when {
-            // 情况1：聊天模型本身可识图 —— 只暴露 direct_image，不再提 intent
-            chatModelHasDirectImage -> {
-                fileSystemToolsCn.copy(
-                    tools = fileSystemToolsCn.tools.map { tool ->
-                        if (tool.name == "read_file") {
-                            tool.copy(
-                                description = "读取文件内容。对于图片文件(jpg, jpeg, png, gif, bmp)，默认使用OCR提取文本。当前模型支持识图时，你可以通过设置'direct_image'为true，直接用你自己的视觉能力查看图片本身，而不是依赖本工具返回的文字描述。",
-                                parameters = "path（文件路径），direct_image（可选，布尔值；当当前模型支持识图时，设置为true表示直接查看图片本身，而不是让本工具做文字提取）"
-                            )
-                        } else {
-                            tool
-                        }
+        val shouldExposeIntent =
+            (hasBackendImageRecognition && !chatModelHasDirectImage) ||
+                (hasBackendAudioRecognition && !chatModelHasDirectAudio) ||
+                (hasBackendVideoRecognition && !chatModelHasDirectVideo)
+
+        val adjustedFileSystemTools = fileSystemToolsCn.copy(
+            tools = fileSystemToolsCn.tools.map { tool ->
+                if (tool.name != "read_file") return@map tool
+
+                val filteredParams = (tool.parametersStructured ?: emptyList()).filter { param ->
+                    when (param.name) {
+                        "direct_image" -> false
+                        "direct_audio" -> false
+                        "direct_video" -> false
+                        "intent" -> shouldExposeIntent
+                        else -> true
                     }
+                }
+
+                val adjustedDescription =
+                    if (shouldExposeIntent) {
+                        "读取文件内容。对于媒体文件，你也可以提供 intent 参数，使用后端识别模型进行分析。"
+                    } else {
+                        tool.description
+                    }
+
+                tool.copy(
+                    description = adjustedDescription,
+                    parametersStructured = filteredParams
                 )
             }
-            // 情况2：聊天模型不能识图，但有后端识图服务 —— 只暴露 intent
-            hasBackendImageRecognition -> {
-                fileSystemToolsCn.copy(
-                    tools = fileSystemToolsCn.tools.map { tool ->
-                        if (tool.name == "read_file") {
-                            tool.copy(
-                                description = "读取文件内容。对于图片文件(jpg, jpeg, png, gif, bmp)，默认使用OCR提取文本。当前模型不具备直接识图能力时，你可以提供'intent'参数，请后端视觉模型帮你分析图片。",
-                                parameters = "path（文件路径），intent（可选，用户对图片的问题，如\"这个图片里面有什么\"、\"提取图片中的公式\"）"
-                            )
-                        } else {
-                            tool
-                        }
-                    }
-                )
-            }
-            // 情况3：既没有聊天模型识图，也没有后端识图服务 —— 保持原始OCR说明
-            else -> fileSystemToolsCn
-        }
+        )
 
         return listOf(
             basicToolsCn,
@@ -838,12 +902,30 @@ object SystemToolPrompts {
     fun generateToolsPromptEn(
         hasBackendImageRecognition: Boolean = false,
         includeMemoryTools: Boolean = true,
-        chatModelHasDirectImage: Boolean = false
+        chatModelHasDirectImage: Boolean = false,
+        hasBackendAudioRecognition: Boolean = false,
+        hasBackendVideoRecognition: Boolean = false,
+        chatModelHasDirectAudio: Boolean = false,
+        chatModelHasDirectVideo: Boolean = false
     ): String {
         val categories = if (includeMemoryTools) {
-            getAllCategoriesEn(hasBackendImageRecognition, chatModelHasDirectImage)
+            getAllCategoriesEn(
+                hasBackendImageRecognition = hasBackendImageRecognition,
+                chatModelHasDirectImage = chatModelHasDirectImage,
+                hasBackendAudioRecognition = hasBackendAudioRecognition,
+                hasBackendVideoRecognition = hasBackendVideoRecognition,
+                chatModelHasDirectAudio = chatModelHasDirectAudio,
+                chatModelHasDirectVideo = chatModelHasDirectVideo
+            )
         } else {
-            getAllCategoriesEn(hasBackendImageRecognition, chatModelHasDirectImage)
+            getAllCategoriesEn(
+                hasBackendImageRecognition = hasBackendImageRecognition,
+                chatModelHasDirectImage = chatModelHasDirectImage,
+                hasBackendAudioRecognition = hasBackendAudioRecognition,
+                hasBackendVideoRecognition = hasBackendVideoRecognition,
+                chatModelHasDirectAudio = chatModelHasDirectAudio,
+                chatModelHasDirectVideo = chatModelHasDirectVideo
+            )
                 .filter { it.categoryName != "Memory and Memory Library Tools" }
         }
 
@@ -856,12 +938,30 @@ object SystemToolPrompts {
     fun generateToolsPromptCn(
         hasBackendImageRecognition: Boolean = false,
         includeMemoryTools: Boolean = true,
-        chatModelHasDirectImage: Boolean = false
+        chatModelHasDirectImage: Boolean = false,
+        hasBackendAudioRecognition: Boolean = false,
+        hasBackendVideoRecognition: Boolean = false,
+        chatModelHasDirectAudio: Boolean = false,
+        chatModelHasDirectVideo: Boolean = false
     ): String {
         val categories = if (includeMemoryTools) {
-            getAllCategoriesCn(hasBackendImageRecognition, chatModelHasDirectImage)
+            getAllCategoriesCn(
+                hasBackendImageRecognition = hasBackendImageRecognition,
+                chatModelHasDirectImage = chatModelHasDirectImage,
+                hasBackendAudioRecognition = hasBackendAudioRecognition,
+                hasBackendVideoRecognition = hasBackendVideoRecognition,
+                chatModelHasDirectAudio = chatModelHasDirectAudio,
+                chatModelHasDirectVideo = chatModelHasDirectVideo
+            )
         } else {
-            getAllCategoriesCn(hasBackendImageRecognition, chatModelHasDirectImage)
+            getAllCategoriesCn(
+                hasBackendImageRecognition = hasBackendImageRecognition,
+                chatModelHasDirectImage = chatModelHasDirectImage,
+                hasBackendAudioRecognition = hasBackendAudioRecognition,
+                hasBackendVideoRecognition = hasBackendVideoRecognition,
+                chatModelHasDirectAudio = chatModelHasDirectAudio,
+                chatModelHasDirectVideo = chatModelHasDirectVideo
+            )
                 .filter { it.categoryName != "记忆与记忆库工具" }
         }
 

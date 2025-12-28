@@ -1186,11 +1186,15 @@ class EnhancedAIService private constructor(private val context: Context) {
         // Check if backend image recognition service is configured (for intent-based vision)
         // For subtasks, always disable backend image recognition (only support OCR)
         val hasImageRecognition = if (isSubTask) false else multiServiceManager.hasImageRecognitionConfigured()
+        val hasAudioRecognition = if (isSubTask) false else multiServiceManager.hasAudioRecognitionConfigured()
+        val hasVideoRecognition = if (isSubTask) false else multiServiceManager.hasVideoRecognitionConfigured()
 
         // 获取当前功能类型（通常是CHAT）的模型配置，用于判断聊天模型是否自带识图能力
         val config = multiServiceManager.getModelConfigForFunction(functionType)
         val useToolCallApi = config.enableToolCall
         val chatModelHasDirectImage = config.enableDirectImageProcessing
+        val chatModelHasDirectAudio = config.enableDirectAudioProcessing
+        val chatModelHasDirectVideo = config.enableDirectVideoProcessing
 
         return conversationService.prepareConversationHistory(
                 chatHistory,
@@ -1202,6 +1206,10 @@ class EnhancedAIService private constructor(private val context: Context) {
                 customSystemPromptTemplate,
                 enableMemoryQuery,
                 hasImageRecognition,
+                hasAudioRecognition,
+                hasVideoRecognition,
+                chatModelHasDirectAudio,
+                chatModelHasDirectVideo,
                 useToolCallApi,
                 chatModelHasDirectImage
         )
@@ -1275,18 +1283,32 @@ class EnhancedAIService private constructor(private val context: Context) {
             // 后端识图服务是否可用（IMAGE_RECOGNITION 功能），用于 intent-based 视觉模型
             val hasBackendImageRecognition = multiServiceManager.hasImageRecognitionConfigured()
 
+            val hasBackendAudioRecognition = multiServiceManager.hasAudioRecognitionConfigured()
+            val hasBackendVideoRecognition = multiServiceManager.hasVideoRecognitionConfigured()
+
             // 当前功能模型（通常是聊天模型）是否支持直接看图
             val chatModelHasDirectImage = config.enableDirectImageProcessing
+
+            val chatModelHasDirectAudio = config.enableDirectAudioProcessing
+            val chatModelHasDirectVideo = config.enableDirectVideoProcessing
 
             val categories = if (isEnglish) {
                 SystemToolPrompts.getAllCategoriesEn(
                     hasBackendImageRecognition = hasBackendImageRecognition,
-                    chatModelHasDirectImage = chatModelHasDirectImage
+                    chatModelHasDirectImage = chatModelHasDirectImage,
+                    hasBackendAudioRecognition = hasBackendAudioRecognition,
+                    hasBackendVideoRecognition = hasBackendVideoRecognition,
+                    chatModelHasDirectAudio = chatModelHasDirectAudio,
+                    chatModelHasDirectVideo = chatModelHasDirectVideo
                 )
             } else {
                 SystemToolPrompts.getAllCategoriesCn(
                     hasBackendImageRecognition = hasBackendImageRecognition,
-                    chatModelHasDirectImage = chatModelHasDirectImage
+                    chatModelHasDirectImage = chatModelHasDirectImage,
+                    hasBackendAudioRecognition = hasBackendAudioRecognition,
+                    hasBackendVideoRecognition = hasBackendVideoRecognition,
+                    chatModelHasDirectAudio = chatModelHasDirectAudio,
+                    chatModelHasDirectVideo = chatModelHasDirectVideo
                 )
             }
 
@@ -1463,5 +1485,13 @@ class EnhancedAIService private constructor(private val context: Context) {
      */
     suspend fun analyzeImageWithIntent(imagePath: String, userIntent: String?): String {
         return conversationService.analyzeImageWithIntent(imagePath, userIntent, multiServiceManager)
+    }
+
+    suspend fun analyzeAudioWithIntent(audioPath: String, userIntent: String?): String {
+        return conversationService.analyzeAudioWithIntent(audioPath, userIntent, multiServiceManager)
+    }
+
+    suspend fun analyzeVideoWithIntent(videoPath: String, userIntent: String?): String {
+        return conversationService.analyzeVideoWithIntent(videoPath, userIntent, multiServiceManager)
     }
 }

@@ -29,6 +29,7 @@ import com.ai.assistance.operit.data.model.ModelConfigSummary
 import com.ai.assistance.operit.data.model.getModelByIndex
 import com.ai.assistance.operit.data.model.getModelList
 import com.ai.assistance.operit.data.model.getValidModelIndex
+import com.ai.assistance.operit.data.model.ModelConfigData
 import com.ai.assistance.operit.data.preferences.ApiPreferences
 import com.ai.assistance.operit.data.preferences.FunctionalConfigManager
 import com.ai.assistance.operit.data.preferences.FunctionConfigMapping
@@ -265,6 +266,42 @@ fun FunctionConfigCard(
     var isTestingConnection by remember { mutableStateOf(false) }
     var testResult by remember { mutableStateOf<Result<String>?>(null) }
 
+    var mediaSupportWarningResId by remember { mutableStateOf<Int?>(null) }
+
+    LaunchedEffect(functionType, currentConfig?.id) {
+        mediaSupportWarningResId = null
+        if (
+            functionType != FunctionType.IMAGE_RECOGNITION &&
+            functionType != FunctionType.AUDIO_RECOGNITION &&
+            functionType != FunctionType.VIDEO_RECOGNITION
+        ) {
+            return@LaunchedEffect
+        }
+
+        val configId = currentConfig?.id ?: FunctionalConfigManager.DEFAULT_CONFIG_ID
+        val fullConfig: ModelConfigData = try {
+            modelConfigManager.getModelConfigFlow(configId).first()
+        } catch (e: Exception) {
+            return@LaunchedEffect
+        }
+
+        val isSupported = when (functionType) {
+            FunctionType.IMAGE_RECOGNITION -> fullConfig.enableDirectImageProcessing
+            FunctionType.AUDIO_RECOGNITION -> fullConfig.enableDirectAudioProcessing
+            FunctionType.VIDEO_RECOGNITION -> fullConfig.enableDirectVideoProcessing
+            else -> true
+        }
+
+        if (!isSupported) {
+            mediaSupportWarningResId = when (functionType) {
+                FunctionType.IMAGE_RECOGNITION -> R.string.functional_config_warning_image_unsupported
+                FunctionType.AUDIO_RECOGNITION -> R.string.functional_config_warning_audio_unsupported
+                FunctionType.VIDEO_RECOGNITION -> R.string.functional_config_warning_video_unsupported
+                else -> null
+            }
+        }
+    }
+
     val showAutoGlmError: () -> Unit = {
         if (functionType == FunctionType.CHAT) {
             Toast.makeText(
@@ -342,6 +379,31 @@ fun FunctionConfigCard(
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
+                            }
+
+                            androidx.compose.animation.AnimatedVisibility(
+                                visible = mediaSupportWarningResId != null
+                            ) {
+                                val warningResId = mediaSupportWarningResId
+                                if (warningResId != null) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(top = 6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Warning,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = stringResource(id = warningResId),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.error
+                                        )
+                                    }
+                                }
                             }
                             
                             // 测试结果显示
@@ -648,6 +710,8 @@ fun getFunctionDisplayName(functionType: FunctionType): String {
         FunctionType.UI_CONTROLLER -> stringResource(id = R.string.function_type_ui_controller)
         FunctionType.TRANSLATION -> stringResource(id = R.string.function_type_translation)
         FunctionType.IMAGE_RECOGNITION -> stringResource(id = R.string.function_type_image_recognition)
+        FunctionType.AUDIO_RECOGNITION -> stringResource(id = R.string.function_type_audio_recognition)
+        FunctionType.VIDEO_RECOGNITION -> stringResource(id = R.string.function_type_video_recognition)
     }
 }
 
@@ -661,5 +725,7 @@ fun getFunctionDescription(functionType: FunctionType): String {
         FunctionType.UI_CONTROLLER -> stringResource(id = R.string.function_desc_ui_controller)
         FunctionType.TRANSLATION -> stringResource(id = R.string.function_desc_translation)
         FunctionType.IMAGE_RECOGNITION -> stringResource(id = R.string.function_desc_image_recognition)
+        FunctionType.AUDIO_RECOGNITION -> stringResource(id = R.string.function_desc_audio_recognition)
+        FunctionType.VIDEO_RECOGNITION -> stringResource(id = R.string.function_desc_video_recognition)
     }
 }

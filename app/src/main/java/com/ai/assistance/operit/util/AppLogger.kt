@@ -43,12 +43,26 @@ object AppLogger {
     @Volatile
     private var logFile: File? = null
 
+    @Volatile
+    private var boundContext: Context? = null
+
+    @JvmStatic
+    fun bindContext(context: Context) {
+        if (boundContext == null) {
+            boundContext = context.applicationContext
+        }
+    }
+
     private fun resolveLogFile(): File? {
         val existing = logFile
         if (existing != null) return existing
 
         return try {
-            val appContext: Context = OperitApplication.instance.applicationContext
+            val appContext: Context = try {
+                OperitApplication.instance.applicationContext
+            } catch (_: Throwable) {
+                boundContext ?: return null
+            }
             val dir = File(appContext.filesDir, LOG_DIR_NAME)
             if (!dir.exists()) {
                 dir.mkdirs()

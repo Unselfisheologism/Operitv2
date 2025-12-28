@@ -961,10 +961,12 @@ class MemoryRepository(private val context: Context, profileId: String) {
                 uuid = UUID.randomUUID().toString(),
                 folderPath = folderPath
             )
-            val embedding = OnnxEmbeddingService.generateEmbedding(placeholder.content)
-            if (embedding != null) {
-                placeholder.embedding = embedding
+            val embedding = try {
+                OnnxEmbeddingService.generateEmbedding(placeholder.content)
+            } catch (_: Exception) {
+                null
             }
+            if (embedding != null) placeholder.embedding = embedding
             memoryBox.put(placeholder)
             true
         } catch (e: Exception) {

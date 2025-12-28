@@ -6,6 +6,7 @@ import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.chat.EnhancedAIService
 import com.ai.assistance.operit.api.chat.plan.PlanModeManager
 import com.ai.assistance.operit.api.chat.llmprovider.ImageLinkParser
+import com.ai.assistance.operit.api.chat.llmprovider.MediaLinkParser
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.core.tools.MemoryQueryResultData
 import com.ai.assistance.operit.data.model.AITool
@@ -16,6 +17,7 @@ import com.ai.assistance.operit.data.model.PromptFunctionType
 import com.ai.assistance.operit.data.preferences.ApiPreferences
 import com.ai.assistance.operit.ui.features.chat.webview.workspace.process.WorkspaceAttachmentProcessor
 import com.ai.assistance.operit.util.ImagePoolManager
+import com.ai.assistance.operit.util.MediaPoolManager
 import com.ai.assistance.operit.data.model.InputProcessingState
 import com.ai.assistance.operit.util.stream.SharedStream
 import com.ai.assistance.operit.util.stream.share
@@ -68,7 +70,10 @@ object AIMessageManager {
      * @param enableMemoryQuery 是否允许AI查询记忆。
      * @param enableWorkspaceAttachment 是否启用工作区附着功能。
      * @param workspacePath 工作区路径。
+     * @param replyToMessage 回复消息。
      * @param enableDirectImageProcessing 是否将图片附件转换为link标签（用于直接图片处理）。
+     * @param enableDirectAudioProcessing 是否将音频附件转换为link标签（用于直接音频处理）。
+     * @param enableDirectVideoProcessing 是否将视频附件转换为link标签（用于直接视频处理）。
      * @return 格式化后的完整消息字符串。
      */
     suspend fun buildUserMessageContent(
@@ -77,8 +82,10 @@ object AIMessageManager {
         enableMemoryQuery: Boolean,
         enableWorkspaceAttachment: Boolean = false,
         workspacePath: String? = null,
-        replyToMessage: ChatMessage? = null, // 新增回复消息参数
-        enableDirectImageProcessing: Boolean = false // 是否启用直接图片处理
+        replyToMessage: ChatMessage? = null,
+        enableDirectImageProcessing: Boolean = false,
+        enableDirectAudioProcessing: Boolean = false,
+        enableDirectVideoProcessing: Boolean = false
     ): String {
         // 1. 构建回复标签（如果有回复消息）
         val replyTag = replyToMessage?.let { message ->
@@ -86,7 +93,7 @@ object AIMessageManager {
                 .replace(Regex("<[^>]*>"), "") // 移除XML标签
                 .trim()
                 .let { if (it.length > 100) it.take(100) + "..." else it }
-            
+
             val roleName = message.roleName ?: if (message.sender == "ai") "AI" else "用户"
             val instruction = "用户正在回复你之前的这条消息："
             "<reply_to sender=\"${roleName}\" timestamp=\"${message.timestamp}\">${instruction}\"${cleanContent}\"</reply_to>"
@@ -117,6 +124,44 @@ object AIMessageManager {
                     } catch (e: Exception) {
                         AppLogger.e(TAG, "添加图片到池失败: ${attachment.filePath}", e)
                         // 失败时回退到普通附件格式
+                        val attributes = buildString {
+                            append("id=\"${attachment.filePath}\" ")
+                            append("filename=\"${attachment.fileName}\" ")
+                            append("type=\"${attachment.mimeType}\"")
+                            if (attachment.fileSize > 0) {
+                                append(" size=\"${attachment.fileSize}\"")
+                            }
+                        }
+                        "<attachment $attributes>${attachment.content}</attachment>"
+                    }
+                } else if (enableDirectAudioProcessing && attachment.mimeType.startsWith("audio/", ignoreCase = true)) {
+                    try {
+                        val audioId = MediaPoolManager.addMedia(attachment.filePath, attachment.mimeType)
+                        if (audioId == "error") {
+                            throw IllegalStateException("addMedia returned error")
+                        }
+                        "<link type=\"audio\" id=\"$audioId\"></link>"
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "添加音频到池失败: ${attachment.filePath}", e)
+                        val attributes = buildString {
+                            append("id=\"${attachment.filePath}\" ")
+                            append("filename=\"${attachment.fileName}\" ")
+                            append("type=\"${attachment.mimeType}\"")
+                            if (attachment.fileSize > 0) {
+                                append(" size=\"${attachment.fileSize}\"")
+                            }
+                        }
+                        "<attachment $attributes>${attachment.content}</attachment>"
+                    }
+                } else if (enableDirectVideoProcessing && attachment.mimeType.startsWith("video/", ignoreCase = true)) {
+                    try {
+                        val videoId = MediaPoolManager.addMedia(attachment.filePath, attachment.mimeType)
+                        if (videoId == "error") {
+                            throw IllegalStateException("addMedia returned error")
+                        }
+                        "<link type=\"video\" id=\"$videoId\"></link>"
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "添加视频到池失败: ${attachment.filePath}", e)
                         val attributes = buildString {
                             append("id=\"${attachment.filePath}\" ")
                             append("filename=\"${attachment.fileName}\" ")
@@ -191,7 +236,10 @@ object AIMessageManager {
         
         return withContext(Dispatchers.IO) {
             val maxImageHistoryUserTurns = apiPreferences.maxImageHistoryUserTurnsFlow.first()
-            val memoryForRequest = limitImageLinksInChatHistory(memory, maxImageHistoryUserTurns)
+            val maxMediaHistoryUserTurns = apiPreferences.maxMediaHistoryUserTurnsFlow.first()
+
+            val memoryAfterImageLimit = limitImageLinksInChatHistory(memory, maxImageHistoryUserTurns)
+            val memoryForRequest = limitMediaLinksInChatHistory(memoryAfterImageLimit, maxMediaHistoryUserTurns)
             val beforeImageLinkCount = memory.count { (_, content) -> ImageLinkParser.hasImageLinks(content) }
             val afterImageLinkCount = memoryForRequest.count { (_, content) -> ImageLinkParser.hasImageLinks(content) }
             if (beforeImageLinkCount != afterImageLinkCount) {
@@ -200,6 +248,16 @@ object AIMessageManager {
                     "历史图片裁剪生效: limit=$maxImageHistoryUserTurns, before=$beforeImageLinkCount, after=$afterImageLinkCount"
                 )
             }
+
+            val beforeMediaLinkCount = memory.count { (_, content) -> MediaLinkParser.hasMediaLinks(content) }
+            val afterMediaLinkCount = memoryForRequest.count { (_, content) -> MediaLinkParser.hasMediaLinks(content) }
+            if (beforeMediaLinkCount != afterMediaLinkCount) {
+                AppLogger.d(
+                    TAG,
+                    "历史音视频裁剪生效: limit=$maxMediaHistoryUserTurns, before=$beforeMediaLinkCount, after=$afterMediaLinkCount"
+                )
+            }
+            
             if (isDeepSearchEnabled) {
                 // 创建计划模式管理器
                 val planModeManager = PlanModeManager(context, enhancedAiService)
@@ -254,6 +312,30 @@ object AIMessageManager {
                 avatarUri = avatarUri,
                 stream = enableStream
             ).share(scope) // 使用.share()将其转换为共享流
+        }
+    }
+
+    private fun limitMediaLinksInChatHistory(
+        history: List<Pair<String, String>>,
+        keepLastUserMediaTurns: Int
+    ): List<Pair<String, String>> {
+        val limit = keepLastUserMediaTurns.coerceAtLeast(0)
+        val totalUserTurns = history.count { (role, _) -> role == "user" }
+        val keepFromTurn = (totalUserTurns - limit).coerceAtLeast(0)
+
+        var currentUserTurnIndex = -1
+        return history.map { (role, content) ->
+            if (role == "user") {
+                currentUserTurnIndex += 1
+            }
+
+            val shouldKeepMedia = limit > 0 && currentUserTurnIndex >= keepFromTurn
+            if (!shouldKeepMedia && MediaLinkParser.hasMediaLinks(content)) {
+                val removed = MediaLinkParser.removeMediaLinks(content).trim()
+                role to (removed.ifBlank { "[音视频已省略]" })
+            } else {
+                role to content
+            }
         }
     }
 

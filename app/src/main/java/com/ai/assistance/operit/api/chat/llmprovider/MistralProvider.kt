@@ -13,8 +13,21 @@ class MistralProvider(
     customHeaders: Map<String, String> = emptyMap(),
     providerType: ApiProviderType = ApiProviderType.MISTRAL,
     supportsVision: Boolean = false,
+    supportsAudio: Boolean = false,
+    supportsVideo: Boolean = false,
     enableToolCall: Boolean = false
-) : OpenAIProvider(apiEndpoint, apiKeyProvider, modelName, client, customHeaders, providerType, supportsVision, enableToolCall) {
+) : OpenAIProvider(
+        apiEndpoint = apiEndpoint,
+        apiKeyProvider = apiKeyProvider,
+        modelName = modelName,
+        client = client,
+        customHeaders = customHeaders,
+        providerType = providerType,
+        supportsVision = supportsVision,
+        supportsAudio = supportsAudio,
+        supportsVideo = supportsVideo,
+        enableToolCall = enableToolCall
+    ) {
 
     override fun parseXmlToolCalls(content: String): Pair<String, JSONArray?> {
         val toolPattern =

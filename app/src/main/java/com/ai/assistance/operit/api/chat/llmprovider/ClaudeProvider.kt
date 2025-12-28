@@ -11,6 +11,7 @@ import com.ai.assistance.operit.util.TokenCacheManager
 import com.ai.assistance.operit.util.exceptions.UserCancellationException
 import com.ai.assistance.operit.util.stream.Stream
 import com.ai.assistance.operit.util.stream.stream
+import com.ai.assistance.operit.api.chat.llmprovider.MediaLinkParser
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -293,11 +294,18 @@ class ClaudeProvider(
      */
     private fun buildContentArray(text: String): JSONArray {
         val contentArray = JSONArray()
+
+        val textAfterMediaRemoval = if (MediaLinkParser.hasMediaLinks(text)) {
+            AppLogger.w("AIService", "检测到音视频链接，但Claude格式当前仅支持图片，多媒体链接将被移除")
+            MediaLinkParser.removeMediaLinks(text).trim()
+        } else {
+            text
+        }
         
         // 检查是否包含图片链接
-        if (ImageLinkParser.hasImageLinks(text)) {
-            val imageLinks = ImageLinkParser.extractImageLinks(text)
-            val textWithoutLinks = ImageLinkParser.removeImageLinks(text).trim()
+        if (ImageLinkParser.hasImageLinks(textAfterMediaRemoval)) {
+            val imageLinks = ImageLinkParser.extractImageLinks(textAfterMediaRemoval)
+            val textWithoutLinks = ImageLinkParser.removeImageLinks(textAfterMediaRemoval).trim()
             
             // 添加图片
             imageLinks.forEach { link ->
@@ -322,7 +330,7 @@ class ClaudeProvider(
             // 纯文本消息
             contentArray.put(JSONObject().apply {
                 put("type", "text")
-                put("text", text)
+                put("text", textAfterMediaRemoval)
             })
         }
         

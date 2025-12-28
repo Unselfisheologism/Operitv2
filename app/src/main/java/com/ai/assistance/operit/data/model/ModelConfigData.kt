@@ -100,6 +100,10 @@ data class ModelConfigData(
         // 图片处理配置
         val enableDirectImageProcessing: Boolean = false, // 是否启用直接图片处理
 
+        // 音频/视频处理配置
+        val enableDirectAudioProcessing: Boolean = false, // 是否启用直接音频处理
+        val enableDirectVideoProcessing: Boolean = false, // 是否启用直接视频处理
+
         // Gemini特定配置
         val enableGoogleSearch: Boolean = false, // 是否启用Google Search Grounding (仅Gemini支持)
 

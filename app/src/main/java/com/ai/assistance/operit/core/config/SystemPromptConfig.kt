@@ -98,12 +98,20 @@ PACKAGE SYSTEM
 
     private fun getAvailableToolsEn(
         hasImageRecognition: Boolean,
-        chatModelHasDirectImage: Boolean
+        chatModelHasDirectImage: Boolean,
+        hasAudioRecognition: Boolean,
+        hasVideoRecognition: Boolean,
+        chatModelHasDirectAudio: Boolean,
+        chatModelHasDirectVideo: Boolean
     ): String {
         return SystemToolPrompts.generateToolsPromptEn(
             hasBackendImageRecognition = hasImageRecognition,
             includeMemoryTools = false,
-            chatModelHasDirectImage = chatModelHasDirectImage
+            chatModelHasDirectImage = chatModelHasDirectImage,
+            hasBackendAudioRecognition = hasAudioRecognition,
+            hasBackendVideoRecognition = hasVideoRecognition,
+            chatModelHasDirectAudio = chatModelHasDirectAudio,
+            chatModelHasDirectVideo = chatModelHasDirectVideo
         )
     }
     
@@ -112,12 +120,20 @@ PACKAGE SYSTEM
 
     private fun getAvailableToolsCn(
         hasImageRecognition: Boolean,
-        chatModelHasDirectImage: Boolean
+        chatModelHasDirectImage: Boolean,
+        hasAudioRecognition: Boolean,
+        hasVideoRecognition: Boolean,
+        chatModelHasDirectAudio: Boolean,
+        chatModelHasDirectVideo: Boolean
     ): String {
         return SystemToolPrompts.generateToolsPromptCn(
             hasBackendImageRecognition = hasImageRecognition,
             includeMemoryTools = false,
-            chatModelHasDirectImage = chatModelHasDirectImage
+            chatModelHasDirectImage = chatModelHasDirectImage,
+            hasBackendAudioRecognition = hasAudioRecognition,
+            hasBackendVideoRecognition = hasVideoRecognition,
+            chatModelHasDirectAudio = chatModelHasDirectAudio,
+            chatModelHasDirectVideo = chatModelHasDirectVideo
         )
     }
     
@@ -269,6 +285,10 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
           enableMemoryQuery: Boolean = true,
           hasImageRecognition: Boolean = false,
           chatModelHasDirectImage: Boolean = false,
+          hasAudioRecognition: Boolean = false,
+          hasVideoRecognition: Boolean = false,
+          chatModelHasDirectAudio: Boolean = false,
+          chatModelHasDirectVideo: Boolean = false,
           useToolCallApi: Boolean = false
   ): String {
     val importedPackages = packageManager.getImportedPackages()
@@ -338,12 +358,48 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
     // Determine the available tools string based on memory query setting and image recognition
     // 当使用Tool Call API时，不在系统提示词中包含工具描述（工具已通过API的tools字段发送）
     val availableToolsEn = if (useToolCallApi) "" else (
-        if (enableMemoryQuery) MEMORY_TOOLS_EN + getAvailableToolsEn(hasImageRecognition, chatModelHasDirectImage)
-        else getAvailableToolsEn(hasImageRecognition, chatModelHasDirectImage)
+        if (enableMemoryQuery) {
+            MEMORY_TOOLS_EN +
+                getAvailableToolsEn(
+                    hasImageRecognition = hasImageRecognition,
+                    chatModelHasDirectImage = chatModelHasDirectImage,
+                    hasAudioRecognition = hasAudioRecognition,
+                    hasVideoRecognition = hasVideoRecognition,
+                    chatModelHasDirectAudio = chatModelHasDirectAudio,
+                    chatModelHasDirectVideo = chatModelHasDirectVideo
+                )
+        } else {
+            getAvailableToolsEn(
+                hasImageRecognition = hasImageRecognition,
+                chatModelHasDirectImage = chatModelHasDirectImage,
+                hasAudioRecognition = hasAudioRecognition,
+                hasVideoRecognition = hasVideoRecognition,
+                chatModelHasDirectAudio = chatModelHasDirectAudio,
+                chatModelHasDirectVideo = chatModelHasDirectVideo
+            )
+        }
     )
     val availableToolsCn = if (useToolCallApi) "" else (
-        if (enableMemoryQuery) MEMORY_TOOLS_CN + getAvailableToolsCn(hasImageRecognition, chatModelHasDirectImage)
-        else getAvailableToolsCn(hasImageRecognition, chatModelHasDirectImage)
+        if (enableMemoryQuery) {
+            MEMORY_TOOLS_CN +
+                getAvailableToolsCn(
+                    hasImageRecognition = hasImageRecognition,
+                    chatModelHasDirectImage = chatModelHasDirectImage,
+                    hasAudioRecognition = hasAudioRecognition,
+                    hasVideoRecognition = hasVideoRecognition,
+                    chatModelHasDirectAudio = chatModelHasDirectAudio,
+                    chatModelHasDirectVideo = chatModelHasDirectVideo
+                )
+        } else {
+            getAvailableToolsCn(
+                hasImageRecognition = hasImageRecognition,
+                chatModelHasDirectImage = chatModelHasDirectImage,
+                hasAudioRecognition = hasAudioRecognition,
+                hasVideoRecognition = hasVideoRecognition,
+                chatModelHasDirectAudio = chatModelHasDirectAudio,
+                chatModelHasDirectVideo = chatModelHasDirectVideo
+            )
+        }
     )
 
     // Handle tools disable/enable
@@ -457,6 +513,10 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
           enableMemoryQuery: Boolean = true,
           hasImageRecognition: Boolean = false,
           chatModelHasDirectImage: Boolean = false,
+          hasAudioRecognition: Boolean = false,
+          hasVideoRecognition: Boolean = false,
+          chatModelHasDirectAudio: Boolean = false,
+          chatModelHasDirectVideo: Boolean = false,
           useToolCallApi: Boolean = false
   ): String {
     // Get the base system prompt
@@ -470,6 +530,10 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
         enableMemoryQuery,
         hasImageRecognition,
         chatModelHasDirectImage,
+        hasAudioRecognition,
+        hasVideoRecognition,
+        chatModelHasDirectAudio,
+        chatModelHasDirectVideo,
         useToolCallApi
     )
 
@@ -489,6 +553,10 @@ AVAILABLE_TOOLS_SECTION""".trimIndent()
         enableMemoryQuery = true,
         hasImageRecognition = false,
         chatModelHasDirectImage = false,
+        hasAudioRecognition = false,
+        hasVideoRecognition = false,
+        chatModelHasDirectAudio = false,
+        chatModelHasDirectVideo = false,
         useToolCallApi = false
     )
   }

@@ -24,6 +24,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import com.ai.assistance.operit.api.chat.llmprovider.MediaLinkParser
 
 /** Google Gemini API的实现 支持标准Gemini接口流式传输 */
 class GeminiProvider(
@@ -326,11 +327,33 @@ class GeminiProvider(
      */
     private fun buildPartsArray(text: String): JSONArray {
         val partsArray = JSONArray()
-        
-        if (ImageLinkParser.hasImageLinks(text)) {
-            val imageLinks = ImageLinkParser.extractImageLinks(text)
-            val textWithoutLinks = ImageLinkParser.removeImageLinks(text).trim()
-            
+
+        val hasImages = ImageLinkParser.hasImageLinks(text)
+        val hasMedia = MediaLinkParser.hasMediaLinks(text)
+
+        if (hasImages || hasMedia) {
+            val imageLinks = if (hasImages) ImageLinkParser.extractImageLinks(text) else emptyList()
+            val mediaLinks = if (hasMedia) MediaLinkParser.extractMediaLinks(text) else emptyList()
+
+            var textWithoutLinks = text
+            if (hasImages) {
+                textWithoutLinks = ImageLinkParser.removeImageLinks(textWithoutLinks)
+            }
+            if (hasMedia) {
+                textWithoutLinks = MediaLinkParser.removeMediaLinks(textWithoutLinks)
+            }
+            textWithoutLinks = textWithoutLinks.trim()
+
+            // 添加媒体（音频/视频）
+            mediaLinks.forEach { link ->
+                partsArray.put(JSONObject().apply {
+                    put("inline_data", JSONObject().apply {
+                        put("mime_type", link.mimeType)
+                        put("data", link.base64Data)
+                    })
+                })
+            }
+
             // 添加图片
             imageLinks.forEach { link ->
                 partsArray.put(JSONObject().apply {
@@ -340,7 +363,7 @@ class GeminiProvider(
                     })
                 })
             }
-            
+
             // 添加文本（如果有）
             if (textWithoutLinks.isNotEmpty()) {
                 partsArray.put(JSONObject().apply {

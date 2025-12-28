@@ -175,6 +175,10 @@ class ConversationService(
             customSystemPromptTemplate: String? = null,
             enableMemoryQuery: Boolean = true,
             hasImageRecognition: Boolean = false,
+            hasAudioRecognition: Boolean = false,
+            hasVideoRecognition: Boolean = false,
+            chatModelHasDirectAudio: Boolean = false,
+            chatModelHasDirectVideo: Boolean = false,
             useToolCallApi: Boolean = false,
             chatModelHasDirectImage: Boolean = false
     ): List<Pair<String, String>> {
@@ -209,16 +213,20 @@ class ConversationService(
 
                 // 获取系统提示词，现在传入workspacePath和识图配置状态
                 val systemPrompt = SystemPromptConfig.getSystemPromptWithCustomPrompts(
-                    packageManager,
-                    workspacePath,
-                    introPrompt,
-                    thinkingGuidance,
-                    finalCustomSystemPromptTemplate,
-                    enableTools,
-                    enableMemoryQuery,
-                    hasImageRecognition,
-                    useToolCallApi,
-                    chatModelHasDirectImage
+                    packageManager = packageManager,
+                    workspacePath = workspacePath,
+                    customIntroPrompt = introPrompt,
+                    thinkingGuidance = thinkingGuidance,
+                    customSystemPromptTemplate = finalCustomSystemPromptTemplate,
+                    enableTools = enableTools,
+                    enableMemoryQuery = enableMemoryQuery,
+                    hasImageRecognition = hasImageRecognition,
+                    chatModelHasDirectImage = chatModelHasDirectImage,
+                    hasAudioRecognition = hasAudioRecognition,
+                    hasVideoRecognition = hasVideoRecognition,
+                    chatModelHasDirectAudio = chatModelHasDirectAudio,
+                    chatModelHasDirectVideo = chatModelHasDirectVideo,
+                    useToolCallApi = useToolCallApi
                 )
 
                 // 构建waifu特殊规则
@@ -952,6 +960,90 @@ $toolList
         } catch (e: Exception) {
             AppLogger.e(TAG, "识图分析失败", e)
             "识图分析失败: ${e.message}"
+        }
+    }
+
+    suspend fun analyzeAudioWithIntent(
+        audioPath: String,
+        userIntent: String?,
+        multiServiceManager: MultiServiceManager
+    ): String {
+        return try {
+            val service = multiServiceManager.getServiceForFunction(FunctionType.AUDIO_RECOGNITION)
+
+            val mimeType = android.webkit.MimeTypeMap.getSingleton()
+                .getMimeTypeFromExtension(java.io.File(audioPath).extension.lowercase())
+                ?: "audio/*"
+
+            val mediaId = com.ai.assistance.operit.util.MediaPoolManager.addMedia(audioPath, mimeType)
+            if (mediaId == "error") {
+                return "无法加载音频: $audioPath"
+            }
+
+            val prompt = if (userIntent.isNullOrBlank()) {
+                "<link type=\"audio\" id=\"$mediaId\">音频</link>\n请分析这段音频。"
+            } else {
+                "<link type=\"audio\" id=\"$mediaId\">音频</link>\n$userIntent"
+            }
+
+            val modelParameters = multiServiceManager.getModelParametersForFunction(FunctionType.AUDIO_RECOGNITION)
+
+            val result = StringBuilder()
+            service.sendMessage(
+                message = prompt,
+                chatHistory = emptyList(),
+                modelParameters = modelParameters
+            ).collect { chunk ->
+                result.append(chunk)
+            }
+
+            com.ai.assistance.operit.util.MediaPoolManager.removeMedia(mediaId)
+            result.toString()
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "音频识别失败", e)
+            "音频识别失败: ${e.message}"
+        }
+    }
+
+    suspend fun analyzeVideoWithIntent(
+        videoPath: String,
+        userIntent: String?,
+        multiServiceManager: MultiServiceManager
+    ): String {
+        return try {
+            val service = multiServiceManager.getServiceForFunction(FunctionType.VIDEO_RECOGNITION)
+
+            val mimeType = android.webkit.MimeTypeMap.getSingleton()
+                .getMimeTypeFromExtension(java.io.File(videoPath).extension.lowercase())
+                ?: "video/*"
+
+            val mediaId = com.ai.assistance.operit.util.MediaPoolManager.addMedia(videoPath, mimeType)
+            if (mediaId == "error") {
+                return "无法加载视频: $videoPath"
+            }
+
+            val prompt = if (userIntent.isNullOrBlank()) {
+                "<link type=\"video\" id=\"$mediaId\">视频</link>\n请分析这个视频。"
+            } else {
+                "<link type=\"video\" id=\"$mediaId\">视频</link>\n$userIntent"
+            }
+
+            val modelParameters = multiServiceManager.getModelParametersForFunction(FunctionType.VIDEO_RECOGNITION)
+
+            val result = StringBuilder()
+            service.sendMessage(
+                message = prompt,
+                chatHistory = emptyList(),
+                modelParameters = modelParameters
+            ).collect { chunk ->
+                result.append(chunk)
+            }
+
+            com.ai.assistance.operit.util.MediaPoolManager.removeMedia(mediaId)
+            result.toString()
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "视频识别失败", e)
+            "视频识别失败: ${e.message}"
         }
     }
 }
