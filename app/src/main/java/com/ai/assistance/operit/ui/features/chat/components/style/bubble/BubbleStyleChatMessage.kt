@@ -30,7 +30,8 @@ fun BubbleStyleChatMessage(
             BubbleUserMessageComposable(
                 message = message,
                 backgroundColor = userMessageColor,
-                textColor = userTextColor
+                textColor = userTextColor,
+                enableDialogs = enableDialogs
             )
         }
         "ai" -> {

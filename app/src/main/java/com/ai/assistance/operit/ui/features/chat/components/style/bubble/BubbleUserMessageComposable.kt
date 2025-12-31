@@ -60,7 +60,8 @@ import kotlinx.coroutines.withContext
 fun BubbleUserMessageComposable(
     message: ChatMessage,
     backgroundColor: Color,
-    textColor: Color
+    textColor: Color,
+    enableDialogs: Boolean = true
 ) {
     val context = LocalContext.current
     val preferencesManager = remember { UserPreferencesManager.getInstance(context) }
@@ -164,7 +165,7 @@ fun BubbleUserMessageComposable(
                         Card(
                             modifier = Modifier
                                 .size(120.dp)
-                                .clickable {
+                                .clickable(enabled = enableDialogs) {
                                     selectedImageBitmap.value = bitmap
                                     showImagePreview.value = true
                                 },
@@ -189,7 +190,8 @@ fun BubbleUserMessageComposable(
                                 content = ""
                             ),
                             textColor = textColor,
-                            backgroundColor = backgroundColor
+                            backgroundColor = backgroundColor,
+                            enabled = enableDialogs
                         )
                     }
                 }
@@ -209,7 +211,9 @@ fun BubbleUserMessageComposable(
                         attachment = attachment,
                         textColor = textColor,
                         backgroundColor = backgroundColor,
+                        enabled = enableDialogs,
                         onClick = { attachmentData ->
+                            if (!enableDialogs) return@AttachmentTag
                             selectedChatAttachment.value =
                                 ChatAttachment(
                                     id = attachmentData.id,
@@ -293,7 +297,7 @@ fun BubbleUserMessageComposable(
     }
 
     // 内容预览对话框
-    if (showContentPreview.value) {
+    if (enableDialogs && showContentPreview.value) {
         AttachmentViewerDialog(
             visible = true,
             attachment = selectedChatAttachment.value,
@@ -302,7 +306,7 @@ fun BubbleUserMessageComposable(
     }
 
     // 图片预览对话框
-    if (showImagePreview.value && selectedImageBitmap.value != null) {
+    if (enableDialogs && showImagePreview.value && selectedImageBitmap.value != null) {
         Dialog(onDismissRequest = { showImagePreview.value = false }) {
             Surface(
                 modifier = Modifier
@@ -334,7 +338,7 @@ fun BubbleUserMessageComposable(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                         }
-
+                        
                         IconButton(onClick = { showImagePreview.value = false }) {
                             Icon(
                                 imageVector = Icons.Default.Close,
@@ -628,6 +632,7 @@ private fun AttachmentTag(
     attachment: AttachmentData,
     textColor: Color,
     backgroundColor: Color,
+    enabled: Boolean = true,
     onClick: (AttachmentData) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -657,12 +662,15 @@ private fun AttachmentTag(
                 .padding(vertical = 2.dp)
                 .clickable(
                     enabled =
-                        attachment.content.isNotEmpty() ||
-                            attachment.id.startsWith("/") ||
-                            attachment.id.startsWith("content://") ||
-                            attachment.id.startsWith("file://") ||
-                            attachment.id.startsWith("media_pool:") ||
-                            attachment.type.startsWith("image/"),
+                        enabled &&
+                            (
+                                attachment.content.isNotEmpty() ||
+                                    attachment.id.startsWith("/") ||
+                                    attachment.id.startsWith("content://") ||
+                                    attachment.id.startsWith("file://") ||
+                                    attachment.id.startsWith("media_pool:") ||
+                                    attachment.type.startsWith("image/")
+                            ),
                     onClick = { onClick(attachment) }
                 ),
         shape = RoundedCornerShape(12.dp),
@@ -691,4 +699,4 @@ private fun AttachmentTag(
             )
         }
     }
-} 
+}
