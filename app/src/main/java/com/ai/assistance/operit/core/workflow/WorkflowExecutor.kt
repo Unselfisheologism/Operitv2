@@ -29,6 +29,7 @@ sealed class NodeExecutionState {
     object Pending : NodeExecutionState()
     object Running : NodeExecutionState()
     data class Success(val result: String) : NodeExecutionState()
+    data class Skipped(val reason: String = "跳过") : NodeExecutionState()
     data class Failed(val error: String) : NodeExecutionState()
 }
 
@@ -64,7 +65,7 @@ class WorkflowExecutor(private val context: Context) {
     }
 
     private fun isSkippedState(state: NodeExecutionState?): Boolean {
-        return state is NodeExecutionState.Success && state.result == "跳过"
+        return state is NodeExecutionState.Skipped || (state is NodeExecutionState.Success && state.result == "跳过")
     }
 
     private fun parseBooleanLike(value: String): Boolean? {
@@ -86,6 +87,7 @@ class WorkflowExecutor(private val context: Context) {
                 val refState = nodeResults[value.nodeId]
                 when (refState) {
                     is NodeExecutionState.Success -> refState.result
+                    is NodeExecutionState.Skipped -> refState.reason
                     is NodeExecutionState.Failed -> throw IllegalStateException("引用的节点 ${value.nodeId} 执行失败")
                     else -> throw IllegalStateException("引用的节点 ${value.nodeId} 尚未完成执行")
                 }
@@ -539,8 +541,8 @@ class WorkflowExecutor(private val context: Context) {
 
             if (!shouldExecute) {
                 AppLogger.d(TAG, "节点条件不满足，跳过执行: ${node.name} (${node.id})")
-                nodeResults[node.id] = NodeExecutionState.Success("跳过")
-                onNodeStateChange(node.id, NodeExecutionState.Success("跳过"))
+                nodeResults[node.id] = NodeExecutionState.Skipped("条件不满足")
+                onNodeStateChange(node.id, NodeExecutionState.Skipped("条件不满足"))
 
                 for (nextNodeId in dependencyGraph.adjacencyList[currentNodeId] ?: emptyList()) {
                     if (!currentInDegree.containsKey(nextNodeId)) {
@@ -690,8 +692,8 @@ class WorkflowExecutor(private val context: Context) {
 
         if (node !is ExecuteNode) {
             AppLogger.d(TAG, "跳过非执行节点: ${node.name}")
-            nodeResults[node.id] = NodeExecutionState.Success("跳过")
-            onNodeStateChange(node.id, NodeExecutionState.Success("跳过"))
+            nodeResults[node.id] = NodeExecutionState.Skipped("非执行节点")
+            onNodeStateChange(node.id, NodeExecutionState.Skipped("非执行节点"))
             return true
         }
         

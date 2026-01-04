@@ -55,6 +55,28 @@ import com.ai.assistance.operit.ui.features.workflow.components.ScheduleConfigDi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+private fun ConditionOperator.toDisplayText(): String {
+    return when (this) {
+        ConditionOperator.EQ -> "="
+        ConditionOperator.NE -> "!="
+        ConditionOperator.GT -> ">"
+        ConditionOperator.GTE -> ">="
+        ConditionOperator.LT -> "<"
+        ConditionOperator.LTE -> "<="
+        ConditionOperator.CONTAINS -> "包含"
+        ConditionOperator.NOT_CONTAINS -> "不包含"
+        ConditionOperator.IN -> "∈"
+        ConditionOperator.NOT_IN -> "∉"
+    }
+}
+
+private fun LogicOperator.toDisplayText(): String {
+    return when (this) {
+        LogicOperator.AND -> "&&"
+        LogicOperator.OR -> "||"
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkflowDetailScreen(
@@ -364,6 +386,10 @@ fun WorkflowDetailScreen(
                             showConnectionMenu = nodeId
                             showNodeActionMenu = null
                         },
+                        onDelete = {
+                            showDeleteNodeDialog = nodeId
+                            showNodeActionMenu = null
+                        },
                         onDismiss = {
                             showNodeActionMenu = null
                         }
@@ -403,6 +429,11 @@ fun WorkflowDetailScreen(
                         onDeleteConnection = { connectionId ->
                             viewModel.deleteConnection(workflowId, connectionId) {
                                 // 连接删除成功
+                            }
+                        },
+                        onUpdateConnectionCondition = { connectionId, condition ->
+                            viewModel.updateConnectionCondition(workflowId, connectionId, condition) {
+                                // 条件更新成功
                             }
                         },
                         onDismiss = { showConnectionMenu = null }
@@ -1022,7 +1053,7 @@ fun NodeDialog(
                             onExpandedChange = { conditionOperatorExpanded = !conditionOperatorExpanded }
                         ) {
                             OutlinedTextField(
-                                value = conditionOperator.name,
+                                value = conditionOperator.toDisplayText(),
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("运算符") },
@@ -1035,7 +1066,7 @@ fun NodeDialog(
                             ) {
                                 ConditionOperator.values().forEach { op ->
                                     DropdownMenuItem(
-                                        text = { Text(op.name) },
+                                        text = { Text(op.toDisplayText()) },
                                         onClick = {
                                             conditionOperator = op
                                             conditionOperatorExpanded = false
@@ -1196,7 +1227,7 @@ fun NodeDialog(
                             onExpandedChange = { logicOperatorExpanded = !logicOperatorExpanded }
                         ) {
                             OutlinedTextField(
-                                value = logicOperator.name,
+                                value = logicOperator.toDisplayText(),
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("逻辑运算") },
@@ -1209,7 +1240,7 @@ fun NodeDialog(
                             ) {
                                 LogicOperator.values().forEach { op ->
                                     DropdownMenuItem(
-                                        text = { Text(op.name) },
+                                        text = { Text(op.toDisplayText()) },
                                         onClick = {
                                             logicOperator = op
                                             logicOperatorExpanded = false

@@ -1,5 +1,6 @@
 package com.ai.assistance.operit.ui.features.workflow.components
 
+import android.graphics.Paint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -16,7 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
@@ -25,6 +28,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -33,6 +37,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ai.assistance.operit.core.workflow.NodeExecutionState
+import com.ai.assistance.operit.data.model.ConditionNode
+
+
+import com.ai.assistance.operit.data.model.LogicNode
 import com.ai.assistance.operit.data.model.WorkflowNode
 import com.ai.assistance.operit.data.model.WorkflowNodeConnection
 import kotlin.math.roundToInt
@@ -65,6 +73,77 @@ fun GridWorkflowCanvas(
     val nodeHeightPx = with(density) { NODE_HEIGHT.toPx() }
     val canvasWidthPx = with(density) { CANVAS_WIDTH.toPx() }
     val canvasHeightPx = with(density) { CANVAS_HEIGHT.toPx() }
+
+    val nodeById = remember(nodes) { nodes.associateBy { it.id } }
+
+    fun connectionLabelText(connection: WorkflowNodeConnection): String? {
+        val raw = connection.condition?.trim().orEmpty()
+        val sourceNode = nodeById[connection.sourceNodeId]
+        val isConditionLike = sourceNode is ConditionNode || sourceNode is LogicNode
+
+        if (raw.isBlank()) {
+            return if (isConditionLike) {
+                "T"
+            } else {
+                null
+            }
+        }
+
+        return when (raw.lowercase()) {
+            "true" -> "T"
+            "false" -> "F"
+            else -> {
+                val short = if (raw.length > 12) raw.take(12) + "…" else raw
+                "R:$short"
+            }
+        }
+    }
+
+    fun parseBooleanLike(value: String): Boolean? {
+        val normalized = value.trim().lowercase()
+        return when (normalized) {
+            "true", "1", "yes", "y", "on" -> true
+            "false", "0", "no", "n", "off" -> false
+            else -> null
+        }
+    }
+
+    fun isConnectionActive(connection: WorkflowNodeConnection): Boolean {
+        val sourceState = nodeExecutionStates[connection.sourceNodeId]
+        val sourceResult = (sourceState as? NodeExecutionState.Success)?.result ?: return false
+        if (sourceResult == "跳过") return false
+
+        val rawCondition = connection.condition?.trim().orEmpty()
+        val sourceNode = nodeById[connection.sourceNodeId]
+        val effectiveCondition =
+            if (rawCondition.isBlank() && (sourceNode is ConditionNode || sourceNode is LogicNode)) {
+                "true"
+            } else {
+                rawCondition
+            }
+
+        if (effectiveCondition.isBlank()) {
+            return true
+        }
+
+        val desiredBool =
+            when (effectiveCondition.lowercase()) {
+                "true" -> true
+                "false" -> false
+                else -> null
+            }
+
+        if (desiredBool != null) {
+            val actual = parseBooleanLike(sourceResult) ?: false
+            return actual == desiredBool
+        }
+
+        return try {
+            Regex(effectiveCondition).containsMatchIn(sourceResult)
+        } catch (_: Exception) {
+            false
+        }
+    }
     
     // 维护节点位置状态（像素坐标）
     val nodePositions = remember(nodes) {
@@ -90,8 +169,8 @@ fun GridWorkflowCanvas(
             .pointerInput(Unit) {
                 // 检测双指缩放和平移手势
                 detectTransformGestures { centroid, pan, zoom, rotation ->
-                    // 应用缩放（限制在 0.5x 到 3x 之间）
-                    val newScale = (scale * zoom).coerceIn(0.5f, 3f)
+                    // 应用缩放（限制在 0.25x 到 3x 之间）
+                    val newScale = (scale * zoom).coerceIn(0.25f, 3f)
 
                     val scaleChange = newScale / scale
                     panOffset = (panOffset - centroid) * scaleChange + centroid + pan
@@ -126,6 +205,13 @@ fun GridWorkflowCanvas(
             ) {
                 val width = size.width
                 val height = size.height
+
+                val labelTextSize = 34f
+                val labelTextPaint = Paint().apply {
+                    isAntiAlias = true
+                    textSize = labelTextSize
+                    color = android.graphics.Color.BLACK
+                }
                 
                 // 绘制网格点背景
                 val gridDotColor = Color(0xFF888888) // 更深、对比度更高的颜色
@@ -154,6 +240,32 @@ fun GridWorkflowCanvas(
                     val targetPos = nodePositions[connection.targetNodeId]
                     
                     if (sourcePos != null && targetPos != null) {
+                        val targetState = nodeExecutionStates[connection.targetNodeId]
+                        val hasExecutionInfo = nodeExecutionStates.isNotEmpty()
+                        val isTargetSkipped = targetState is NodeExecutionState.Skipped
+                        val active = hasExecutionInfo && !isTargetSkipped && isConnectionActive(connection)
+
+                        val activeColor =
+                            when (targetState) {
+                                is NodeExecutionState.Running -> Color(0xFF2196F3)
+                                is NodeExecutionState.Failed -> Color(0xFFF44336)
+                                is NodeExecutionState.Success -> Color(0xFF4CAF50)
+                                else -> Color(0xFF4285F4)
+                            }
+
+                        val inactiveColor = Color(0xFFBDBDBD)
+                        val lineColor =
+                            if (!hasExecutionInfo) {
+                                Color(0xFF4285F4)
+                            } else if (active) {
+                                activeColor
+                            } else {
+                                inactiveColor
+                            }
+
+                        val lineWidth = if (active) 3.5f else 2.5f
+                        val dash = if (hasExecutionInfo && !active) PathEffect.dashPathEffect(floatArrayOf(14f, 10f), 0f) else null
+
                         // 计算节点中心点
                         val sourceCenterX = sourcePos.x + nodeWidthPx / 2
                         val sourceCenterY = sourcePos.y + nodeHeightPx / 2
@@ -230,20 +342,22 @@ fun GridWorkflowCanvas(
                         // 绘制连接线阴影
                         drawPath(
                             path = path,
-                            color = Color(0x30000000),
+                            color = if (hasExecutionInfo && !active) Color(0x14000000) else Color(0x30000000),
                             style = Stroke(
-                                width = 4f,
-                                cap = StrokeCap.Round
+                                width = lineWidth + 1.5f,
+                                cap = StrokeCap.Round,
+                                pathEffect = dash
                             )
                         )
                         
                         // 绘制连接线主体
                         drawPath(
                             path = path,
-                            color = Color(0xFF4285F4),
+                            color = lineColor,
                             style = Stroke(
-                                width = 2.5f,
-                                cap = StrokeCap.Round
+                                width = lineWidth,
+                                cap = StrokeCap.Round,
+                                pathEffect = dash
                             )
                         )
                         
@@ -308,18 +422,49 @@ fun GridWorkflowCanvas(
                             // 绘制箭头阴影
                             drawPath(
                                 path = arrowPath,
-                                color = Color(0x40000000)
+                                color = if (hasExecutionInfo && !active) Color(0x24000000) else Color(0x40000000)
                             )
                             
                             // 绘制实心箭头
                             drawPath(
                                 path = arrowPath,
-                                color = Color(0xFF4285F4)
+                                color = lineColor
                             )
                         }
                         
                         // 在曲线中点绘制箭头（增大尺寸使其更明显）
                         val (midPoint, midAngle) = getBezierPointAndTangent(0.5f)
+                        val label = connectionLabelText(connection)
+                        if (label != null) {
+                            val paddingX = 14f
+                            val paddingY = 10f
+                            val textWidth = labelTextPaint.measureText(label)
+                            val rectWidth = textWidth + paddingX * 2
+                            val rectHeight = labelTextSize + paddingY * 2
+                            val rectTopLeft = Offset(midPoint.x - rectWidth / 2, midPoint.y - rectHeight / 2)
+
+                            drawRoundRect(
+                                color = Color(0xE0FFFFFF),
+                                topLeft = rectTopLeft,
+                                size = Size(rectWidth, rectHeight),
+                                cornerRadius = CornerRadius(10f, 10f)
+                            )
+                            drawRoundRect(
+                                color = lineColor.copy(alpha = 0.9f),
+                                topLeft = rectTopLeft,
+                                size = Size(rectWidth, rectHeight),
+                                cornerRadius = CornerRadius(12f, 12f),
+                                style = Stroke(width = 2.5f)
+                            )
+
+                            drawContext.canvas.nativeCanvas.drawText(
+                                label,
+                                rectTopLeft.x + paddingX,
+                                rectTopLeft.y + paddingY + labelTextSize * 0.85f,
+                                labelTextPaint
+                            )
+                        }
+
                         drawArrow(midPoint, midAngle, 18f)
                         
                         // 在曲线终点绘制箭头
