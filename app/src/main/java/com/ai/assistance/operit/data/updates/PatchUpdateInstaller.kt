@@ -147,6 +147,7 @@ object PatchUpdateInstaller {
             }
         }
 
+        cleanupPatchWorkDir(workDir, outApk)
         outApk
     }
 
@@ -364,10 +365,29 @@ object PatchUpdateInstaller {
         val outApk = File(workDir, "rebuilt.apk")
         if (outApk.exists()) outApk.delete()
         workApk.renameTo(outApk)
+        cleanupPatchWorkDir(workDir, outApk)
         AutoPatchResult(
             apkFile = outApk,
             finalVersion = lastAppliedVersion
         )
+    }
+
+    private fun cleanupPatchWorkDir(workDir: File, keepFile: File) {
+        val keep = runCatching { keepFile.canonicalFile }.getOrElse { keepFile.absoluteFile }
+        val files = workDir.listFiles() ?: return
+        for (f in files) {
+            val fc = runCatching { f.canonicalFile }.getOrElse { f.absoluteFile }
+            if (fc.path == keep.path) continue
+            runCatching {
+                if (f.isDirectory) {
+                    f.deleteRecursively()
+                } else {
+                    f.delete()
+                }
+            }.onFailure { e ->
+                AppLogger.w(TAG, "Failed to cleanup patch work file: ${f.absolutePath}", e)
+            }
+        }
     }
 
     private fun selectUrl(originalUrl: String, mirrorKey: String): String {

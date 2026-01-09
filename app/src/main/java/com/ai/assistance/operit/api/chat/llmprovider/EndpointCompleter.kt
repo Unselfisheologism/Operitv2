@@ -67,6 +67,10 @@ object EndpointCompleter {
                         return "$endpointWithoutSlash/v1/messages"
                     }
 
+                    if (path.endsWith("/anthropic", ignoreCase = true)) {
+                        return "$endpointWithoutSlash/v1/messages"
+                    }
+
                     if (path.endsWith("/v1", ignoreCase = true)) {
                         return "$endpointWithoutSlash/messages"
                     }

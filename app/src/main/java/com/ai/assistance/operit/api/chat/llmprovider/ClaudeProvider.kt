@@ -19,7 +19,7 @@ import com.ai.assistance.operit.api.chat.llmprovider.MediaLinkParser
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -99,6 +99,22 @@ class ClaudeProvider(
 
         AppLogger.d("AIService", "取消标志已设置，流读取将立即被中断")
     }
+
+     private fun headersForLog(headers: Headers): String {
+         return buildString {
+             headers.names().forEach { name ->
+                 val value = when {
+                     name.equals("x-api-key", ignoreCase = true) -> "[REDACTED]"
+                     name.equals("authorization", ignoreCase = true) -> "[REDACTED]"
+                     else -> headers[name] ?: ""
+                 }
+                 append(name)
+                 append(": ")
+                 append(value)
+                 append('\n')
+             }
+         }.trimEnd()
+     }
 
     // ==================== Tool Call 支持 ====================
 
@@ -663,7 +679,8 @@ class ClaudeProvider(
         }
 
         val request = builder.build()
-        AppLogger.d("AIService", "Claude请求头: \n${request.headers}")
+        AppLogger.d("AIService", "Claude请求URL: ${request.url}")
+        AppLogger.d("AIService", "Claude请求头: \n${headersForLog(request.headers)}")
         return request
     }
 
@@ -679,32 +696,76 @@ class ClaudeProvider(
             onNonFatalError: suspend (error: String) -> Unit
     ): Stream<String> = stream {
         isManuallyCancelled = false
-        // 重置token计数
         resetTokenCounts()
 
         val maxRetries = 3
         var retryCount = 0
         var lastException: Exception? = null
-
-        // 用于保存已接收到的内容，以便在重试时使用
         val receivedContent = StringBuilder()
+
+        fun parseAnthropicNonStreaming(jsonResponse: JSONObject): String {
+            val content = jsonResponse.optJSONArray("content") ?: return ""
+            if (content.length() <= 0) return ""
+            val fullText = StringBuilder()
+            for (i in 0 until content.length()) {
+                val block = content.optJSONObject(i) ?: continue
+                when (block.optString("type")) {
+                    "text" -> {
+                        val text = block.optString("text", "")
+                        if (text.isNotEmpty()) fullText.append(text)
+                    }
+                    "tool_use" -> {
+                        if (enableToolCall) {
+                            val toolName = block.optString("name", "")
+                            if (toolName.isNotEmpty()) {
+                                fullText.append("\n<tool name=\"$toolName\">")
+                                val input = block.optJSONObject("input")
+                                if (input != null) {
+                                    val converter = StreamingJsonXmlConverter()
+                                    val events = converter.feed(input.toString())
+                                    events.forEach { event ->
+                                        when (event) {
+                                            is StreamingJsonXmlConverter.Event.Tag -> fullText.append(event.text)
+                                            is StreamingJsonXmlConverter.Event.Content -> fullText.append(event.text)
+                                        }
+                                    }
+                                    val flushEvents = converter.flush()
+                                    flushEvents.forEach { event ->
+                                        when (event) {
+                                            is StreamingJsonXmlConverter.Event.Tag -> fullText.append(event.text)
+                                            is StreamingJsonXmlConverter.Event.Content -> fullText.append(event.text)
+                                        }
+                                    }
+                                }
+                                fullText.append("\n</tool>\n")
+                            }
+                        }
+                    }
+                }
+            }
+            return fullText.toString()
+        }
+
+        fun parseOpenAiNonStreaming(jsonResponse: JSONObject): String {
+            val choices = jsonResponse.optJSONArray("choices") ?: return ""
+            if (choices.length() <= 0) return ""
+            val first = choices.optJSONObject(0) ?: return ""
+            val messageObj = first.optJSONObject("message")
+            return messageObj?.optString("content", "") ?: ""
+        }
 
         AppLogger.d("AIService", "准备连接到Claude AI服务...")
         while (retryCount < maxRetries) {
-            // 在循环开始时检查是否已被取消
             if (isManuallyCancelled) {
                 AppLogger.d("AIService", "【Claude】请求被用户取消，停止重试。")
                 throw UserCancellationException("请求已被用户取消")
             }
-            
-            try {
-                // 如果是重试，我们需要构建一个新的请求
+
+            val call = try {
                 val currentMessage: String
                 val currentHistory: List<Pair<String, String>>
-
                 if (retryCount > 0 && receivedContent.isNotEmpty()) {
                     AppLogger.d("AIService", "【Claude 重试】准备续写请求，已接收内容: ${receivedContent.length}")
-                    // Claude 对续写指令可能需要不同的优化，这里使用一个通用的方式
                     currentMessage = message + "\n\n[SYSTEM NOTE] The previous response was cut off by a network error. You MUST continue from the exact point of interruption. Do not repeat any content. If you were in the middle of a code block or XML tag, complete it. Just output the text that would have come next."
                     val resumeHistory = chatHistory.toMutableList()
                     resumeHistory.add("assistant" to receivedContent.toString())
@@ -714,145 +775,165 @@ class ClaudeProvider(
                     currentHistory = chatHistory
                 }
 
-                val requestBody = createRequestBody(currentMessage, currentHistory, modelParameters, enableThinking, stream, availableTools, preserveThinkInHistory)
+                val requestBody = createRequestBody(
+                    currentMessage,
+                    currentHistory,
+                    modelParameters,
+                    enableThinking,
+                    stream,
+                    availableTools,
+                    preserveThinkInHistory
+                )
                 onTokensUpdated(
-                        tokenCacheManager.totalInputTokenCount,
-                        tokenCacheManager.cachedInputTokenCount,
-                        tokenCacheManager.outputTokenCount
+                    tokenCacheManager.totalInputTokenCount,
+                    tokenCacheManager.cachedInputTokenCount,
+                    tokenCacheManager.outputTokenCount
                 )
                 val request = createRequest(requestBody)
+                client.newCall(request)
+            } catch (e: Exception) {
+                throw e
+            }
 
-                // 创建Call对象并保存到activeCall中，以便可以取消
-                val call = client.newCall(request)
-                activeCall = call
-
+            activeCall = call
+            try {
                 AppLogger.d("AIService", "正在建立连接...")
-                val response = call.execute()
-                activeResponse = response
-                try {
-                    if (!response.isSuccessful) {
-                        val errorBody = response.body?.string() ?: "No error details"
-                        // 对于4xx这类明确的客户端错误，直接抛出，不进行重试
-                        if (response.code in 400..499) {
-                            throw NonRetriableException("API请求失败，状态码: ${response.code}，错误信息: $errorBody")
+                withContext(Dispatchers.IO) {
+                    val response = call.execute()
+                    activeResponse = response
+                    try {
+                        if (!response.isSuccessful) {
+                            val errorBody = response.body?.string() ?: "No error details"
+                            if (response.code in 400..499) {
+                                throw NonRetriableException("API请求失败，状态码: ${response.code}，错误信息: $errorBody")
+                            }
+                            throw IOException("API请求失败，状态码: ${response.code}，错误信息: $errorBody")
                         }
-                        // 对于5xx等服务端错误，允许重试
-                        throw IOException("API请求失败，状态码: ${response.code}，错误信息: $errorBody")
-                    }
 
-                    AppLogger.d("AIService", "连接成功，等待响应...")
-                    val responseBody = response.body ?: throw IOException("API响应为空")
-                    
-                    // 根据stream参数处理响应
-                    if (stream) {
-                        // 处理流式响应
+                        AppLogger.d("AIService", "连接成功，等待响应...")
+                        val responseBody = response.body ?: throw IOException("API响应为空")
+
+                        val contentType = response.header("Content-Type") ?: ""
+                        AppLogger.d(
+                            "AIService",
+                            "Claude响应状态: code=${response.code}, contentType=$contentType"
+                        )
+
+                        val preview = runCatching { response.peekBody(4096).string() }.getOrNull().orEmpty()
+                        val previewTrim = preview.trimStart()
+                        val looksLikeJson = previewTrim.startsWith("{") || previewTrim.startsWith("[")
+                        val looksLikeSse = previewTrim.startsWith("data:") || preview.contains("\ndata:")
+                        val isEventStream = contentType.contains("event-stream", ignoreCase = true)
+                        AppLogger.d(
+                            "AIService",
+                            "Claude响应格式检测: looksLikeJson=$looksLikeJson, looksLikeSse=$looksLikeSse, isEventStream=$isEventStream"
+                        )
+
+                        if (stream && !looksLikeSse && looksLikeJson) {
+                            val responseText = responseBody.string().trim()
+                            val json = JSONObject(responseText)
+                            val resultText = parseAnthropicNonStreaming(json).ifBlank { parseOpenAiNonStreaming(json) }
+                            if (resultText.isNotBlank()) {
+                                emit(resultText)
+                                receivedContent.append(resultText)
+                                tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(resultText))
+                                onTokensUpdated(
+                                    tokenCacheManager.totalInputTokenCount,
+                                    tokenCacheManager.cachedInputTokenCount,
+                                    tokenCacheManager.outputTokenCount
+                                )
+                            } else {
+                                throw IOException("响应解析为空")
+                            }
+                            return@withContext
+                        }
+
+                        if (!stream) {
+                            val responseText = responseBody.string().trim()
+                            val json = JSONObject(responseText)
+                            val resultText = parseAnthropicNonStreaming(json).ifBlank { parseOpenAiNonStreaming(json) }
+                            if (resultText.isNotBlank()) {
+                                emit(resultText)
+                                receivedContent.append(resultText)
+                                tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(resultText))
+                                onTokensUpdated(
+                                    tokenCacheManager.totalInputTokenCount,
+                                    tokenCacheManager.cachedInputTokenCount,
+                                    tokenCacheManager.outputTokenCount
+                                )
+                            }
+                            return@withContext
+                        }
+
                         val reader = responseBody.charStream().buffered()
-                        
-                        // Tool call 流式输出支持
                         var currentToolParser: StreamingJsonXmlConverter? = null
                         var isInToolCall = false
-                        var wasCancelled = false
+                        var emittedAny = false
+                        val nonSseJsonLinesBuffer = StringBuilder()
 
-                        try {
-                            reader.useLines { lines ->
-                                for (line in lines) {
-                                    // 如果call已被取消，提前退出
-                                    if (activeCall?.isCanceled() == true) {
-                                        AppLogger.d("AIService", "流式传输已被取消，提前退出处理")
-                                        wasCancelled = true
-                                        break
-                                    }
+                        while (true) {
+                            val rawLine = reader.readLine() ?: break
+                            val line = rawLine.trim()
+                            if (activeCall?.isCanceled() == true) {
+                                AppLogger.d("AIService", "流式传输已被取消，提前退出处理")
+                                break
+                            }
+                            if (!line.startsWith("data:")) {
+                                // 某些兼容端点可能直接返回 JSON/JSONL（不带 SSE 的 data: 前缀）
+                                if ((line.startsWith("{") || line.startsWith("[")) &&
+                                    nonSseJsonLinesBuffer.length < 2_000_000
+                                ) {
+                                    nonSseJsonLinesBuffer.append(line).append('\n')
+                                }
+                                continue
+                            }
+                            val data = line.substringAfter("data:").trimStart()
+                            if (data == "[DONE]") break
+                            if (data.isBlank()) continue
 
-                                    if (!line.startsWith("data: ")) continue
+                            val jsonResponse = runCatching { JSONObject(data) }.getOrNull() ?: continue
+                            val type = jsonResponse.optString("type", "")
 
-                                    val data = line.substring(6).trim()
-                                    if (data == "[DONE]") {
-                                        break
-                                    }
+                            // OpenAI-style chunk (no `type`)
+                            if (type.isBlank()) {
+                                val choices = jsonResponse.optJSONArray("choices")
+                                val first = choices?.optJSONObject(0)
+                                val delta = first?.optJSONObject("delta")
+                                val content = delta?.optString("content", "").orEmpty()
+                                if (content.isNotEmpty()) {
+                                    emittedAny = true
+                                    tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(content))
+                                    onTokensUpdated(
+                                        tokenCacheManager.totalInputTokenCount,
+                                        tokenCacheManager.cachedInputTokenCount,
+                                        tokenCacheManager.outputTokenCount
+                                    )
+                                    emit(content)
+                                    receivedContent.append(content)
+                                }
+                                continue
+                            }
 
-                                    try {
-                                        val jsonResponse = JSONObject(data)
+                            when (type) {
+                                "ping" -> {
+                                }
+                                "content_block_start" -> {
+                                    if (enableToolCall) {
+                                        val contentBlock = jsonResponse.optJSONObject("content_block")
+                                        if (contentBlock != null && contentBlock.optString("type") == "tool_use") {
+                                            val toolName = contentBlock.optString("name", "")
+                                            if (toolName.isNotEmpty()) {
+                                                val toolStartTag = "\n<tool name=\"$toolName\">"
+                                                emittedAny = true
+                                                emit(toolStartTag)
+                                                receivedContent.append(toolStartTag)
 
-                                        val type = jsonResponse.optString("type", "")
+                                                currentToolParser = StreamingJsonXmlConverter()
+                                                isInToolCall = true
 
-                                        when (type) {
-                                            "ping" -> {
-                                            }
-                                            "content_block_start" -> {
-                                                if (enableToolCall) {
-                                                    val contentBlock = jsonResponse.optJSONObject("content_block")
-                                                    if (contentBlock != null && contentBlock.optString("type") == "tool_use") {
-                                                        val toolName = contentBlock.optString("name", "")
-                                                        if (toolName.isNotEmpty()) {
-                                                            val toolStartTag = "\n<tool name=\"$toolName\">"
-                                                            emit(toolStartTag)
-                                                            receivedContent.append(toolStartTag)
-
-                                                            currentToolParser = StreamingJsonXmlConverter()
-                                                            isInToolCall = true
-
-                                                            val input = contentBlock.optJSONObject("input")
-                                                            if (input != null) {
-                                                                val inputJson = input.toString()
-                                                                val events = currentToolParser!!.feed(inputJson)
-                                                                events.forEach { event ->
-                                                                    when (event) {
-                                                                        is StreamingJsonXmlConverter.Event.Tag -> {
-                                                                            emit(event.text)
-                                                                            receivedContent.append(event.text)
-                                                                        }
-                                                                        is StreamingJsonXmlConverter.Event.Content -> {
-                                                                            emit(event.text)
-                                                                            receivedContent.append(event.text)
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-
-                                                            AppLogger.d("AIService", "Claude Tool Use流式转XML: $toolName")
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            "content_block_delta" -> {
-                                                val delta = jsonResponse.optJSONObject("delta")
-                                                if (delta != null) {
-                                                    val deltaType = delta.optString("type", "")
-                                                    if (deltaType == "text_delta" || delta.has("text")) {
-                                                        val content = delta.optString("text", "")
-                                                        if (content.isNotEmpty()) {
-                                                            tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(content))
-                                                            onTokensUpdated(
-                                                                tokenCacheManager.totalInputTokenCount,
-                                                                tokenCacheManager.cachedInputTokenCount,
-                                                                tokenCacheManager.outputTokenCount
-                                                            )
-                                                            emit(content)
-                                                            receivedContent.append(content)
-                                                        }
-                                                    } else if (enableToolCall && isInToolCall && currentToolParser != null && deltaType == "input_json_delta") {
-                                                        val partialJson = delta.optString("partial_json", "")
-                                                        if (partialJson.isNotEmpty()) {
-                                                            val events = currentToolParser!!.feed(partialJson)
-                                                            events.forEach { event ->
-                                                                when (event) {
-                                                                    is StreamingJsonXmlConverter.Event.Tag -> {
-                                                                        emit(event.text)
-                                                                        receivedContent.append(event.text)
-                                                                    }
-                                                                    is StreamingJsonXmlConverter.Event.Content -> {
-                                                                        emit(event.text)
-                                                                        receivedContent.append(event.text)
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            "content_block_stop" -> {
-                                                if (isInToolCall && currentToolParser != null) {
-                                                    val events = currentToolParser!!.flush()
+                                                val input = contentBlock.optJSONObject("input")
+                                                if (input != null) {
+                                                    val events = currentToolParser!!.feed(input.toString())
                                                     events.forEach { event ->
                                                         when (event) {
                                                             is StreamingJsonXmlConverter.Event.Tag -> {
@@ -865,135 +946,141 @@ class ClaudeProvider(
                                                             }
                                                         }
                                                     }
-
-                                                    val toolEndTag = "\n</tool>\n"
-                                                    emit(toolEndTag)
-                                                    receivedContent.append(toolEndTag)
-
-                                                    isInToolCall = false
-                                                    currentToolParser = null
                                                 }
                                             }
-                                            "message_delta" -> {
-                                            }
-                                            "message_stop" -> {
-                                                break
-                                            }
                                         }
-                                    } catch (e: Exception) {
-                                        AppLogger.w("AIService", "JSON解析错误: ${e.message}")
                                     }
                                 }
-                            }
-                        } catch (e: IOException) {
-                            if (isManuallyCancelled) {
-                                AppLogger.d("AIService", "【Claude】流式传输已被用户取消，停止后续操作。")
-                                throw UserCancellationException("请求已被用户取消", e)
-                            }
-                            // 捕获IO异常，可能是由于取消Call导致的
-                            var wasCancelled = false
-                            if (activeCall?.isCanceled() == true) {
-                                AppLogger.d("AIService", "流式传输已被取消，处理IO异常")
-                                wasCancelled = true
-                            } else {
-                                 AppLogger.e("AIService", "【Claude】流式读取时发生IO异常，准备重试", e)
-                                lastException = e
-                                throw e
-                            }
-                        }
-                    } else {
-                        // 处理非流式响应
-                        val responseText = responseBody.string()
-                        AppLogger.d("AIService", "收到完整响应，长度: ${responseText.length}")
-                        
-                        try {
-                            val jsonResponse = JSONObject(responseText)
-                            
-                            // Claude非流式响应格式
-                            val content = jsonResponse.optJSONArray("content")
-                            if (content != null && content.length() > 0) {
-                                val fullText = StringBuilder()
-                                for (i in 0 until content.length()) {
-                                    val block = content.getJSONObject(i)
-                                    when (block.optString("type")) {
-                                        "text" -> {
-                                            val text = block.optString("text", "")
-                                            if (text.isNotEmpty()) {
-                                                fullText.append(text)
+                                "content_block_delta" -> {
+                                    val delta = jsonResponse.optJSONObject("delta")
+                                    if (delta != null) {
+                                        val deltaType = delta.optString("type", "")
+                                        if (deltaType == "text_delta" || delta.has("text")) {
+                                            val content = delta.optString("text", "")
+                                            if (content.isNotEmpty()) {
+                                                emittedAny = true
+                                                tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(content))
+                                                onTokensUpdated(
+                                                    tokenCacheManager.totalInputTokenCount,
+                                                    tokenCacheManager.cachedInputTokenCount,
+                                                    tokenCacheManager.outputTokenCount
+                                                )
+                                                emit(content)
+                                                receivedContent.append(content)
                                             }
-                                        }
-                                        "tool_use" -> {
-                                            // 流式转换 tool_use 为 XML
-                                            if (enableToolCall) {
-                                                val toolName = block.optString("name", "")
-                                                if (toolName.isNotEmpty()) {
-                                                    fullText.append("\n<tool name=\"$toolName\">")
-                                                    
-                                                    // 使用 StreamingJsonXmlConverter 流式转换参数
-                                                    val input = block.optJSONObject("input")
-                                                    if (input != null) {
-                                                        val converter = StreamingJsonXmlConverter()
-                                                        val inputJson = input.toString()
-                                                        val events = converter.feed(inputJson)
-                                                        events.forEach { event ->
-                                                            when (event) {
-                                                                is StreamingJsonXmlConverter.Event.Tag -> fullText.append(event.text)
-                                                                is StreamingJsonXmlConverter.Event.Content -> fullText.append(event.text)
-                                                            }
+                                        } else if (enableToolCall && isInToolCall && currentToolParser != null && deltaType == "input_json_delta") {
+                                            val partialJson = delta.optString("partial_json", "")
+                                            if (partialJson.isNotEmpty()) {
+                                                val events = currentToolParser!!.feed(partialJson)
+                                                events.forEach { event ->
+                                                    when (event) {
+                                                        is StreamingJsonXmlConverter.Event.Tag -> {
+                                                            emit(event.text)
+                                                            receivedContent.append(event.text)
                                                         }
-                                                        // 刷新剩余内容
-                                                        val flushEvents = converter.flush()
-                                                        flushEvents.forEach { event ->
-                                                            when (event) {
-                                                                is StreamingJsonXmlConverter.Event.Tag -> fullText.append(event.text)
-                                                                is StreamingJsonXmlConverter.Event.Content -> fullText.append(event.text)
-                                                            }
+                                                        is StreamingJsonXmlConverter.Event.Content -> {
+                                                            emit(event.text)
+                                                            receivedContent.append(event.text)
                                                         }
                                                     }
-                                                    
-                                                    fullText.append("\n</tool>\n")
-                                                    AppLogger.d("AIService", "Claude Tool Use流式转XML (非流式): $toolName")
                                                 }
                                             }
                                         }
                                     }
                                 }
-                                
-                                val resultText = fullText.toString()
-                                if (resultText.isNotEmpty()) {
-                                    // 直接发送整个内容块，下游会自己处理
+                                "content_block_stop" -> {
+                                    if (isInToolCall && currentToolParser != null) {
+                                        val events = currentToolParser!!.flush()
+                                        events.forEach { event ->
+                                            when (event) {
+                                                is StreamingJsonXmlConverter.Event.Tag -> {
+                                                    emit(event.text)
+                                                    receivedContent.append(event.text)
+                                                }
+                                                is StreamingJsonXmlConverter.Event.Content -> {
+                                                    emit(event.text)
+                                                    receivedContent.append(event.text)
+                                                }
+                                            }
+                                        }
+                                        val toolEndTag = "\n</tool>\n"
+                                        emit(toolEndTag)
+                                        receivedContent.append(toolEndTag)
+
+                                        isInToolCall = false
+                                        currentToolParser = null
+                                    }
+                                }
+                                "message_delta" -> {
+                                }
+                                "message_stop" -> {
+                                    break
+                                }
+                            }
+                        }
+
+                        if (!emittedAny && nonSseJsonLinesBuffer.isNotBlank()) {
+                            val buffered = nonSseJsonLinesBuffer.toString().trim()
+                            AppLogger.w(
+                                "AIService",
+                                "Claude流式返回疑似JSON/JSONL(无data:前缀)，尝试回退解析。preview=${buffered.take(200)}"
+                            )
+
+                            // 先尝试整体当成一个JSON对象解析
+                            val wholeJson = runCatching { JSONObject(buffered) }.getOrNull()
+                            if (wholeJson != null) {
+                                val resultText = parseAnthropicNonStreaming(wholeJson)
+                                    .ifBlank { parseOpenAiNonStreaming(wholeJson) }
+                                if (resultText.isNotBlank()) {
+                                    emittedAny = true
                                     emit(resultText)
                                     receivedContent.append(resultText)
                                     tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(resultText))
                                     onTokensUpdated(
+                                        tokenCacheManager.totalInputTokenCount,
+                                        tokenCacheManager.cachedInputTokenCount,
+                                        tokenCacheManager.outputTokenCount
+                                    )
+                                }
+                            } else {
+                                // 再尝试逐行解析（JSONL），优先支持 OpenAI-style delta
+                                buffered.lineSequence().forEach { jsonLine ->
+                                    val t = jsonLine.trim()
+                                    if (!t.startsWith("{")) return@forEach
+                                    val obj = runCatching { JSONObject(t) }.getOrNull() ?: return@forEach
+                                    val choices = obj.optJSONArray("choices") ?: return@forEach
+                                    val first = choices.optJSONObject(0) ?: return@forEach
+                                    val delta = first.optJSONObject("delta") ?: return@forEach
+                                    val content = delta.optString("content", "")
+                                    if (content.isNotBlank()) {
+                                        emittedAny = true
+                                        tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(content))
+                                        onTokensUpdated(
                                             tokenCacheManager.totalInputTokenCount,
                                             tokenCacheManager.cachedInputTokenCount,
                                             tokenCacheManager.outputTokenCount
-                                    )
+                                        )
+                                        emit(content)
+                                        receivedContent.append(content)
+                                    }
                                 }
                             }
-                            
-                            AppLogger.d("AIService", "【Claude】非流式响应处理完成")
-                        } catch (e: Exception) {
-                            AppLogger.e("AIService", "【Claude】解析非流式响应失败", e)
-                            throw IOException("解析响应失败: ${e.message}", e)
                         }
+
+                        if (!emittedAny && previewTrim.isNotEmpty() && looksLikeJson) {
+                            AppLogger.w("AIService", "Claude流式响应未解析到任何内容，可能不是SSE，preview=${previewTrim.take(200)}")
+                        }
+                    } finally {
+                        response.close()
+                        AppLogger.d("AIService", "【Claude】关闭响应连接")
                     }
-                } finally {
-                    response.close()
-                    AppLogger.d("AIService", "【Claude】关闭响应连接")
                 }
 
-                // 清理活跃引用
-                activeCall = null
-                activeResponse = null
-
-                // 成功处理后，返回
                 AppLogger.d("AIService", "【Claude】请求成功完成")
                 return@stream
             } catch (e: NonRetriableException) {
                 AppLogger.e("AIService", "【Claude】发生不可重试错误", e)
-                throw e // 直接抛出，不重试
+                throw e
             } catch (e: SocketTimeoutException) {
                 if (isManuallyCancelled) {
                     AppLogger.d("AIService", "【Claude】请求被用户取消，停止重试。")
@@ -1017,7 +1104,7 @@ class ClaudeProvider(
                 retryCount++
                 if (retryCount >= maxRetries) {
                     AppLogger.e("AIService", "【Claude】无法解析主机且达到最大重试次数", e)
-                throw IOException("无法连接到服务器，请检查网络连接或API地址是否正确")
+                    throw IOException("无法连接到服务器，请检查网络连接或API地址是否正确")
                 }
                 AppLogger.w("AIService", "【Claude】无法解析主机，正在进行第 $retryCount 次重试...", e)
                 onNonFatalError("【网络不稳定，正在进行第 $retryCount 次重试...】")
@@ -1029,29 +1116,29 @@ class ClaudeProvider(
                 }
                 lastException = e
                 retryCount++
-                if(retryCount >= maxRetries) {
+                if (retryCount >= maxRetries) {
                     AppLogger.e("AIService", "【Claude】达到最大重试次数", e)
                     throw IOException("AI响应获取失败，已达最大重试次数: ${e.message}")
                 }
                 AppLogger.w("AIService", "【Claude】网络中断，正在进行第 $retryCount 次重试...", e)
                 onNonFatalError("【网络中断，正在进行第 $retryCount 次重试...】")
                 delay(1000L * (1 shl (retryCount - 1)))
-            }
-            catch (e: Exception) {
+            } catch (e: Exception) {
                 if (isManuallyCancelled) {
                     AppLogger.d("AIService", "【Claude】请求被用户取消，停止重试。")
                     throw UserCancellationException("请求已被用户取消", e)
                 }
                 AppLogger.e("AIService", "【Claude】发生未知异常，停止重试", e)
                 throw IOException("AI响应获取失败: ${e.message}", e)
+            } finally {
+                activeCall = null
+                activeResponse = null
             }
         }
-        
-        // 添加空检查，因为lastException是可空的Exception?类型
+
         lastException?.let { ex ->
             AppLogger.e("AIService", "【Claude】重试失败，请检查网络连接", ex)
         } ?: AppLogger.e("AIService", "【Claude】重试失败，请检查网络连接")
-        // 所有重试都失败
         throw IOException("连接超时或中断，已重试 $maxRetries 次: ${lastException?.message}")
     }
 
@@ -1064,7 +1151,7 @@ class ClaudeProvider(
         return ModelListFetcher.getModelsList(
             apiKey = apiKeyProvider.getApiKey(),
             apiEndpoint = apiEndpoint,
-            apiProviderType = ApiProviderType.ANTHROPIC
+            apiProviderType = providerType
         )
     }
 
