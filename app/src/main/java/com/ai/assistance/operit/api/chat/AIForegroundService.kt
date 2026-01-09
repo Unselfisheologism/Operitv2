@@ -11,11 +11,14 @@ import android.content.pm.ServiceInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.AudioManager
+import android.media.AudioRecordingConfiguration
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.Process
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
@@ -23,6 +26,8 @@ import android.view.WindowManager
 import android.graphics.PixelFormat
 import com.ai.assistance.operit.util.AppLogger
 import androidx.core.app.NotificationCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.ai.assistance.operit.R
 import com.ai.assistance.operit.api.speech.SpeechService
@@ -51,6 +56,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.isActive
 import java.io.InputStream
 
+
 /** 前台服务，用于在AI进行长时间处理时保持应用活跃，防止被系统杀死。 该服务不执行实际工作，仅通过显示一个持久通知来提升应用的进程优先级。 */
 class AIForegroundService : Service() {
 
@@ -72,6 +78,13 @@ class AIForegroundService : Service() {
         private const val ACTION_TOGGLE_WAKE_LISTENING = "com.ai.assistance.operit.action.TOGGLE_WAKE_LISTENING"
         private const val REQUEST_CODE_TOGGLE_WAKE_LISTENING = 9006
 
+        private const val ACTION_SET_WAKE_LISTENING_SUSPENDED_FOR_IME =
+            "com.ai.assistance.operit.action.SET_WAKE_LISTENING_SUSPENDED_FOR_IME"
+        private const val EXTRA_IME_VISIBLE = "extra_ime_visible"
+
+        @Volatile
+        private var lastRequestedImeVisible: Boolean = false
+
         // 静态标志，用于从外部检查服务是否正在运行
         val isRunning = java.util.concurrent.atomic.AtomicBoolean(false)
         
@@ -82,6 +95,142 @@ class AIForegroundService : Service() {
         const val EXTRA_STATE = "extra_state"
         const val STATE_RUNNING = "running"
         const val STATE_IDLE = "idle"
+
+        fun setWakeListeningSuspendedForIme(context: Context, imeVisible: Boolean) {
+            lastRequestedImeVisible = imeVisible
+            if (!isRunning.get()) return
+            val intent = Intent(context, AIForegroundService::class.java).apply {
+                action = ACTION_SET_WAKE_LISTENING_SUSPENDED_FOR_IME
+                putExtra(EXTRA_IME_VISIBLE, imeVisible)
+            }
+            try {
+                context.startService(intent)
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Failed to request IME wake listening suspend: ${e.message}", e)
+            }
+        }
+    }
+
+    private fun updateWakeListeningSuspendedForIme(imeVisible: Boolean) {
+        if (wakeListeningSuspendedForIme == imeVisible) return
+        wakeListeningSuspendedForIme = imeVisible
+        AppLogger.d(TAG, "Wake listening suspended by IME: $wakeListeningSuspendedForIme")
+        applyWakeListeningState()
+    }
+
+    private fun updateWakeListeningSuspendedForExternalRecording(externalRecording: Boolean) {
+        if (wakeListeningSuspendedForExternalRecording == externalRecording) return
+        wakeListeningSuspendedForExternalRecording = externalRecording
+        AppLogger.d(TAG, "Wake listening suspended by external recording: $wakeListeningSuspendedForExternalRecording")
+        applyWakeListeningState()
+    }
+
+    private fun applyWakeListeningState() {
+        serviceScope.launch {
+            val shouldListen =
+                wakeListeningEnabled &&
+                    !wakeListeningSuspendedForIme &&
+                    !wakeListeningSuspendedForExternalRecording
+
+            if (shouldListen) {
+                startWakeListening()
+            } else {
+                stopWakeListening()
+            }
+
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.notify(NOTIFICATION_ID, createNotification())
+        }
+    }
+
+    private fun startRecordingStateMonitoring() {
+        if (!wakeListeningEnabled) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        if (audioRecordingCallback != null) return
+
+        val am = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return
+        audioManager = am
+
+        val callback =
+            object : AudioManager.AudioRecordingCallback() {
+                override fun onRecordingConfigChanged(configs: List<AudioRecordingConfiguration>) {
+                    val myUid = Process.myUid()
+                    val hasExternal =
+                        configs.any { cfg ->
+                            val uid = cfg.tryGetClientUid()
+                            if (uid != null) {
+                                uid != myUid
+                            } else {
+                                val isWakeListeningRunning = wakeListeningJob?.isActive == true
+                                if (isWakeListeningRunning) {
+                                    configs.size > 1
+                                } else {
+                                    configs.isNotEmpty()
+                                }
+                            }
+                        }
+                    updateWakeListeningSuspendedForExternalRecording(hasExternal)
+                }
+            }
+        audioRecordingCallback = callback
+
+        try {
+            am.registerAudioRecordingCallback(callback, Handler(Looper.getMainLooper()))
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Failed to register recording callback: ${e.message}", e)
+            audioRecordingCallback = null
+            audioManager = null
+            return
+        }
+
+        try {
+            val configs = am.activeRecordingConfigurations
+            val myUid = Process.myUid()
+            val hasExternal =
+                configs.any { cfg ->
+                    val uid = cfg.tryGetClientUid()
+                    if (uid != null) {
+                        uid != myUid
+                    } else {
+                        val isWakeListeningRunning = wakeListeningJob?.isActive == true
+                        if (isWakeListeningRunning) {
+                            configs.size > 1
+                        } else {
+                            configs.isNotEmpty()
+                        }
+                    }
+                }
+            updateWakeListeningSuspendedForExternalRecording(hasExternal)
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Failed to read active recording configs: ${e.message}", e)
+        }
+    }
+
+    private fun AudioRecordingConfiguration.tryGetClientUid(): Int? {
+        return try {
+            val method = javaClass.getMethod("getClientUid")
+            (method.invoke(this) as? Int)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun stopRecordingStateMonitoring() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
+        val am = audioManager
+        val callback = audioRecordingCallback
+
+        if (am != null && callback != null) {
+            try {
+                am.unregisterAudioRecordingCallback(callback)
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Failed to unregister recording callback: ${e.message}", e)
+            }
+        }
+
+        audioRecordingCallback = null
+        audioManager = null
+        wakeListeningSuspendedForExternalRecording = false
     }
     
     // 存储通知信息
@@ -119,6 +268,15 @@ class AIForegroundService : Service() {
     @Volatile
     private var wakeListeningEnabled: Boolean = false
 
+    @Volatile
+    private var wakeListeningSuspendedForIme: Boolean = false
+
+    @Volatile
+    private var wakeListeningSuspendedForExternalRecording: Boolean = false
+
+    private var audioManager: AudioManager? = null
+    private var audioRecordingCallback: AudioManager.AudioRecordingCallback? = null
+
     private var lastWakeTriggerAtMs: Long = 0L
 
     private var lastSpeechWorkflowCheckAtMs: Long = 0L
@@ -126,6 +284,7 @@ class AIForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         isRunning.set(true)
+        wakeListeningSuspendedForIme = lastRequestedImeVisible
         AppLogger.d(TAG, "AI 前台服务创建。")
         createNotificationChannel()
         val notification = createNotification()
@@ -252,6 +411,12 @@ class AIForegroundService : Service() {
             return START_NOT_STICKY
         }
 
+        if (intent?.action == ACTION_SET_WAKE_LISTENING_SUSPENDED_FOR_IME) {
+            val imeVisible = intent.getBooleanExtra(EXTRA_IME_VISIBLE, false)
+            updateWakeListeningSuspendedForIme(imeVisible)
+            return START_NOT_STICKY
+        }
+
         if (intent?.action == ACTION_CANCEL_CURRENT_OPERATION) {
             try {
                 AIMessageManager.cancelCurrentOperation()
@@ -343,13 +508,20 @@ class AIForegroundService : Service() {
                 wakePrefs.alwaysListeningEnabledFlow.collectLatest { enabled ->
                     wakeListeningEnabled = enabled
                     AppLogger.d(TAG, "唤醒监听开关更新: enabled=$enabled")
+
                     if (enabled) {
                         showKeepAliveOverlayIfPossible()
-                        startWakeListening()
                     } else {
                         hideKeepAliveOverlay()
-                        stopWakeListening()
                     }
+
+                    if (enabled) {
+                        startRecordingStateMonitoring()
+                    } else {
+                        stopRecordingStateMonitoring()
+                    }
+
+                    applyWakeListeningState()
 
                     val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                     manager.notify(NOTIFICATION_ID, createNotification())
@@ -364,6 +536,7 @@ class AIForegroundService : Service() {
         wakeResumeJob = null
         wakeListeningJob?.cancel()
         wakeListeningJob = null
+        stopRecordingStateMonitoring()
         hideKeepAliveOverlay()
         try {
             serviceScope.cancel()
@@ -404,6 +577,11 @@ class AIForegroundService : Service() {
             try {
                 val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
                 val view = View(this)
+                ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+                    val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
+                    updateWakeListeningSuspendedForIme(imeVisible)
+                    insets
+                }
                 val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 } else {
@@ -427,6 +605,7 @@ class AIForegroundService : Service() {
 
                 wm.addView(view, params)
                 keepAliveOverlayView = view
+                ViewCompat.requestApplyInsets(view)
                 AppLogger.d(TAG, "Keep-alive overlay shown")
             } catch (e: Exception) {
                 AppLogger.e(TAG, "Failed to show keep-alive overlay: ${e.message}", e)
@@ -584,7 +763,9 @@ class AIForegroundService : Service() {
 
                 AppLogger.d(TAG, "检测到悬浮窗已关闭，准备恢复唤醒监听")
 
-                if (wakeListeningEnabled) startWakeListening()
+                if (wakeListeningEnabled && !wakeListeningSuspendedForIme && !wakeListeningSuspendedForExternalRecording) {
+                    startWakeListening()
+                }
             }
     }
 
@@ -629,10 +810,19 @@ class AIForegroundService : Service() {
         // 为了简单起见，使用一个安卓内置图标。
         // 在实际项目中，应替换为应用的自定义图标。
         val wakeListeningEnabledSnapshot = wakeListeningEnabled
+        val wakeListeningSuspendedSnapshot = wakeListeningSuspendedForIme || wakeListeningSuspendedForExternalRecording
         val contentText = if (isAiBusy) {
             "AI is processing..."
         } else {
-            if (wakeListeningEnabledSnapshot) "Operit 正在运行（唤醒监听中）" else "Operit 正在运行"
+            if (wakeListeningEnabledSnapshot) {
+                if (wakeListeningSuspendedSnapshot) {
+                    "Operit 正在运行（唤醒暂停）"
+                } else {
+                    "Operit 正在运行（唤醒监听中）"
+                }
+            } else {
+                "Operit 正在运行"
+            }
         }
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Operit")

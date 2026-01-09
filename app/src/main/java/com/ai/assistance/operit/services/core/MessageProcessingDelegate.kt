@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.ai.assistance.operit.core.tools.ToolProgressBus
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
 /** 委托类，负责处理消息处理相关功能 */
 class MessageProcessingDelegate(
@@ -57,6 +58,7 @@ class MessageProcessingDelegate(
 ) {
     companion object {
         private const val TAG = "MessageProcessingDelegate"
+        private const val STREAM_SCROLL_THROTTLE_MS = 200L
     }
 
     // 角色卡管理器
@@ -104,8 +106,25 @@ class MessageProcessingDelegate(
     )
 
     private val chatRuntimes = ConcurrentHashMap<String, ChatRuntime>()
+    private val lastScrollEmitMsByChatKey = ConcurrentHashMap<String, AtomicLong>()
 
     private fun chatKey(chatId: String?): String = chatId ?: "__DEFAULT_CHAT__"
+
+    private fun tryEmitScrollToBottomThrottled(chatId: String?) {
+        val key = chatKey(chatId)
+        val now = System.currentTimeMillis()
+        val last = lastScrollEmitMsByChatKey.getOrPut(key) { AtomicLong(0L) }
+        val prev = last.get()
+        if (now - prev >= STREAM_SCROLL_THROTTLE_MS && last.compareAndSet(prev, now)) {
+            _scrollToBottomEvent.tryEmit(Unit)
+        }
+    }
+
+    private fun forceEmitScrollToBottom(chatId: String?) {
+        val key = chatKey(chatId)
+        lastScrollEmitMsByChatKey.getOrPut(key) { AtomicLong(0L) }.set(System.currentTimeMillis())
+        _scrollToBottomEvent.tryEmit(Unit)
+    }
 
     private fun runtimeFor(chatId: String?): ChatRuntime {
         val key = chatKey(chatId)
@@ -434,7 +453,7 @@ class MessageProcessingDelegate(
                                 if (chatId != null) {
                                     addMessageToChat(chatId, updatedMessage)
                                 }
-                                _scrollToBottomEvent.tryEmit(Unit)
+                                tryEmitScrollToBottomThrottled(chatId)
                             }
                         }
                     }
@@ -536,7 +555,11 @@ class MessageProcessingDelegate(
                                         if (getIsAutoReadEnabled()) {
                                             speakMessage(sentence)
                                         }
-                                        _scrollToBottomEvent.tryEmit(Unit)
+                                        if (index == sentences.lastIndex) {
+                                            forceEmitScrollToBottom(chatId)
+                                        } else {
+                                            tryEmitScrollToBottomThrottled(chatId)
+                                        }
                                     }
                                 }
                                 
@@ -553,6 +576,7 @@ class MessageProcessingDelegate(
                                 if (getIsAutoReadEnabled()) {
                                     speakMessage(finalContent)
                                 }
+                                forceEmitScrollToBottom(chatId)
                             }
                         }
                     }

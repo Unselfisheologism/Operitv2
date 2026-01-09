@@ -2,10 +2,12 @@ package com.ai.assistance.operit.ui.features.chat.components.style.cursor
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +28,7 @@ import com.ai.assistance.operit.data.preferences.UserPreferencesManager
 import com.ai.assistance.operit.data.preferences.DisplayPreferencesManager
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * A composable function for rendering AI response messages in a Cursor IDE style. Supports text
@@ -68,6 +71,21 @@ fun AiMessageComposable(
             enableDialogs = enableDialogs  // 传递弹窗启用状态
         )
     }
+
+    // val recompositionCounter = remember(message.timestamp) { AtomicInteger(0) }
+    // SideEffect {
+    //     val count = recompositionCounter.incrementAndGet()
+    //     val streamObj = overrideStream ?: message.contentStream
+    //     val hasStream = streamObj != null
+    //     val messageHash = System.identityHashCode(message)
+    //     val streamHash = streamObj?.let { System.identityHashCode(it) }
+    //     val contentLen = message.content.length
+    //     Log.d(
+    //         "AiMessageComposable",
+    //         "recompose#$count ts=${message.timestamp} msgHash=$messageHash contentLen=$contentLen " +
+    //             "hasStream=$hasStream streamHash=${streamHash ?: "null"} enableDialogs=$enableDialogs"
+    //     )
+    // }
     val rememberedOnLinkClick = remember(context, onLinkClick, enableDialogs) {
         onLinkClick ?: { url ->
             // 如果启用了弹窗，显示链接预览；否则使用系统浏览器打开

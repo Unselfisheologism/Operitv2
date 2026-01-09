@@ -423,20 +423,25 @@ class ChatHistoryManager private constructor(private val context: Context) {
                 val existingMessage = messageDao.getMessageByTimestamp(chatId, message.timestamp)
 
                 if (existingMessage != null) {
+                    val shouldUpdateChatMetadata =
+                        message.contentStream == null ||
+                            (existingMessage.content.isEmpty() && message.content.isNotEmpty())
                     // 更新现有消息
                     messageDao.updateMessageContent(existingMessage.messageId, message.content)
 
-                    // 更新聊天元数据时间戳
-                    val chat = chatDao.getChatById(chatId)
-                    if (chat != null) {
-                        chatDao.updateChatMetadata(
-                            chatId = chatId,
-                            title = chat.title,
-                            timestamp = System.currentTimeMillis(),
-                            inputTokens = chat.inputTokens,
-                            outputTokens = chat.outputTokens,
-                            currentWindowSize = chat.currentWindowSize
-                        )
+                    if (shouldUpdateChatMetadata) {
+                        // 更新聊天元数据时间戳
+                        val chat = chatDao.getChatById(chatId)
+                        if (chat != null) {
+                            chatDao.updateChatMetadata(
+                                chatId = chatId,
+                                title = chat.title,
+                                timestamp = System.currentTimeMillis(),
+                                inputTokens = chat.inputTokens,
+                                outputTokens = chat.outputTokens,
+                                currentWindowSize = chat.currentWindowSize
+                            )
+                        }
                     }
                 } else {
                     // 如果找不到现有消息，则添加新消息

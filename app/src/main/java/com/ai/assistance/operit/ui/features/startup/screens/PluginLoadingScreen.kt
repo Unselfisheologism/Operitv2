@@ -328,7 +328,7 @@ private fun ExpandedLoadingView(
 
                 // 底部版权信息
                 Text(
-                        text = stringResource(id = R.string.plugin_copyright),
+                        text = stringResource(id = R.string.about_copyright),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

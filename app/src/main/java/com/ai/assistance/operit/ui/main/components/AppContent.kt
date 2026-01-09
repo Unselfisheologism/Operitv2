@@ -68,6 +68,9 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.runtime.setValue
 import com.ai.assistance.operit.ui.components.CustomScaffold
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
+import com.ai.assistance.operit.api.chat.AIForegroundService
 
 // 定义一个 CompositionLocal，用于向下传递当前屏幕是否可见的状态
 val LocalIsCurrentScreen = compositionLocalOf { true }
@@ -105,6 +108,11 @@ fun AppContent(
 ) {
     // Get background image state
     val context = LocalContext.current
+    val density = LocalDensity.current
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+    LaunchedEffect(imeVisible) {
+        AIForegroundService.setWakeListeningSuspendedForIme(context, imeVisible)
+    }
     val preferencesManager = UserPreferencesManager.getInstance(context)
     val useBackgroundImage =
             preferencesManager.useBackgroundImage.collectAsState(initial = false).value
