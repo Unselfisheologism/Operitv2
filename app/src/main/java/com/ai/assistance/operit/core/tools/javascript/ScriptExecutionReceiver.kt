@@ -4,8 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import com.ai.assistance.operit.util.AppLogger
-import com.ai.assistance.operit.core.tools.AIToolHandler
-import com.ai.assistance.operit.core.tools.packTool.PackageManager
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +19,8 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
         const val EXTRA_FUNCTION_NAME = "function_name"
         const val EXTRA_PARAMS = "params"
         const val EXTRA_TEMP_FILE = "temp_file"
+        const val EXTRA_ENV_FILE_PATH = "env_file_path"
+        const val EXTRA_TEMP_ENV_FILE = "temp_env_file"
     }
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -29,6 +29,9 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
             val functionName = intent.getStringExtra(EXTRA_FUNCTION_NAME)
             val paramsJson = intent.getStringExtra(EXTRA_PARAMS) ?: "{}"
             val isTempFile = intent.getBooleanExtra(EXTRA_TEMP_FILE, false)
+
+            val envFilePath = intent.getStringExtra(EXTRA_ENV_FILE_PATH)
+            val isTempEnvFile = intent.getBooleanExtra(EXTRA_TEMP_ENV_FILE, false)
 
             if (filePath == null || functionName == null) {
                 AppLogger.e(
@@ -39,7 +42,7 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
             }
 
             AppLogger.d(TAG, "Received request to execute JS file: $filePath, function: $functionName")
-            executeJavaScript(context, filePath, functionName, paramsJson, isTempFile)
+            executeJavaScript(context, filePath, functionName, paramsJson, isTempFile, envFilePath, isTempEnvFile)
         }
     }
 
@@ -48,7 +51,9 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
             filePath: String,
             functionName: String,
             paramsJson: String,
-            isTempFile: Boolean
+            isTempFile: Boolean,
+            envFilePath: String?,
+            isTempEnvFile: Boolean
     ) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -63,8 +68,6 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
                 AppLogger.d(TAG, "Loaded JavaScript file, size: ${scriptContent.length} bytes")
 
                 // 获取JsEngine实例
-                val aiToolHandler = AIToolHandler.getInstance(context)
-                val packageManager = PackageManager.getInstance(context, aiToolHandler)
                 val jsEngine = JsEngine(context)
 
                 // 解析参数
@@ -81,8 +84,49 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
                             mapOf<String, String>()
                         }
 
+                val envOverrides: Map<String, String> =
+                        try {
+                            if (envFilePath.isNullOrBlank()) {
+                                emptyMap()
+                            } else {
+                                val envFile = File(envFilePath)
+                                if (!envFile.exists()) {
+                                    AppLogger.w(TAG, "Env file not found: $envFilePath")
+                                    emptyMap()
+                                } else {
+                                    val map = mutableMapOf<String, String>()
+                                    envFile.readLines().forEach { rawLine ->
+                                        val line = rawLine.trim()
+                                        if (line.isEmpty()) return@forEach
+                                        if (line.startsWith("#")) return@forEach
+                                        val idx = line.indexOf('=')
+                                        if (idx <= 0) return@forEach
+                                        val k = line.substring(0, idx).trim()
+                                        if (k.isEmpty()) return@forEach
+                                        var v = line.substring(idx + 1).trim()
+                                        if ((v.startsWith("\"") && v.endsWith("\"")) || (v.startsWith("'") && v.endsWith("'"))) {
+                                            if (v.length >= 2) {
+                                                v = v.substring(1, v.length - 1)
+                                            }
+                                        }
+                                        map[k] = v
+                                    }
+                                    map
+                                }
+                            }
+                        } catch (e: Exception) {
+                            AppLogger.e(TAG, "Error parsing env file: ${envFilePath ?: ""}", e)
+                            emptyMap()
+                        }
+
                 // 执行JavaScript
-                val result = jsEngine.executeScriptFunction(scriptContent, functionName, params)
+                val result =
+                        jsEngine.executeScriptFunction(
+                                scriptContent,
+                                functionName,
+                                params,
+                                envOverrides = envOverrides
+                        )
 
                 AppLogger.d(TAG, "JavaScript execution result: $result")
 
@@ -93,6 +137,15 @@ class ScriptExecutionReceiver : BroadcastReceiver() {
                         AppLogger.d(TAG, "Deleted temporary file: $filePath")
                     } catch (e: Exception) {
                         AppLogger.e(TAG, "Error deleting temporary file: $filePath", e)
+                    }
+                }
+
+                if (isTempEnvFile && !envFilePath.isNullOrBlank()) {
+                    try {
+                        File(envFilePath).delete()
+                        AppLogger.d(TAG, "Deleted temporary env file: $envFilePath")
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "Error deleting temporary env file: $envFilePath", e)
                     }
                 }
             } catch (e: Exception) {

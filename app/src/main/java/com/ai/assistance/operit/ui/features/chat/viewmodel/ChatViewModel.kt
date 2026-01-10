@@ -695,7 +695,6 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                 if (messagesToSummarize.isEmpty()) {
                     uiStateDelegate.showToast("没有可总结的消息")
                     messageProcessingDelegate.handleInputProcessingState(InputProcessingState.Idle)
-                    messageProcessingDelegate.setActiveStreamingChatId(null)
                     return@launch
                 }
                 
@@ -706,7 +705,6 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                 if (enhancedAiService == null) {
                     uiStateDelegate.showToast("AI服务未初始化")
                     messageProcessingDelegate.handleInputProcessingState(InputProcessingState.Idle)
-                    messageProcessingDelegate.setActiveStreamingChatId(null)
                     return@launch
                 }
                 
@@ -736,13 +734,11 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                 
                 // 清除输入处理状态
                 messageProcessingDelegate.handleInputProcessingState(InputProcessingState.Idle)
-                messageProcessingDelegate.setActiveStreamingChatId(null)
             } catch (e: Exception) {
                 AppLogger.e(TAG, "插入总结时发生错误", e)
                 uiStateDelegate.showToast("插入总结失败: ${e.message}")
                 // 发生错误时也需要清除状态
                 messageProcessingDelegate.handleInputProcessingState(InputProcessingState.Idle)
-                messageProcessingDelegate.setActiveStreamingChatId(null)
             }
         }
     }

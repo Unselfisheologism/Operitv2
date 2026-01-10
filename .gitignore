@@ -22,6 +22,10 @@ temp
 /app/src/main/assets/models
 /app/src/main/assets/subpack
 
+.env
+.env.*
+!.env.*.example
+
 app/src/main/assets/pets
 
 .gradle

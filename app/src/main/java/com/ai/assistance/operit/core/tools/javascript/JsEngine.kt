@@ -97,6 +97,8 @@ class JsEngine(private val context: Context) {
     // 标记 JS 环境是否已初始化
     private var jsEnvironmentInitialized = false
 
+    private var envOverrides: Map<String, String> = emptyMap()
+
     // 初始化 WebView
     private fun initWebView() {
         if (webView == null) {
@@ -693,10 +695,12 @@ class JsEngine(private val context: Context) {
             script: String,
             functionName: String,
             params: Map<String, Any?>,
+            envOverrides: Map<String, String> = emptyMap(),
             onIntermediateResult: ((Any?) -> Unit)? = null
     ): Any? {
         // Reset any previous state
         resetState()
+        this.envOverrides = envOverrides
         this.intermediateResultCallback = onIntermediateResult
 
         initWebView()
@@ -944,6 +948,8 @@ class JsEngine(private val context: Context) {
         }
         toolCallbacks.clear()
 
+        envOverrides = emptyMap()
+
         // 清理Bitmap注册表
         bitmapRegistry.values.forEach { it.recycle() }
         bitmapRegistry.clear()
@@ -1032,7 +1038,12 @@ class JsEngine(private val context: Context) {
                 if (name.isEmpty()) {
                     ""
                 } else {
-                    EnvPreferences.getInstance(context).getEnv(name) ?: ""
+                    val overridden = envOverrides[name]
+                    if (!overridden.isNullOrEmpty()) {
+                        overridden
+                    } else {
+                        EnvPreferences.getInstance(context).getEnv(name) ?: ""
+                    }
                 }
             } catch (e: Exception) {
                 AppLogger.e(TAG, "Error reading environment variable from JS: $key", e)

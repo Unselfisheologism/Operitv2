@@ -224,6 +224,15 @@
         { "name": "session_name", "description": { "zh": "会话名（可选，默认 github_tools_session）", "en": "Session name (optional; default: github_tools_session)." }, "type": "string", "required": false },
         { "name": "close", "description": { "zh": "是否执行后关闭会话", "en": "Whether to close the session after execution." }, "type": "boolean", "required": false }
       ]
+    },
+    {
+      "name": "main",
+      "description": { "zh": "用于快速连通性自测：拉取一个仓库信息并做一次仓库搜索，然后返回结果。", "en": "Quick connectivity self-test: fetch a repository and run a repository search, then return results." },
+      "parameters": [
+        { "name": "owner", "description": { "zh": "仓库 owner（默认 octocat）", "en": "Repository owner (default: octocat)." }, "type": "string", "required": false },
+        { "name": "repo", "description": { "zh": "仓库名（默认 Hello-World）", "en": "Repository name (default: Hello-World)." }, "type": "string", "required": false },
+        { "name": "query", "description": { "zh": "搜索关键词（默认 operit）", "en": "Search keyword (default: operit)." }, "type": "string", "required": false }
+      ]
     }
   ]
 }
@@ -232,6 +241,11 @@
 /// <reference path="../../types/index.d.ts" />
 import { toolImpl } from './tools';
 import { getRepository, searchRepositories } from './github/repos';
+import { listIssues, listIssueComments, createIssue, commentIssue } from './github/issues';
+import { listPullRequests, getPullRequest, createPullRequest, mergePullRequest } from './github/pulls';
+import { getFileContent, createOrUpdateFile, deleteFile } from './github/contents';
+import { createBranch } from './github/branches';
+import { patchFileInRepo } from './github/patch';
 import { getBaseUrl, getToken } from './github/api';
 
 exports.search_repositories = toolImpl.search_repositories;
@@ -257,26 +271,276 @@ exports.apply_local_delete = toolImpl.apply_local_delete;
 exports.overwrite_local_file = toolImpl.overwrite_local_file;
 exports.terminal_exec = toolImpl.terminal_exec;
 
-async function main(params?: { owner?: string; repo?: string; query?: string }) {
+async function main(
+  params?: {
+    owner?: string;
+    repo?: string;
+    query?: string;
+    path?: string;
+    issue_number?: number;
+    pull_number?: number;
+    enable_write?: boolean;
+    pr_head?: string;
+    pr_base?: string;
+  }
+) {
   try {
     const owner = String(params?.owner || 'octocat');
     const repo = String(params?.repo || 'Hello-World');
     const query = String(params?.query || 'operit');
+    const path = String(params?.path || 'README.md');
+    const enableWrite = params?.enable_write === true;
 
     const baseUrl = getBaseUrl();
     const token = getToken();
 
-    const repoInfo = await getRepository({ owner, repo });
-    const searchResult = await searchRepositories({ query, per_page: 5 });
+    type TestResult =
+      | { ok: true; data: any }
+      | { ok: false; error: string; error_stack: string }
+      | { ok: false; skipped: true; reason: string };
+
+    const results: Record<string, TestResult> = {};
+
+    const toErrMsg = (e: any) => String(e && e.message ? e.message : e);
+    const toErrStack = (e: any) => String(e && e.stack ? e.stack : '');
+
+    const run = async (name: string, fn: () => Promise<any>): Promise<TestResult> => {
+      try {
+        const data = await fn();
+        return { ok: true, data };
+      } catch (e: any) {
+        return { ok: false, error: toErrMsg(e), error_stack: toErrStack(e) };
+      }
+    };
+
+    const summarizeRepo = (r: any) =>
+      r
+        ? {
+          id: r.id,
+          full_name: r.full_name,
+          private: r.private,
+          default_branch: r.default_branch
+        }
+        : r;
+
+    const summarizeList = (items: any[]) => ({
+      count: Array.isArray(items) ? items.length : 0,
+      first: Array.isArray(items) && items.length > 0 ? items[0] : null
+    });
+
+    results.get_repository = await run('get_repository', async () => summarizeRepo(await getRepository({ owner, repo })));
+
+    results.search_repositories = await run('search_repositories', async () => {
+      const r = await searchRepositories({ query, per_page: 5 });
+      const items = Array.isArray(r?.items) ? r.items : [];
+      return {
+        total_count: r?.total_count,
+        count: items.length,
+        first: items[0] ? { id: items[0].id, full_name: items[0].full_name, stargazers_count: items[0].stargazers_count } : null
+      };
+    });
+
+    results.list_issues = await run('list_issues', async () => summarizeList(await listIssues({ owner, repo, per_page: 5 })));
+
+    let issueNumber: number | undefined = typeof params?.issue_number === 'number' ? params.issue_number : undefined;
+    if (!issueNumber && results.list_issues.ok) {
+      const first = results.list_issues.data?.first;
+      if (first && typeof first.number === 'number') issueNumber = first.number;
+    }
+
+    if (issueNumber) {
+      results.list_issue_comments = await run('list_issue_comments', async () =>
+        summarizeList(await listIssueComments({ owner, repo, issue_number: issueNumber, per_page: 5 }))
+      );
+    } else {
+      results.list_issue_comments = { ok: false, skipped: true, reason: 'No issue_number provided and cannot infer from list_issues.' };
+    }
+
+    results.list_pull_requests = await run('list_pull_requests', async () => summarizeList(await listPullRequests({ owner, repo, per_page: 5 })));
+
+    let pullNumber: number | undefined = typeof params?.pull_number === 'number' ? params.pull_number : undefined;
+    if (!pullNumber && results.list_pull_requests.ok) {
+      const first = results.list_pull_requests.data?.first;
+      if (first && typeof first.number === 'number') pullNumber = first.number;
+    }
+
+    if (pullNumber) {
+      results.get_pull_request = await run('get_pull_request', async () => {
+        const pr = await getPullRequest({ owner, repo, pull_number: pullNumber });
+        return pr
+          ? {
+            number: pr.number,
+            title: pr.title,
+            state: pr.state,
+            merged: pr.merged,
+            head: pr.head?.ref,
+            base: pr.base?.ref
+          }
+          : pr;
+      });
+    } else {
+      results.get_pull_request = { ok: false, skipped: true, reason: 'No pull_number provided and cannot infer from list_pull_requests.' };
+    }
+
+    const inferReadableRepoFilePath = async (): Promise<string | undefined> => {
+      if (params?.path) {
+        return path;
+      }
+
+      try {
+        const root = await getFileContent({ owner, repo, path: '' });
+        if (!Array.isArray(root)) {
+          return undefined;
+        }
+
+        const prefer = ['README.md', 'README', 'readme.md', 'Readme.md', 'README.MD'];
+        for (const p of prefer) {
+          const hit = root.find((it: any) => it && it.type === 'file' && String(it.path || it.name || '') === p);
+          if (hit) return String(hit.path || hit.name);
+        }
+
+        const firstFile = root.find((it: any) => it && it.type === 'file' && (typeof it.path === 'string' || typeof it.name === 'string'));
+        if (firstFile) return String(firstFile.path || firstFile.name);
+
+        return undefined;
+      } catch (e) {
+        return undefined;
+      }
+    };
+
+    const resolvedPath = await inferReadableRepoFilePath();
+    if (!resolvedPath) {
+      results.get_file_content = { ok: false, skipped: true, reason: 'No readable file found in repo root for get_file_content test.' };
+    } else {
+      results.get_file_content = await run('get_file_content', async () => {
+        const f = await getFileContent({ owner, repo, path: resolvedPath });
+        return f
+          ? {
+            type: f.type,
+            path: f.path,
+            sha: f.sha,
+            size: f.size,
+            has_decoded_text: typeof f.decoded_text === 'string' && f.decoded_text.length > 0
+          }
+          : f;
+      });
+    }
+
+    const writeSkipped = (name: string, reason: string) => {
+      results[name] = { ok: false, skipped: true, reason };
+    };
+
+    if (!enableWrite) {
+      writeSkipped('create_issue', 'Skipped: enable_write=false (write operation).');
+      writeSkipped('comment_issue', 'Skipped: enable_write=false (write operation).');
+      writeSkipped('create_branch', 'Skipped: enable_write=false (write operation).');
+      writeSkipped('create_or_update_file', 'Skipped: enable_write=false (write operation).');
+      writeSkipped('patch_file_in_repo', 'Skipped: enable_write=false (write operation).');
+      writeSkipped('delete_file', 'Skipped: enable_write=false (write operation).');
+      writeSkipped('create_pull_request', 'Skipped: enable_write=false (write operation).');
+      writeSkipped('merge_pull_request', 'Skipped: enable_write=false (write operation).');
+    } else {
+      const ts = Date.now();
+      const testBranch = `operit-test-${ts}`;
+      const testPath = `operit_test_${ts}.txt`;
+      const baseBranch = (results.get_repository.ok ? results.get_repository.data?.default_branch : undefined) || 'main';
+
+      results.create_branch = await run('create_branch', async () =>
+        createBranch({ owner, repo, new_branch: testBranch, from_branch: baseBranch })
+      );
+
+      results.create_or_update_file = await run('create_or_update_file', async () =>
+        createOrUpdateFile({
+          owner,
+          repo,
+          path: testPath,
+          message: `operit test create file ${ts}`,
+          content: `operit github tools self-test ${ts}`,
+          content_encoding: 'utf-8',
+          branch: testBranch
+        })
+      );
+
+      results.patch_file_in_repo = await run('patch_file_in_repo', async () =>
+        patchFileInRepo({
+          owner,
+          repo,
+          path: testPath,
+          message: `operit test patch file ${ts}`,
+          patch: `[START-REPLACE]\n[OLD]\noperit github tools self-test ${ts}\n[/OLD]\n[NEW]\noperit github tools self-test ${ts} (patched)\n[/NEW]\n[END-REPLACE]`,
+          branch: testBranch
+        })
+      );
+
+      results.delete_file = await run('delete_file', async () => {
+        const sha =
+          results.create_or_update_file.ok && results.create_or_update_file.data && results.create_or_update_file.data.content
+            ? results.create_or_update_file.data.content.sha
+            : undefined;
+        if (!sha) {
+          throw new Error('Cannot infer sha from create_or_update_file response; pass sha explicitly if needed.');
+        }
+        return deleteFile({ owner, repo, path: testPath, message: `operit test delete file ${ts}`, branch: testBranch, sha });
+      });
+
+      const canIssue = Boolean(token) && issueNumber !== undefined;
+      if (!token) {
+        writeSkipped('create_issue', 'Skipped: GITHUB_TOKEN missing (required for write operation).');
+      } else {
+        results.create_issue = await run('create_issue', async () =>
+          createIssue({ owner, repo, title: `operit self-test issue ${ts}`, body: `created by operit github tools self-test ${ts}` })
+        );
+      }
+
+      if (!canIssue) {
+        writeSkipped('comment_issue', 'Skipped: need GITHUB_TOKEN and issue_number (or at least one issue from list_issues).');
+      } else {
+        results.comment_issue = await run('comment_issue', async () =>
+          commentIssue({ owner, repo, issue_number: issueNumber!, body: `operit self-test comment ${ts}` })
+        );
+      }
+
+      const prHead = params?.pr_head ? String(params.pr_head) : '';
+      const prBase = params?.pr_base ? String(params.pr_base) : '';
+      if (!token) {
+        writeSkipped('create_pull_request', 'Skipped: GITHUB_TOKEN missing (required for write operation).');
+      } else if (!prHead || !prBase) {
+        writeSkipped('create_pull_request', 'Skipped: pr_head/pr_base not provided (required to create PR).');
+      } else {
+        results.create_pull_request = await run('create_pull_request', async () =>
+          createPullRequest({ owner, repo, title: `operit self-test PR ${ts}`, head: prHead, base: prBase, body: `created by operit self-test ${ts}` })
+        );
+      }
+
+      if (!token) {
+        writeSkipped('merge_pull_request', 'Skipped: GITHUB_TOKEN missing (required for write operation).');
+      } else if (!pullNumber) {
+        writeSkipped('merge_pull_request', 'Skipped: pull_number missing (required to merge PR).');
+      } else {
+        results.merge_pull_request = await run('merge_pull_request', async () =>
+          mergePullRequest({ owner, repo, pull_number: pullNumber!, merge_method: 'merge' })
+        );
+      }
+    }
+
+    const okCount = Object.values(results).filter((r) => (r as any).ok === true).length;
+    const failCount = Object.values(results).filter((r) => (r as any).ok === false && !(r as any).skipped).length;
+    const skippedCount = Object.values(results).filter((r) => (r as any).skipped).length;
 
     complete({
-      success: true,
-      message: 'GitHub tools main test finished.',
+      success: failCount === 0,
+      message:
+        failCount === 0
+          ? 'GitHub tools main test finished.'
+          : `GitHub tools main test finished with failures: failed=${failCount}, ok=${okCount}, skipped=${skippedCount}.`,
       data: {
         baseUrl,
         hasToken: Boolean(token),
-        get_repository: repoInfo,
-        search_repositories: searchResult
+        enable_write: enableWrite,
+        owner,
+        repo,
+        summary: { ok: okCount, failed: failCount, skipped: skippedCount },
+        results
       }
     });
   } catch (error: any) {
