@@ -77,6 +77,17 @@ private fun LogicOperator.toDisplayText(): String {
     }
 }
 
+private fun ExtractMode.toDisplayText(): String {
+    return when (this) {
+        ExtractMode.REGEX -> "正则"
+        ExtractMode.JSON -> "JSON"
+        ExtractMode.SUB -> "截取"
+        ExtractMode.CONCAT -> "拼接"
+        ExtractMode.RANDOM_INT -> "随机数"
+        ExtractMode.RANDOM_STRING -> "随机字符串"
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkflowDetailScreen(
@@ -716,11 +727,33 @@ fun NodeDialog(
             }
         )
     }
+
+    val initialExtractOthers = if (node is ExtractNode) node.others else emptyList()
+    var extractOthers by remember {
+        mutableStateOf(
+            initialExtractOthers.map { other ->
+                when (other) {
+                    is ParameterValue.StaticValue -> ParameterConfig("", false, other.value)
+                    is ParameterValue.NodeReference -> ParameterConfig("", true, other.nodeId)
+                }
+            }
+        )
+    }
+
     var extractMode by remember { mutableStateOf(if (node is ExtractNode) node.mode else ExtractMode.REGEX) }
     var extractModeExpanded by remember { mutableStateOf(false) }
     var extractExpression by remember { mutableStateOf(if (node is ExtractNode) node.expression else "") }
     var extractGroupText by remember { mutableStateOf(if (node is ExtractNode) node.group.toString() else "0") }
     var extractDefaultValue by remember { mutableStateOf(if (node is ExtractNode) node.defaultValue else "") }
+
+    var extractStartIndexText by remember { mutableStateOf(if (node is ExtractNode) node.startIndex.toString() else "0") }
+    var extractLengthText by remember { mutableStateOf(if (node is ExtractNode) node.length.toString() else "-1") }
+    var extractRandomMinText by remember { mutableStateOf(if (node is ExtractNode) node.randomMin.toString() else "0") }
+    var extractRandomMaxText by remember { mutableStateOf(if (node is ExtractNode) node.randomMax.toString() else "100") }
+    var extractRandomStringLengthText by remember { mutableStateOf(if (node is ExtractNode) node.randomStringLength.toString() else "8") }
+    var extractRandomStringCharset by remember { mutableStateOf(if (node is ExtractNode) node.randomStringCharset else "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") }
+    var extractUseFixed by remember { mutableStateOf(if (node is ExtractNode) node.useFixed else false) }
+    var extractFixedValue by remember { mutableStateOf(if (node is ExtractNode) node.fixedValue else "") }
     
     // 定时配置对话框状态
     var showScheduleDialog by remember { mutableStateOf(false) }
@@ -730,7 +763,7 @@ fun NodeDialog(
         "execute" to "执行节点",
         "condition" to "条件节点",
         "logic" to "逻辑节点",
-        "extract" to "提取节点"
+        "extract" to "运算节点"
     )
 
     val triggerTypes = mapOf(
@@ -802,7 +835,7 @@ fun NodeDialog(
                                 "execute" -> "如: ${actionType.takeIf { it.isNotBlank() } ?: "执行动作"}"
                                 "condition" -> "如: 条件判断"
                                 "logic" -> "如: 逻辑判断"
-                                "extract" -> "如: 提取"
+                                "extract" -> "如: 运算"
                                 else -> nodeTypes[nodeType] ?: ""
                             }
                         )
@@ -1250,7 +1283,7 @@ fun NodeDialog(
                     "extract" -> {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         Text(
-                            text = "提取配置",
+                            text = "运算配置",
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -1260,7 +1293,7 @@ fun NodeDialog(
                             onExpandedChange = { extractModeExpanded = !extractModeExpanded }
                         ) {
                             OutlinedTextField(
-                                value = extractMode.name,
+                                value = extractMode.toDisplayText(),
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("模式") },
@@ -1273,7 +1306,7 @@ fun NodeDialog(
                             ) {
                                 ExtractMode.values().forEach { mode ->
                                     DropdownMenuItem(
-                                        text = { Text(mode.name) },
+                                        text = { Text(mode.toDisplayText()) },
                                         onClick = {
                                             extractMode = mode
                                             extractModeExpanded = false
@@ -1283,93 +1316,309 @@ fun NodeDialog(
                             }
                         }
 
-                        OutlinedTextField(
-                            value = extractExpression,
-                            onValueChange = { extractExpression = it },
-                            label = { Text(if (extractMode == ExtractMode.REGEX) "正则表达式" else "JSON 路径") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
+                        when (extractMode) {
+                            ExtractMode.REGEX, ExtractMode.JSON -> {
+                                OutlinedTextField(
+                                    value = extractExpression,
+                                    onValueChange = { extractExpression = it },
+                                    label = { Text(if (extractMode == ExtractMode.REGEX) "正则表达式" else "JSON 路径") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
 
-                        if (extractMode == ExtractMode.REGEX) {
-                            OutlinedTextField(
-                                value = extractGroupText,
-                                onValueChange = { extractGroupText = it },
-                                label = { Text("分组编号") },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true
-                            )
-                        }
+                                if (extractMode == ExtractMode.REGEX) {
+                                    OutlinedTextField(
+                                        value = extractGroupText,
+                                        onValueChange = { extractGroupText = it },
+                                        label = { Text("分组编号") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+                                }
 
-                        OutlinedTextField(
-                            value = extractDefaultValue,
-                            onValueChange = { extractDefaultValue = it },
-                            label = { Text("默认值") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = if (extractSourceIsReference) {
-                                    workflow.nodes.find { it.id == extractSourceValue }?.name ?: "[未知节点]"
-                                } else {
-                                    extractSourceValue
-                                },
-                                onValueChange = { v ->
-                                    if (!extractSourceIsReference) extractSourceValue = v
-                                },
-                                label = { Text("来源") },
-                                modifier = Modifier.weight(1f),
-                                readOnly = extractSourceIsReference,
-                                enabled = !extractSourceIsReference
-                            )
-
-                            var showSourceSelector by remember { mutableStateOf(false) }
-                            IconButton(
-                                onClick = { showSourceSelector = true },
-                                enabled = availableReferenceNodes.isNotEmpty()
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Call,
-                                    contentDescription = "选择前置节点"
+                                OutlinedTextField(
+                                    value = extractDefaultValue,
+                                    onValueChange = { extractDefaultValue = it },
+                                    label = { Text("默认值") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
                                 )
                             }
-                            DropdownMenu(
-                                expanded = showSourceSelector,
-                                onDismissRequest = { showSourceSelector = false }
+
+                            ExtractMode.SUB -> {
+                                OutlinedTextField(
+                                    value = extractStartIndexText,
+                                    onValueChange = { extractStartIndexText = it },
+                                    label = { Text("起始下标") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = extractLengthText,
+                                    onValueChange = { extractLengthText = it },
+                                    label = { Text("长度（-1 到结尾）") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = extractDefaultValue,
+                                    onValueChange = { extractDefaultValue = it },
+                                    label = { Text("默认值") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+                            }
+
+                            ExtractMode.CONCAT -> {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    extractOthers.forEachIndexed { index, other ->
+                                        key(index) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                OutlinedTextField(
+                                                    value = if (other.isReference) {
+                                                        workflow.nodes.find { it.id == other.value }?.name ?: "[未知节点]"
+                                                    } else {
+                                                        other.value
+                                                    },
+                                                    onValueChange = { v ->
+                                                        if (!other.isReference) {
+                                                            val newList = extractOthers.toMutableList()
+                                                            newList[index] = other.copy(value = v)
+                                                            extractOthers = newList
+                                                        }
+                                                    },
+                                                    label = { Text("拼接项") },
+                                                    modifier = Modifier.weight(1f),
+                                                    readOnly = other.isReference,
+                                                    enabled = !other.isReference
+                                                )
+
+                                                var showOtherSelector by remember { mutableStateOf(false) }
+                                                IconButton(
+                                                    onClick = { showOtherSelector = true },
+                                                    enabled = availableReferenceNodes.isNotEmpty()
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Call,
+                                                        contentDescription = "选择前置节点"
+                                                    )
+                                                }
+                                                DropdownMenu(
+                                                    expanded = showOtherSelector,
+                                                    onDismissRequest = { showOtherSelector = false }
+                                                ) {
+                                                    if (other.isReference) {
+                                                        DropdownMenuItem(
+                                                            text = { Text("使用静态值") },
+                                                            onClick = {
+                                                                val newList = extractOthers.toMutableList()
+                                                                newList[index] = other.copy(isReference = false, value = "")
+                                                                extractOthers = newList
+                                                                showOtherSelector = false
+                                                            }
+                                                        )
+                                                        HorizontalDivider()
+                                                    }
+                                                    availableReferenceNodes.forEach { predecessorNode ->
+                                                        DropdownMenuItem(
+                                                            text = { Text(predecessorNode.name) },
+                                                            onClick = {
+                                                                val newList = extractOthers.toMutableList()
+                                                                newList[index] = other.copy(isReference = true, value = predecessorNode.id)
+                                                                extractOthers = newList
+                                                                showOtherSelector = false
+                                                            }
+                                                        )
+                                                    }
+                                                    if (availableReferenceNodes.isEmpty()) {
+                                                        DropdownMenuItem(
+                                                            text = { Text("无可用前置节点") },
+                                                            onClick = { showOtherSelector = false },
+                                                            enabled = false
+                                                        )
+                                                    }
+                                                }
+
+                                                IconButton(
+                                                    onClick = {
+                                                        val newList = extractOthers.toMutableList()
+                                                        if (index in newList.indices) {
+                                                            newList.removeAt(index)
+                                                            extractOthers = newList
+                                                        }
+                                                    }
+                                                ) {
+                                                    Icon(Icons.Default.Delete, contentDescription = "删除拼接项")
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            extractOthers = extractOthers + ParameterConfig("", false, "")
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("添加拼接项")
+                                    }
+                                }
+                            }
+
+                            ExtractMode.RANDOM_INT -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Switch(
+                                        checked = extractUseFixed,
+                                        onCheckedChange = { extractUseFixed = it }
+                                    )
+                                    Text(if (extractUseFixed) "使用固定值" else "使用随机值")
+                                }
+
+                                if (extractUseFixed) {
+                                    OutlinedTextField(
+                                        value = extractFixedValue,
+                                        onValueChange = { extractFixedValue = it },
+                                        label = { Text("固定整数") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+                                }
+
+                                OutlinedTextField(
+                                    value = extractRandomMinText,
+                                    onValueChange = { extractRandomMinText = it },
+                                    label = { Text("最小值") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = extractRandomMaxText,
+                                    onValueChange = { extractRandomMaxText = it },
+                                    label = { Text("最大值") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+                            }
+
+                            ExtractMode.RANDOM_STRING -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Switch(
+                                        checked = extractUseFixed,
+                                        onCheckedChange = { extractUseFixed = it }
+                                    )
+                                    Text(if (extractUseFixed) "使用固定值" else "使用随机值")
+                                }
+
+                                if (extractUseFixed) {
+                                    OutlinedTextField(
+                                        value = extractFixedValue,
+                                        onValueChange = { extractFixedValue = it },
+                                        label = { Text("固定字符串") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+                                }
+
+                                OutlinedTextField(
+                                    value = extractRandomStringLengthText,
+                                    onValueChange = { extractRandomStringLengthText = it },
+                                    label = { Text("长度") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                OutlinedTextField(
+                                    value = extractRandomStringCharset,
+                                    onValueChange = { extractRandomStringCharset = it },
+                                    label = { Text("字符集") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 2,
+                                    maxLines = 4
+                                )
+                            }
+                        }
+
+                        if (extractMode != ExtractMode.RANDOM_INT && extractMode != ExtractMode.RANDOM_STRING) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                if (extractSourceIsReference) {
-                                    DropdownMenuItem(
-                                        text = { Text("使用静态值") },
-                                        onClick = {
-                                            extractSourceIsReference = false
-                                            extractSourceValue = ""
-                                            showSourceSelector = false
-                                        }
+                                OutlinedTextField(
+                                    value = if (extractSourceIsReference) {
+                                        workflow.nodes.find { it.id == extractSourceValue }?.name ?: "[未知节点]"
+                                    } else {
+                                        extractSourceValue
+                                    },
+                                    onValueChange = { v ->
+                                        if (!extractSourceIsReference) extractSourceValue = v
+                                    },
+                                    label = { Text("来源") },
+                                    modifier = Modifier.weight(1f),
+                                    readOnly = extractSourceIsReference,
+                                    enabled = !extractSourceIsReference
+                                )
+
+                                var showSourceSelector by remember { mutableStateOf(false) }
+                                IconButton(
+                                    onClick = { showSourceSelector = true },
+                                    enabled = availableReferenceNodes.isNotEmpty()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Call,
+                                        contentDescription = "选择前置节点"
                                     )
-                                    HorizontalDivider()
                                 }
-                                availableReferenceNodes.forEach { predecessorNode ->
-                                    DropdownMenuItem(
-                                        text = { Text(predecessorNode.name) },
-                                        onClick = {
-                                            extractSourceIsReference = true
-                                            extractSourceValue = predecessorNode.id
-                                            showSourceSelector = false
-                                        }
-                                    )
-                                }
-                                if (availableReferenceNodes.isEmpty()) {
-                                    DropdownMenuItem(
-                                        text = { Text("无可用前置节点") },
-                                        onClick = { showSourceSelector = false },
-                                        enabled = false
-                                    )
+                                DropdownMenu(
+                                    expanded = showSourceSelector,
+                                    onDismissRequest = { showSourceSelector = false }
+                                ) {
+                                    if (extractSourceIsReference) {
+                                        DropdownMenuItem(
+                                            text = { Text("使用静态值") },
+                                            onClick = {
+                                                extractSourceIsReference = false
+                                                extractSourceValue = ""
+                                                showSourceSelector = false
+                                            }
+                                        )
+                                        HorizontalDivider()
+                                    }
+                                    availableReferenceNodes.forEach { predecessorNode ->
+                                        DropdownMenuItem(
+                                            text = { Text(predecessorNode.name) },
+                                            onClick = {
+                                                extractSourceIsReference = true
+                                                extractSourceValue = predecessorNode.id
+                                                showSourceSelector = false
+                                            }
+                                        )
+                                    }
+                                    if (availableReferenceNodes.isEmpty()) {
+                                        DropdownMenuItem(
+                                            text = { Text("无可用前置节点") },
+                                            onClick = { showSourceSelector = false },
+                                            enabled = false
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1473,7 +1722,7 @@ fun NodeDialog(
                             }
                             "condition" -> "条件判断"
                             "logic" -> "逻辑判断"
-                            "extract" -> "提取"
+                            "extract" -> "运算"
                             else -> nodeTypes[nodeType] ?: "节点"
                         }
                     } else {
@@ -1542,7 +1791,24 @@ fun NodeDialog(
                                 mode = extractMode,
                                 expression = extractExpression,
                                 group = extractGroupText.toIntOrNull() ?: 0,
-                                defaultValue = extractDefaultValue
+                                defaultValue = extractDefaultValue,
+                                others = extractOthers
+                                    .filter { it.value.isNotBlank() }
+                                    .map { other ->
+                                        if (other.isReference) {
+                                            ParameterValue.NodeReference(other.value)
+                                        } else {
+                                            ParameterValue.StaticValue(other.value)
+                                        }
+                                    },
+                                startIndex = extractStartIndexText.toIntOrNull() ?: 0,
+                                length = extractLengthText.toIntOrNull() ?: -1,
+                                randomMin = extractRandomMinText.toIntOrNull() ?: 0,
+                                randomMax = extractRandomMaxText.toIntOrNull() ?: 100,
+                                randomStringLength = extractRandomStringLengthText.toIntOrNull() ?: 8,
+                                randomStringCharset = extractRandomStringCharset,
+                                useFixed = extractUseFixed,
+                                fixedValue = extractFixedValue
                             )
                             else -> node
                         }
@@ -1608,7 +1874,24 @@ fun NodeDialog(
                                 mode = extractMode,
                                 expression = extractExpression,
                                 group = extractGroupText.toIntOrNull() ?: 0,
-                                defaultValue = extractDefaultValue
+                                defaultValue = extractDefaultValue,
+                                others = extractOthers
+                                    .filter { it.value.isNotBlank() }
+                                    .map { other ->
+                                        if (other.isReference) {
+                                            ParameterValue.NodeReference(other.value)
+                                        } else {
+                                            ParameterValue.StaticValue(other.value)
+                                        }
+                                    },
+                                startIndex = extractStartIndexText.toIntOrNull() ?: 0,
+                                length = extractLengthText.toIntOrNull() ?: -1,
+                                randomMin = extractRandomMinText.toIntOrNull() ?: 0,
+                                randomMax = extractRandomMaxText.toIntOrNull() ?: 100,
+                                randomStringLength = extractRandomStringLengthText.toIntOrNull() ?: 8,
+                                randomStringCharset = extractRandomStringCharset,
+                                useFixed = extractUseFixed,
+                                fixedValue = extractFixedValue
                             )
                             else -> TriggerNode(name = nodeName, description = description)
                         }

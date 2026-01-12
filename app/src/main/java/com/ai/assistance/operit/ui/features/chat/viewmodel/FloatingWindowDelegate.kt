@@ -40,12 +40,15 @@ class FloatingWindowDelegate(
     // 悬浮窗服务
     private var floatingService: FloatingChatService? = null
 
+    private var floatingBinder: FloatingChatService.LocalBinder? = null
+
     // 服务连接
     private val serviceConnection =
         object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 val binder = service as FloatingChatService.LocalBinder
                 floatingService = binder.getService()
+                floatingBinder = binder
                 // 设置回调，允许服务通知委托关闭
                 binder.setCloseCallback {
                     closeFloatingWindow()
@@ -66,11 +69,34 @@ class FloatingWindowDelegate(
                         }
                     }
                 }
+
+                binder.setChatSyncCallback { chatId, messages ->
+                    coroutineScope.launch {
+                        try {
+                            if (chatId == null) {
+                                return@launch
+                            }
+
+                            val currentId = chatHistoryDelegate?.currentChatId?.value
+                            if (currentId == chatId) {
+                                AppLogger.d(TAG, "收到悬浮窗消息同步: chatId=$chatId, messages=${messages.size}")
+                                chatHistoryDelegate?.updateChatHistory(messages)
+                            }
+                        } catch (e: Exception) {
+                            AppLogger.e(TAG, "处理悬浮窗消息同步失败", e)
+                        }
+                    }
+                }
                 // 订阅聊天历史更新
                 setupChatHistoryCollection()
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
+                try {
+                    floatingBinder?.clearCallbacks()
+                } catch (_: Exception) {
+                }
+                floatingBinder = null
                 floatingService = null
             }
         }
@@ -155,6 +181,11 @@ class FloatingWindowDelegate(
             } catch (e: IllegalArgumentException) {
                 AppLogger.e(TAG, "服务可能已解绑: ${e.message}")
             }
+            try {
+                floatingBinder?.clearCallbacks()
+            } catch (_: Exception) {
+            }
+            floatingBinder = null
             floatingService = null
         }
     }
@@ -215,5 +246,12 @@ class FloatingWindowDelegate(
                 AppLogger.e(TAG, "在清理时解绑服务失败", e)
             }
         }
+
+        try {
+            floatingBinder?.clearCallbacks()
+        } catch (_: Exception) {
+        }
+        floatingBinder = null
+        floatingService = null
     }
 }

@@ -57,6 +57,16 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.isActive
 import java.io.InputStream
 
+private fun AudioRecordingConfiguration.tryGetClientUid(): Int? {
+    return try {
+        val method =
+            javaClass.methods.firstOrNull { it.name == "getClientUid" && it.parameterTypes.isEmpty() }
+        val value = method?.invoke(this)
+        value as? Int
+    } catch (_: Exception) {
+        null
+    }
+}
 
 /** 前台服务，用于在AI进行长时间处理时保持应用活跃，防止被系统杀死。 该服务不执行实际工作，仅通过显示一个持久通知来提升应用的进程优先级。 */
 class AIForegroundService : Service() {
@@ -82,6 +92,10 @@ class AIForegroundService : Service() {
         private const val ACTION_SET_WAKE_LISTENING_SUSPENDED_FOR_IME =
             "com.ai.assistance.operit.action.SET_WAKE_LISTENING_SUSPENDED_FOR_IME"
         private const val EXTRA_IME_VISIBLE = "extra_ime_visible"
+
+        private const val ACTION_SET_WAKE_LISTENING_SUSPENDED_FOR_FLOATING_FULLSCREEN =
+            "com.ai.assistance.operit.action.SET_WAKE_LISTENING_SUSPENDED_FOR_FLOATING_FULLSCREEN"
+        private const val EXTRA_FLOATING_FULLSCREEN_ACTIVE = "extra_floating_fullscreen_active"
 
         const val ACTION_PREPARE_WAKE_HANDOFF =
             "com.ai.assistance.operit.action.PREPARE_WAKE_HANDOFF"
@@ -113,6 +127,23 @@ class AIForegroundService : Service() {
                 AppLogger.e(TAG, "Failed to request IME wake listening suspend: ${e.message}", e)
             }
         }
+
+        fun setWakeListeningSuspendedForFloatingFullscreen(context: Context, active: Boolean) {
+            if (!isRunning.get()) return
+            val intent = Intent(context, AIForegroundService::class.java).apply {
+                action = ACTION_SET_WAKE_LISTENING_SUSPENDED_FOR_FLOATING_FULLSCREEN
+                putExtra(EXTRA_FLOATING_FULLSCREEN_ACTIVE, active)
+            }
+            try {
+                context.startService(intent)
+            } catch (e: Exception) {
+                AppLogger.e(
+                    TAG,
+                    "Failed to request floating fullscreen wake listening suspend: ${e.message}",
+                    e
+                )
+            }
+        }
     }
 
     private fun updateWakeListeningSuspendedForIme(imeVisible: Boolean) {
@@ -129,17 +160,31 @@ class AIForegroundService : Service() {
         applyWakeListeningState()
     }
 
+    private fun updateWakeListeningSuspendedForFloatingFullscreen(active: Boolean) {
+        if (wakeListeningSuspendedForFloatingFullscreen == active) return
+        wakeListeningSuspendedForFloatingFullscreen = active
+        AppLogger.d(TAG, "Wake listening suspended by floating fullscreen: $wakeListeningSuspendedForFloatingFullscreen")
+        applyWakeListeningState()
+    }
+    
     private fun applyWakeListeningState() {
         serviceScope.launch {
             val shouldListen =
                 wakeListeningEnabled &&
                     !wakeListeningSuspendedForIme &&
-                    !wakeListeningSuspendedForExternalRecording
+                    !wakeListeningSuspendedForExternalRecording &&
+                    !wakeListeningSuspendedForFloatingFullscreen
 
             if (shouldListen) {
                 startWakeListening()
             } else {
                 stopWakeListening()
+                if (wakeListeningSuspendedForFloatingFullscreen) {
+                    try {
+                        wakeSpeechProvider.shutdown()
+                    } catch (_: Exception) {
+                    }
+                }
             }
 
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -210,15 +255,6 @@ class AIForegroundService : Service() {
         }
     }
 
-    private fun AudioRecordingConfiguration.tryGetClientUid(): Int? {
-        return try {
-            val method = javaClass.getMethod("getClientUid")
-            (method.invoke(this) as? Int)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
     private fun stopRecordingStateMonitoring() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         val am = audioManager
@@ -272,6 +308,9 @@ class AIForegroundService : Service() {
 
     @Volatile
     private var wakeListeningSuspendedForExternalRecording: Boolean = false
+
+    @Volatile
+    private var wakeListeningSuspendedForFloatingFullscreen: Boolean = false
 
     private var audioManager: AudioManager? = null
     private var audioRecordingCallback: AudioManager.AudioRecordingCallback? = null
@@ -422,6 +461,12 @@ class AIForegroundService : Service() {
         if (intent?.action == ACTION_SET_WAKE_LISTENING_SUSPENDED_FOR_IME) {
             val imeVisible = intent.getBooleanExtra(EXTRA_IME_VISIBLE, false)
             updateWakeListeningSuspendedForIme(imeVisible)
+            return START_NOT_STICKY
+        }
+
+        if (intent?.action == ACTION_SET_WAKE_LISTENING_SUSPENDED_FOR_FLOATING_FULLSCREEN) {
+            val active = intent.getBooleanExtra(EXTRA_FLOATING_FULLSCREEN_ACTIVE, false)
+            updateWakeListeningSuspendedForFloatingFullscreen(active)
             return START_NOT_STICKY
         }
 
@@ -827,7 +872,7 @@ class AIForegroundService : Service() {
                     SpeechPrerollStore.clearPendingWakePhrase()
                 }
 
-                if (wakeListeningEnabled && !wakeListeningSuspendedForIme && !wakeListeningSuspendedForExternalRecording) {
+                if (wakeListeningEnabled && !wakeListeningSuspendedForIme && !wakeListeningSuspendedForExternalRecording && !wakeListeningSuspendedForFloatingFullscreen) {
                     startWakeListening()
                 }
             }
@@ -884,7 +929,7 @@ class AIForegroundService : Service() {
         // 为了简单起见，使用一个安卓内置图标。
         // 在实际项目中，应替换为应用的自定义图标。
         val wakeListeningEnabledSnapshot = wakeListeningEnabled
-        val wakeListeningSuspendedSnapshot = wakeListeningSuspendedForIme || wakeListeningSuspendedForExternalRecording
+        val wakeListeningSuspendedSnapshot = wakeListeningSuspendedForIme || wakeListeningSuspendedForExternalRecording || wakeListeningSuspendedForFloatingFullscreen
         val contentText = if (isAiBusy) {
             "AI is processing..."
         } else {

@@ -41,6 +41,19 @@ class MCPDeployer(private val context: Context) {
         data class Success(val message: String) : DeploymentStatus()
         data class Error(val message: String) : DeploymentStatus()
     }
+
+    private fun emitCommandOutput(output: String, statusCallback: (DeploymentStatus) -> Unit) {
+        if (output.isBlank()) return
+
+        val maxChunkSize = 3500
+        var start = 0
+        while (start < output.length) {
+            val end = kotlin.math.min(start + maxChunkSize, output.length)
+            val chunk = output.substring(start, end)
+            statusCallback(DeploymentStatus.InProgress("输出: $chunk"))
+            start = end
+        }
+    }
     /**
      * 部署MCP插件（使用自定义命令）
      *
@@ -333,6 +346,10 @@ class MCPDeployer(private val context: Context) {
                 AppLogger.d(TAG, "执行命令 (${index + 1}/${deployCommands.size}): $cleanCommand")
 
                 val commandExecuted = terminal.executeCommand(sessionId, cleanCommand)
+
+                if (commandExecuted != null) {
+                    emitCommandOutput(commandExecuted, statusCallback)
+                }
 
                 // 如果命令失败
                 if (commandExecuted == null) {

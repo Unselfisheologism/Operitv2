@@ -112,6 +112,12 @@ fun GridWorkflowCanvas(
                     if (source is ParameterValue.NodeReference) {
                         addEdge(source.nodeId, node.id)
                     }
+
+                    node.others.forEach { other ->
+                        if (other is ParameterValue.NodeReference) {
+                            addEdge(other.nodeId, node.id)
+                        }
+                    }
                 }
                 else -> Unit
             }

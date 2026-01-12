@@ -295,8 +295,8 @@ private fun TemplateTypeDialog(
                     onClick = onSelectLogicOrTemplate
                 )
                 TemplateTypeItem(
-                    title = "提取（Extract）",
-                    subtitle = "提取 visit_key -> 跟进搜索链接",
+                    title = "运算（Operator）",
+                    subtitle = "运算 visit_key -> 跟进搜索链接",
                     onClick = onSelectExtractTemplate
                 )
                 TemplateTypeItem(

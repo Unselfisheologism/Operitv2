@@ -836,7 +836,7 @@ export interface LogicNode {
     operator: LogicOperator;
 }
 
-export type ExtractMode = 'REGEX' | 'JSON';
+export type ExtractMode = 'REGEX' | 'JSON' | 'SUB' | 'CONCAT' | 'RANDOM_INT' | 'RANDOM_STRING';
 
 export interface ExtractNode {
     __type?: string;
@@ -850,6 +850,15 @@ export interface ExtractNode {
     expression: string;
     group: number;
     defaultValue: string;
+    others?: ParameterValue[];
+    startIndex?: number;
+    length?: number;
+    randomMin?: number;
+    randomMax?: number;
+    randomStringLength?: number;
+    randomStringCharset?: string;
+    useFixed?: boolean;
+    fixedValue?: string;
 }
 
 /**

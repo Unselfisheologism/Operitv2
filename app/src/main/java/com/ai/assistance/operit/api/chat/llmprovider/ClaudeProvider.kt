@@ -714,6 +714,16 @@ class ClaudeProvider(
                         val text = block.optString("text", "")
                         if (text.isNotEmpty()) fullText.append(text)
                     }
+                    "thinking" -> {
+                        val thinking = block.optString("thinking", "")
+                        if (thinking.isNotEmpty()) {
+                            fullText.append("\n<think>")
+                            fullText.append(thinking)
+                            fullText.append("</think>\n")
+                        }
+                    }
+                    "redacted_thinking" -> {
+                    }
                     "tool_use" -> {
                         if (enableToolCall) {
                             val toolName = block.optString("name", "")
@@ -868,6 +878,7 @@ class ClaudeProvider(
                         val reader = responseBody.charStream().buffered()
                         var currentToolParser: StreamingJsonXmlConverter? = null
                         var isInToolCall = false
+                        var isInThinkingBlock = false
                         var emittedAny = false
                         val nonSseJsonLinesBuffer = StringBuilder()
 
@@ -918,35 +929,60 @@ class ClaudeProvider(
                                 "ping" -> {
                                 }
                                 "content_block_start" -> {
-                                    if (enableToolCall) {
-                                        val contentBlock = jsonResponse.optJSONObject("content_block")
-                                        if (contentBlock != null && contentBlock.optString("type") == "tool_use") {
-                                            val toolName = contentBlock.optString("name", "")
-                                            if (toolName.isNotEmpty()) {
-                                                val toolStartTag = "\n<tool name=\"$toolName\">"
-                                                emittedAny = true
-                                                emit(toolStartTag)
-                                                receivedContent.append(toolStartTag)
+                                    val contentBlock = jsonResponse.optJSONObject("content_block")
+                                    if (contentBlock != null) {
+                                        when (contentBlock.optString("type")) {
+                                            "tool_use" -> {
+                                                if (enableToolCall) {
+                                                    val toolName = contentBlock.optString("name", "")
+                                                    if (toolName.isNotEmpty()) {
+                                                        val toolStartTag = "\n<tool name=\"$toolName\">"
+                                                        emittedAny = true
+                                                        emit(toolStartTag)
+                                                        receivedContent.append(toolStartTag)
 
-                                                currentToolParser = StreamingJsonXmlConverter()
-                                                isInToolCall = true
+                                                        currentToolParser = StreamingJsonXmlConverter()
+                                                        isInToolCall = true
 
-                                                val input = contentBlock.optJSONObject("input")
-                                                if (input != null) {
-                                                    val events = currentToolParser!!.feed(input.toString())
-                                                    events.forEach { event ->
-                                                        when (event) {
-                                                            is StreamingJsonXmlConverter.Event.Tag -> {
-                                                                emit(event.text)
-                                                                receivedContent.append(event.text)
-                                                            }
-                                                            is StreamingJsonXmlConverter.Event.Content -> {
-                                                                emit(event.text)
-                                                                receivedContent.append(event.text)
+                                                        val input = contentBlock.optJSONObject("input")
+                                                        if (input != null) {
+                                                            val events = currentToolParser!!.feed(input.toString())
+                                                            events.forEach { event ->
+                                                                when (event) {
+                                                                    is StreamingJsonXmlConverter.Event.Tag -> {
+                                                                        emit(event.text)
+                                                                        receivedContent.append(event.text)
+                                                                    }
+                                                                    is StreamingJsonXmlConverter.Event.Content -> {
+                                                                        emit(event.text)
+                                                                        receivedContent.append(event.text)
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
                                                 }
+                                            }
+                                            "thinking" -> {
+                                                val thinkingStartTag = "\n<think>"
+                                                emittedAny = true
+                                                emit(thinkingStartTag)
+                                                receivedContent.append(thinkingStartTag)
+                                                isInThinkingBlock = true
+
+                                                val initialThinking = contentBlock.optString("thinking", "")
+                                                if (initialThinking.isNotEmpty()) {
+                                                    tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(initialThinking))
+                                                    onTokensUpdated(
+                                                        tokenCacheManager.totalInputTokenCount,
+                                                        tokenCacheManager.cachedInputTokenCount,
+                                                        tokenCacheManager.outputTokenCount
+                                                    )
+                                                    emit(initialThinking)
+                                                    receivedContent.append(initialThinking)
+                                                }
+                                            }
+                                            "redacted_thinking" -> {
                                             }
                                         }
                                     }
@@ -967,6 +1003,19 @@ class ClaudeProvider(
                                                 )
                                                 emit(content)
                                                 receivedContent.append(content)
+                                            }
+                                        } else if (isInThinkingBlock && (deltaType == "thinking_delta" || delta.has("thinking"))) {
+                                            val thinking = delta.optString("thinking", "")
+                                            if (thinking.isNotEmpty()) {
+                                                emittedAny = true
+                                                tokenCacheManager.addOutputTokens(ChatUtils.estimateTokenCount(thinking))
+                                                onTokensUpdated(
+                                                    tokenCacheManager.totalInputTokenCount,
+                                                    tokenCacheManager.cachedInputTokenCount,
+                                                    tokenCacheManager.outputTokenCount
+                                                )
+                                                emit(thinking)
+                                                receivedContent.append(thinking)
                                             }
                                         } else if (enableToolCall && isInToolCall && currentToolParser != null && deltaType == "input_json_delta") {
                                             val partialJson = delta.optString("partial_json", "")
@@ -1009,11 +1058,42 @@ class ClaudeProvider(
 
                                         isInToolCall = false
                                         currentToolParser = null
+                                    } else if (isInThinkingBlock) {
+                                        val thinkingEndTag = "</think>\n"
+                                        emit(thinkingEndTag)
+                                        receivedContent.append(thinkingEndTag)
+                                        isInThinkingBlock = false
                                     }
                                 }
                                 "message_delta" -> {
                                 }
                                 "message_stop" -> {
+                                    if (isInToolCall && currentToolParser != null) {
+                                        val events = currentToolParser!!.flush()
+                                        events.forEach { event ->
+                                            when (event) {
+                                                is StreamingJsonXmlConverter.Event.Tag -> {
+                                                    emit(event.text)
+                                                    receivedContent.append(event.text)
+                                                }
+                                                is StreamingJsonXmlConverter.Event.Content -> {
+                                                    emit(event.text)
+                                                    receivedContent.append(event.text)
+                                                }
+                                            }
+                                        }
+                                        val toolEndTag = "\n</tool>\n"
+                                        emit(toolEndTag)
+                                        receivedContent.append(toolEndTag)
+                                        isInToolCall = false
+                                        currentToolParser = null
+                                    }
+                                    if (isInThinkingBlock) {
+                                        val thinkingEndTag = "</think>\n"
+                                        emit(thinkingEndTag)
+                                        receivedContent.append(thinkingEndTag)
+                                        isInThinkingBlock = false
+                                    }
                                     break
                                 }
                             }

@@ -63,24 +63,18 @@ class MCPBridgeClient(context: Context, private val serviceName: String) {
                             isConnected.set(false)
                             return@withContext false
                         }
-                        // Give it a moment to initialize after spawning
-                        delay(1000)
                     }
 
-                    // 4. After spawning (or if it was already active but not ready), ping again to confirm.
-                    val finalPingSuccess = ping()
-                    if (finalPingSuccess) {
+                    val readySuccess = waitForReady()
+                    if (readySuccess) {
                         AppLogger.i(TAG, "Successfully connected to service $serviceName.")
                         isConnected.set(true)
-                    } else {
-                        AppLogger.e(
-                                TAG,
-                                "Failed to connect to service $serviceName even after spawn attempt."
-                        )
-                        isConnected.set(false)
+                        return@withContext true
                     }
 
-                    return@withContext finalPingSuccess
+                    AppLogger.e(TAG, "Failed to connect to service $serviceName: service not ready")
+                    isConnected.set(false)
+                    return@withContext false
                 } catch (e: Exception) {
                     AppLogger.e(TAG, "Error connecting to MCP service $serviceName: ${e.message}", e)
                     isConnected.set(false)
@@ -105,15 +99,8 @@ class MCPBridgeClient(context: Context, private val serviceName: String) {
                         val active = responseObj?.optBoolean("active", false) ?: false
                         val ready = responseObj?.optBoolean("ready", false) ?: false
                         
-                        // Check if this service is active and ready
+                        // Only consider it connected when active AND ready.
                         if (active && ready) {
-                            lastPingTime = System.currentTimeMillis() - startTime
-                            isConnected.set(true)
-                            return@withContext true
-                        }
-
-                        // Also consider it connected if active (even if not fully ready)
-                        if (active) {
                             lastPingTime = System.currentTimeMillis() - startTime
                             isConnected.set(true)
                             return@withContext true
@@ -128,6 +115,54 @@ class MCPBridgeClient(context: Context, private val serviceName: String) {
                     return@withContext false
                 }
             }
+
+    private fun isFatalErrorText(text: String): Boolean {
+        if (text.isBlank()) return false
+        return Regex("environment variable .* is required", RegexOption.IGNORE_CASE).containsMatchIn(text) ||
+            Regex("api[_-]?key.*required", RegexOption.IGNORE_CASE).containsMatchIn(text) ||
+            Regex("missing required.*(api[_-]?key|token)", RegexOption.IGNORE_CASE).containsMatchIn(text)
+    }
+
+    suspend fun waitForReady(timeoutMs: Long = 12000, intervalMs: Long = 250): Boolean =
+        withContext(Dispatchers.IO) {
+            val deadline = System.currentTimeMillis() + timeoutMs
+            var lastLogCheckAt = 0L
+
+            while (System.currentTimeMillis() < deadline) {
+                val status = bridge.getServiceStatus(serviceName)
+                if (status?.optBoolean("success", false) == true) {
+                    val resultObj = status.optJSONObject("result")
+                    val active = resultObj?.optBoolean("active", false) ?: false
+                    val ready = resultObj?.optBoolean("ready", false) ?: false
+                    if (active && ready) {
+                        isConnected.set(true)
+                        return@withContext true
+                    }
+                }
+
+                val now = System.currentTimeMillis()
+                if (now - lastLogCheckAt >= 800) {
+                    lastLogCheckAt = now
+                    val logsResp = bridge.getServiceLogs(serviceName)
+                    val logsObj = logsResp?.optJSONObject("result")
+                    val lastError = logsObj?.optString("lastError").orEmpty()
+                    val logs = logsObj?.optString("logs").orEmpty()
+                    if (isFatalErrorText(lastError)) {
+                        isConnected.set(false)
+                        return@withContext false
+                    }
+                    if (isFatalErrorText(logs)) {
+                        isConnected.set(false)
+                        return@withContext false
+                    }
+                }
+
+                delay(intervalMs)
+            }
+
+            isConnected.set(false)
+            return@withContext false
+        }
 
     /** Synchronous ping method */
     fun pingSync(): Boolean = kotlinx.coroutines.runBlocking { ping() }
@@ -144,21 +179,12 @@ class MCPBridgeClient(context: Context, private val serviceName: String) {
 
                     if (serviceInfo?.active == true) {
                         AppLogger.d(TAG, "Service $serviceName is already active.")
-                        if (!isConnected.get()) {
-                            // If it's active but our client state is not connected, try to ping to
-                            // sync up
-                            return@withContext ping()
-                        }
                         return@withContext true
                     }
 
                     val spawnResult = bridge.spawnMcpService(name = serviceName)
                     if (spawnResult?.optBoolean("success", false) == true) {
                         AppLogger.i(TAG, "Service $serviceName spawned successfully.")
-                        // Wait a moment for the service to be fully ready before setting connected
-                        // state
-                        delay(500)
-                        isConnected.set(true)
                         return@withContext true
                     } else {
                         val error =

@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -29,6 +32,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -102,6 +107,7 @@ fun PluginLoadingScreen(
         isExpanded: Boolean,
         onToggleExpansion: () -> Unit,
         onSkip: () -> Unit = {},
+        onPluginClick: (PluginInfo) -> Unit = {},
         modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -124,7 +130,16 @@ fun PluginLoadingScreen(
         ) {
             AnimatedContent(targetState = isExpanded, modifier = Modifier.align(if(isExpanded) Alignment.BottomCenter else Alignment.TopEnd), label = "") { expanded ->
                 if (expanded) {
-                    ExpandedLoadingView(progress, message, pluginsStarted, pluginsTotal, pluginsList, onSkip, onCollapse = onToggleExpansion)
+                    ExpandedLoadingView(
+                        progress,
+                        message,
+                        pluginsStarted,
+                        pluginsTotal,
+                        pluginsList,
+                        onSkip,
+                        onCollapse = onToggleExpansion,
+                        onPluginClick = onPluginClick
+                    )
                 } else {
                     DraggableCollapsedIndicator(progress, pluginsStarted, pluginsTotal, onClick = onToggleExpansion)
                 }
@@ -204,7 +219,8 @@ private fun ExpandedLoadingView(
     pluginsTotal: Int,
     pluginsList: List<PluginInfo>,
     onSkip: () -> Unit,
-    onCollapse: () -> Unit
+    onCollapse: () -> Unit,
+    onPluginClick: (PluginInfo) -> Unit
 ) {
     Surface(
         modifier = Modifier
@@ -318,7 +334,12 @@ private fun ExpandedLoadingView(
                         items(pluginsList) { plugin ->
                             PluginStatusItem(
                                     plugin = plugin,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = if (plugin.status == PluginStatus.FAILED) {
+                                        { onPluginClick(plugin) }
+                                    } else {
+                                        null
+                                    }
                             )
                         }
                     }
@@ -339,7 +360,11 @@ private fun ExpandedLoadingView(
 
 /** 单个插件状态项 */
 @Composable
-fun PluginStatusItem(plugin: PluginInfo, modifier: Modifier = Modifier) {
+fun PluginStatusItem(
+    plugin: PluginInfo,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
     val animatedProgress by
             animateFloatAsState(
                     targetValue = if (plugin.status == PluginStatus.LOADING) 1f else 0f,
@@ -347,8 +372,12 @@ fun PluginStatusItem(plugin: PluginInfo, modifier: Modifier = Modifier) {
             )
 
     Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = modifier.padding(vertical = 4.dp)
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier
+            .padding(vertical = 4.dp)
+            .let { base ->
+                if (onClick != null) base.clickable(onClick = onClick) else base
+            }
     ) {
         // 状态图标或加载指示器
         Box(contentAlignment = Alignment.Center, modifier = Modifier.size(32.dp)) {
@@ -457,6 +486,9 @@ class PluginLoadingState {
     private val _plugins = MutableStateFlow<List<PluginInfo>>(emptyList())
     val plugins: StateFlow<List<PluginInfo>> = _plugins
 
+    private val _pluginLogs = MutableStateFlow<Map<String, String>>(emptyMap())
+    val pluginLogs: StateFlow<Map<String, String>> = _pluginLogs
+
     // 应用上下文，用于获取MCP相关服务
     private var appContext: Context? = null
 
@@ -479,6 +511,10 @@ class PluginLoadingState {
 
     fun toggleExpansion() {
         _isExpanded.value = !_isExpanded.value
+    }
+
+    private fun forceExpanded() {
+        _isExpanded.value = true
     }
 
     /** 更新进度信息 */
@@ -538,6 +574,31 @@ class PluginLoadingState {
             if (status == PluginStatus.SUCCESS) {
                 _pluginsStarted.value = _plugins.value.count { it.status == PluginStatus.SUCCESS }
             }
+        }
+    }
+
+    private fun updatePluginMessage(pluginId: String, message: String) {
+        val currentPlugins = _plugins.value.toMutableList()
+        val pluginIndex = currentPlugins.indexOfFirst { it.id == pluginId }
+
+        if (pluginIndex >= 0) {
+            val plugin = currentPlugins[pluginIndex]
+            currentPlugins[pluginIndex] = plugin.copy(message = message)
+            _plugins.value = currentPlugins
+        }
+    }
+
+    private fun appendPluginLog(pluginId: String, message: String) {
+        if (message.isBlank()) return
+
+        val maxCharsPerPlugin = 2_000_000
+        val existing = _pluginLogs.value[pluginId].orEmpty()
+        val combined = if (existing.isBlank()) message else "$existing\n$message"
+        val trimmed =
+            if (combined.length > maxCharsPerPlugin) combined.takeLast(maxCharsPerPlugin) else combined
+
+        _pluginLogs.value = _pluginLogs.value.toMutableMap().apply {
+            put(pluginId, trimmed)
         }
     }
 
@@ -639,6 +700,7 @@ class PluginLoadingState {
         _pluginsStarted.value = 0
         _pluginsTotal.value = 0
         _plugins.value = emptyList()
+        _pluginLogs.value = emptyMap()
         _isVisible.value = false
         _hasTimedOut.value = false
         _isExpanded.value = false
@@ -743,26 +805,14 @@ class PluginLoadingState {
                     updateMessage(e.message ?: context.getString(R.string.plugin_loading_failed))
                     updateProgress(1.0f)
 
-                    // 延迟后隐藏
-                    lifecycleScope.launch {
-                        delay(3000)
-                        if (isVisible.value) {
-                            hide()
-                        }
-                    }
+                    forceExpanded()
                 }
             } catch (e: Exception) {
                 AppLogger.e("PluginLoadingState", "启动MCP服务器和插件时出错", e)
                 updateMessage(e.message ?: context.getString(R.string.plugin_other_error))
                 updateProgress(1.0f)
 
-                // 延迟一会儿后如果用户未跳过，则自动隐藏进度条
-                lifecycleScope.launch {
-                    delay(3000) // 等待3秒
-                    if (isVisible.value) {
-                        hide()
-                    }
-                }
+                forceExpanded()
             }
         }
     }
@@ -793,12 +843,16 @@ class PluginLoadingState {
 
                 // 更新特定插件状态
                 startLoadingPlugin(pluginId)
+                appendPluginLog(pluginId, "START")
             }
 
             override fun onPluginRegistered(pluginId: String, serviceName: String, success: Boolean) {
                 updatePluginRegistration(pluginId, serviceName, success)
                 if (!success) {
-                    setPluginFailed(pluginId, context.getString(R.string.plugin_registration_failed))
+                    val lastLogLine = _pluginLogs.value[pluginId]?.lineSequence()?.lastOrNull().orEmpty()
+                    val message = lastLogLine.ifBlank { context.getString(R.string.plugin_registration_failed) }
+                    setPluginFailed(pluginId, message)
+                    forceExpanded()
                 }
             }
 
@@ -813,10 +867,17 @@ class PluginLoadingState {
                     setPluginSuccess(pluginId)
                 } else {
                     setPluginFailed(pluginId, context.getString(R.string.plugin_verification_failed))
+                    forceExpanded()
                 }
 
                 // 更新总体进度
                 updateProgress(0.5f + 0.5f * (index.toFloat() / total)) // 验证和处理占50% (0.5 -> 1.0)
+            }
+
+            override fun onPluginLog(pluginId: String, message: String) {
+                appendPluginLog(pluginId, message)
+                val brief = message.lineSequence().firstOrNull().orEmpty().take(160)
+                updatePluginMessage(pluginId, brief)
             }
 
             override fun onAllPluginsStarted(
@@ -866,15 +927,15 @@ class PluginLoadingState {
 
                 updateProgress(1.0f)
 
-                // 对于错误状态，延长显示时间让用户看清消息
-                val delayTime = if (status != MCPStarter.PluginInitStatus.SUCCESS) 3000L else 100L
-
-                // 延迟一会儿后隐藏进度条
-                lifecycleScope.launch {
-                    delay(delayTime)
-                    // 检查是否已经通过跳过按钮关闭了界面
-                    if (isVisible.value) {
-                        hide()
+                val hasFailures = successCount < totalCount && totalCount > 0
+                if (status != MCPStarter.PluginInitStatus.SUCCESS || hasFailures) {
+                    forceExpanded()
+                } else {
+                    lifecycleScope.launch {
+                        delay(100L)
+                        if (isVisible.value) {
+                            hide()
+                        }
                     }
                 }
             }
@@ -898,6 +959,34 @@ fun PluginLoadingScreenWithState(loadingState: PluginLoadingState, modifier: Mod
     val pluginsTotal by loadingState.pluginsTotal.collectAsState()
     val plugins by loadingState.plugins.collectAsState()
     val isExpanded by loadingState.isExpanded.collectAsState()
+    val pluginLogs by loadingState.pluginLogs.collectAsState()
+
+    var selectedLogPluginId by remember { mutableStateOf<String?>(null) }
+
+    selectedLogPluginId?.let { pluginId ->
+        val logText = pluginLogs[pluginId].orEmpty()
+        AlertDialog(
+            onDismissRequest = { selectedLogPluginId = null },
+            title = { Text(text = pluginId) },
+            text = {
+                SelectionContainer {
+                    Text(
+                        text = if (logText.isBlank()) "(no logs)" else logText,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 420.dp)
+                            .verticalScroll(rememberScrollState()),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedLogPluginId = null }) {
+                    Text(text = stringResource(id = android.R.string.ok))
+                }
+            }
+        )
+    }
 
     PluginLoadingScreen(
             isVisible = isVisible,
@@ -909,6 +998,7 @@ fun PluginLoadingScreenWithState(loadingState: PluginLoadingState, modifier: Mod
             isExpanded = isExpanded,
             onToggleExpansion = { loadingState.toggleExpansion() },
             onSkip = { loadingState.skip() },
+            onPluginClick = { plugin -> selectedLogPluginId = plugin.id },
             modifier = modifier
     )
 }

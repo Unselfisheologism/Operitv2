@@ -5,18 +5,15 @@ import com.ai.assistance.operit.R
 import com.ai.assistance.operit.core.tools.defaultTool.ToolGetter
 import com.ai.assistance.operit.data.model.AITool
 import com.ai.assistance.operit.data.model.ToolResult
+import com.ai.assistance.operit.integrations.tasker.triggerAIAgentAction
+import com.ai.assistance.operit.services.FloatingChatService
+import com.ai.assistance.operit.ui.common.displays.VirtualDisplayOverlay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.last
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
-import com.ai.assistance.operit.api.chat.EnhancedAIService
-import com.ai.assistance.operit.services.FloatingChatService
-import com.ai.assistance.operit.ui.common.displays.VirtualDisplayOverlay
-import com.google.gson.Gson
-import kotlinx.coroutines.flow.map
-import com.ai.assistance.operit.integrations.tasker.triggerAIAgentAction
 
 /**
  * This file contains all tool registrations centralized for easier maintenance and integration It
@@ -323,11 +320,11 @@ fun registerAllTools(handler: AIToolHandler, context: Context) {
 
                 when {
                     !visitKey.isNullOrBlank() && !linkNumber.isNullOrBlank() ->
-                        s(
-                                R.string.toolreg_visit_web_search_link_desc,
-                                linkNumber,
-                                visitKey.take(8)
-                        )
+                            s(
+                                    R.string.toolreg_visit_web_search_link_desc,
+                                    linkNumber,
+                                    visitKey.take(8)
+                            )
                     !url.isNullOrBlank() -> s(R.string.toolreg_visit_web_url_desc, url)
                     else -> s(R.string.toolreg_visit_web_desc)
                 }
@@ -720,9 +717,7 @@ fun registerAllTools(handler: AIToolHandler, context: Context) {
                         }
                 s(R.string.toolreg_delete_file_desc, operation, path, envInfo)
             },
-            executor = { tool ->
-                runBlocking(Dispatchers.IO) { fileSystemTools.deleteFile(tool) }
-            }
+            executor = { tool -> runBlocking(Dispatchers.IO) { fileSystemTools.deleteFile(tool) } }
     )
 
     // UI自动化工具
@@ -1117,6 +1112,22 @@ fun registerAllTools(handler: AIToolHandler, context: Context) {
 
     // 系统操作工具
     val systemOperationTools = ToolGetter.getSystemOperationTools(context)
+
+    handler.registerTool(
+            name = "toast",
+            dangerCheck = { false },
+            executor = { tool ->
+                runBlocking(Dispatchers.IO) { systemOperationTools.toast(tool) }
+            }
+    )
+
+    handler.registerTool(
+            name = "send_notification",
+            dangerCheck = { false },
+            executor = { tool ->
+                runBlocking(Dispatchers.IO) { systemOperationTools.sendNotification(tool) }
+            }
+    )
 
     // 修改系统设置
     handler.registerTool(

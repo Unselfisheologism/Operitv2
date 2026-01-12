@@ -21,6 +21,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.LinkedList
 import java.util.Queue
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.random.Random
 
 /**
  * 节点执行状态
@@ -99,19 +102,79 @@ class WorkflowExecutor(private val context: Context) {
         val left = leftRaw
         val right = rightRaw
 
-        fun numericCompare(op: (Double, Double) -> Boolean): Boolean? {
-            val a = left.trim().toDoubleOrNull() ?: return null
-            val b = right.trim().toDoubleOrNull() ?: return null
-            return op(a, b)
+        fun parseDoubleOrNullStrict(value: String): Double? {
+            val t = value.trim()
+            if (t.isBlank()) return null
+            return t.toDoubleOrNull()
         }
 
         return when (operator) {
-            ConditionOperator.EQ -> left == right
-            ConditionOperator.NE -> left != right
-            ConditionOperator.GT -> numericCompare { a, b -> a > b } ?: (left > right)
-            ConditionOperator.GTE -> numericCompare { a, b -> a >= b } ?: (left >= right)
-            ConditionOperator.LT -> numericCompare { a, b -> a < b } ?: (left < right)
-            ConditionOperator.LTE -> numericCompare { a, b -> a <= b } ?: (left <= right)
+            ConditionOperator.EQ -> {
+                val leftNum = parseDoubleOrNullStrict(left)
+                val rightNum = parseDoubleOrNullStrict(right)
+                if (leftNum != null && rightNum != null) {
+                    leftNum == rightNum
+                } else if (leftNum != null || rightNum != null) {
+                    throw IllegalArgumentException("条件比较类型不一致：left='$left', right='$right'")
+                } else {
+                    left == right
+                }
+            }
+            ConditionOperator.NE -> {
+                val leftNum = parseDoubleOrNullStrict(left)
+                val rightNum = parseDoubleOrNullStrict(right)
+                if (leftNum != null && rightNum != null) {
+                    leftNum != rightNum
+                } else if (leftNum != null || rightNum != null) {
+                    throw IllegalArgumentException("条件比较类型不一致：left='$left', right='$right'")
+                } else {
+                    left != right
+                }
+            }
+            ConditionOperator.GT -> {
+                val leftNum = parseDoubleOrNullStrict(left)
+                val rightNum = parseDoubleOrNullStrict(right)
+                if (leftNum != null && rightNum != null) {
+                    leftNum > rightNum
+                } else if (leftNum != null || rightNum != null) {
+                    throw IllegalArgumentException("条件比较类型不一致：left='$left', right='$right'")
+                } else {
+                    left > right
+                }
+            }
+            ConditionOperator.GTE -> {
+                val leftNum = parseDoubleOrNullStrict(left)
+                val rightNum = parseDoubleOrNullStrict(right)
+                if (leftNum != null && rightNum != null) {
+                    leftNum >= rightNum
+                } else if (leftNum != null || rightNum != null) {
+                    throw IllegalArgumentException("条件比较类型不一致：left='$left', right='$right'")
+                } else {
+                    left >= right
+                }
+            }
+            ConditionOperator.LT -> {
+                val leftNum = parseDoubleOrNullStrict(left)
+                val rightNum = parseDoubleOrNullStrict(right)
+                if (leftNum != null && rightNum != null) {
+                    leftNum < rightNum
+                } else if (leftNum != null || rightNum != null) {
+                    throw IllegalArgumentException("条件比较类型不一致：left='$left', right='$right'")
+                } else {
+                    left < right
+                }
+            }
+            ConditionOperator.LTE -> {
+                val leftNum = parseDoubleOrNullStrict(left)
+                val rightNum = parseDoubleOrNullStrict(right)
+                if (leftNum != null && rightNum != null) {
+                    leftNum <= rightNum
+                } else if (leftNum != null || rightNum != null) {
+                    throw IllegalArgumentException("条件比较类型不一致：left='$left', right='$right'")
+                } else {
+                    left <= right
+                }
+            }
             ConditionOperator.CONTAINS -> left.contains(right)
             ConditionOperator.NOT_CONTAINS -> !left.contains(right)
             ConditionOperator.IN, ConditionOperator.NOT_IN -> {
@@ -121,7 +184,29 @@ class WorkflowExecutor(private val context: Context) {
                 } catch (_: Exception) {
                     right.split(',').map { it.trim() }.filter { it.isNotEmpty() }
                 }
-                val contains = items.contains(left)
+
+                val contains = if (items.isEmpty()) {
+                    false
+                } else {
+                    val leftNum = parseDoubleOrNullStrict(left)
+                    val itemNums = items.map { parseDoubleOrNullStrict(it) }
+                    val listAllNum = itemNums.all { it != null }
+                    val listAllStr = itemNums.all { it == null }
+
+                    if (!listAllNum && !listAllStr) {
+                        throw IllegalArgumentException("IN 列表类型不一致：包含数字与非数字 right='$right'")
+                    }
+
+                    if (listAllNum) {
+                        val ln = leftNum ?: throw IllegalArgumentException("条件比较类型不一致：left='$left', right='$right'")
+                        itemNums.filterNotNull().any { it == ln }
+                    } else {
+                        if (leftNum != null) {
+                            throw IllegalArgumentException("条件比较类型不一致：left='$left', right='$right'")
+                        }
+                        items.contains(left)
+                    }
+                }
                 if (operator == ConditionOperator.IN) contains else !contains
             }
         }
@@ -197,6 +282,49 @@ class WorkflowExecutor(private val context: Context) {
             is org.json.JSONArray -> current.toString()
             else -> current.toString()
         }
+    }
+
+    private fun substringByIndex(source: String, startIndex: Int, length: Int, defaultValue: String): String {
+        if (source.isEmpty()) return defaultValue
+        if (startIndex < 0) return defaultValue
+        if (startIndex > source.length) return defaultValue
+
+        val endExclusive = if (length < 0) {
+            source.length
+        } else {
+            (startIndex + length).coerceAtMost(source.length)
+        }
+
+        if (endExclusive < startIndex) return defaultValue
+        return source.substring(startIndex, endExclusive)
+    }
+
+    private fun randomInt(minValue: Int, maxValue: Int): Int {
+        val low = min(minValue, maxValue)
+        val high = max(minValue, maxValue)
+        if (low == high) return low
+
+        val upperExclusiveLong = high.toLong() + 1L
+        val value = Random.nextLong(low.toLong(), upperExclusiveLong)
+        return value.toInt()
+    }
+
+    private fun randomString(length: Int, charset: String): String {
+        val safeLength = length.coerceAtLeast(0)
+        if (safeLength == 0) return ""
+
+        val safeCharset = if (charset.isNotEmpty()) {
+            charset
+        } else {
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        }
+
+        val sb = StringBuilder(safeLength)
+        repeat(safeLength) {
+            val idx = Random.nextInt(safeCharset.length)
+            sb.append(safeCharset[idx])
+        }
+        return sb.toString()
     }
 
     private fun getReachableNodeIds(
@@ -276,6 +404,12 @@ class WorkflowExecutor(private val context: Context) {
                     val source = node.source
                     if (source is ParameterValue.NodeReference) {
                         addDependency(source.nodeId, node.id)
+                    }
+
+                    node.others.forEach { other ->
+                        if (other is ParameterValue.NodeReference) {
+                            addDependency(other.nodeId, node.id)
+                        }
                     }
                 }
                 else -> Unit
@@ -770,13 +904,16 @@ class WorkflowExecutor(private val context: Context) {
             onNodeStateChange(node.id, NodeExecutionState.Running)
 
             return try {
-                var sourceText = resolveParameterValue(node.source, nodeResults)
-                if (sourceText.isBlank() && node.source is ParameterValue.StaticValue) {
-                    val fallbackSourceId = incomingConnections.firstOrNull()?.sourceNodeId
-                    if (fallbackSourceId != null) {
-                        val fallbackState = nodeResults[fallbackSourceId]
-                        if (fallbackState is NodeExecutionState.Success && !isSkippedState(fallbackState)) {
-                            sourceText = fallbackState.result
+                var sourceText = ""
+                if (node.mode != ExtractMode.RANDOM_INT && node.mode != ExtractMode.RANDOM_STRING) {
+                    sourceText = resolveParameterValue(node.source, nodeResults)
+                    if (sourceText.isBlank() && node.source is ParameterValue.StaticValue) {
+                        val fallbackSourceId = incomingConnections.firstOrNull()?.sourceNodeId
+                        if (fallbackSourceId != null) {
+                            val fallbackState = nodeResults[fallbackSourceId]
+                            if (fallbackState is NodeExecutionState.Success && !isSkippedState(fallbackState)) {
+                                sourceText = fallbackState.result
+                            }
                         }
                     }
                 }
@@ -784,6 +921,30 @@ class WorkflowExecutor(private val context: Context) {
                 val extracted = when (node.mode) {
                     ExtractMode.REGEX -> extractByRegex(sourceText, node.expression, node.group, node.defaultValue)
                     ExtractMode.JSON -> extractByJsonPath(sourceText, node.expression, node.defaultValue)
+                    ExtractMode.SUB -> substringByIndex(sourceText, node.startIndex, node.length, node.defaultValue)
+                    ExtractMode.CONCAT -> {
+                        val otherText = node.others.joinToString(separator = "") { other ->
+                            resolveParameterValue(other, nodeResults)
+                        }
+                        sourceText + otherText
+                    }
+                    ExtractMode.RANDOM_INT -> {
+                        if (node.useFixed) {
+                            val fixed = node.fixedValue.trim()
+                            val fixedInt = fixed.toLongOrNull()
+                                ?: throw IllegalArgumentException("固定值必须是整数: '${node.fixedValue}'")
+                            fixedInt.toString()
+                        } else {
+                            randomInt(node.randomMin, node.randomMax).toString()
+                        }
+                    }
+                    ExtractMode.RANDOM_STRING -> {
+                        if (node.useFixed) {
+                            node.fixedValue
+                        } else {
+                            randomString(node.randomStringLength, node.randomStringCharset)
+                        }
+                    }
                 }
 
                 nodeResults[node.id] = NodeExecutionState.Success(extracted)

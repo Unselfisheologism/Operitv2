@@ -78,6 +78,7 @@ fun SkillManagerScreen(
     val context = LocalContext.current
 
     var skills by remember { mutableStateOf<Map<String, SkillPackage>>(emptyMap()) }
+    var isLoading by remember { mutableStateOf(true) }
 
     var selectedSkillName by remember { mutableStateOf<String?>(null) }
     var selectedSkillContent by remember { mutableStateOf<String?>(null) }
@@ -90,7 +91,16 @@ fun SkillManagerScreen(
     var isImporting by remember { mutableStateOf(false) }
 
     val refreshSkills: suspend () -> Unit = {
-        skills = skillRepository.getAvailableSkillPackages()
+        isLoading = true
+        try {
+            val loaded =
+                withContext(Dispatchers.IO) {
+                    skillRepository.getAvailableSkillPackages()
+                }
+            skills = loaded
+        } finally {
+            isLoading = false
+        }
     }
 
     val zipPicker = rememberLauncherForActivityResult(
@@ -194,7 +204,14 @@ fun SkillManagerScreen(
                             onClick = {
                                 val name = skill.name
                                 selectedSkillName = name
-                                selectedSkillContent = skillRepository.readSkillContent(name) ?: ""
+                                selectedSkillContent = null
+                                scope.launch {
+                                    val content =
+                                        withContext(Dispatchers.IO) {
+                                            skillRepository.readSkillContent(name)
+                                        }
+                                    selectedSkillContent = content ?: ""
+                                }
                             }
                         )
                     }
@@ -228,6 +245,15 @@ fun SkillManagerScreen(
                     imageVector = Icons.Rounded.Add,
                     contentDescription = stringResource(R.string.import_action)
                 )
+            }
+        }
+
+        if (skills.isEmpty() && (isLoading || isImporting)) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
             }
         }
     }

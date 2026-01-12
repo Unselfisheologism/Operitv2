@@ -267,7 +267,7 @@ class WorkflowViewModel(application: Application) : AndroidViewModel(application
 
             val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
             val workflow = buildExtractTemplateWorkflow(
-                name = "提取模板 $time",
+                name = "运算模板 $time",
                 description = ""
             )
 
@@ -396,7 +396,7 @@ class WorkflowViewModel(application: Application) : AndroidViewModel(application
 
         val extractVisitKey = ExtractNode(
             id = extractVisitKeyId,
-            name = "提取 visit_key",
+            name = "运算 visit_key",
             source = ParameterValue.NodeReference(visitId),
             mode = ExtractMode.REGEX,
             expression = "Visit key:\\s*([0-9a-fA-F-]+)",
@@ -512,7 +512,7 @@ class WorkflowViewModel(application: Application) : AndroidViewModel(application
 
         val extractVisitKey = ExtractNode(
             id = extractVisitKeyId,
-            name = "提取 visit_key",
+            name = "运算 visit_key",
             source = ParameterValue.NodeReference(visitId),
             mode = ExtractMode.REGEX,
             expression = "Visit key:\\s*([0-9a-fA-F-]+)",
@@ -573,9 +573,14 @@ class WorkflowViewModel(application: Application) : AndroidViewModel(application
 
     private fun buildExtractTemplateWorkflow(name: String, description: String): Workflow {
         val triggerId = UUID.randomUUID().toString()
-        val visitId = UUID.randomUUID().toString()
-        val extractVisitKeyId = UUID.randomUUID().toString()
-        val followLinkId = UUID.randomUUID().toString()
+        val fixedIntId = UUID.randomUUID().toString()
+        val randomIntId = UUID.randomUUID().toString()
+        val fixedStrId = UUID.randomUUID().toString()
+        val randomStrId = UUID.randomUUID().toString()
+        val concatId = UUID.randomUUID().toString()
+        val subId = UUID.randomUUID().toString()
+        val compareId = UUID.randomUUID().toString()
+        val showId = UUID.randomUUID().toString()
 
         val trigger = TriggerNode(
             id = triggerId,
@@ -584,48 +589,117 @@ class WorkflowViewModel(application: Application) : AndroidViewModel(application
             position = templateNodePosition(0)
         )
 
-        val visitWeb = ExecuteNode(
-            id = visitId,
-            name = "访问网页",
-            actionType = "visit_web",
-            actionConfig = mapOf(
-                "url" to ParameterValue.StaticValue("https://example.com")
-            ),
+        val fixedInt = ExtractNode(
+            id = fixedIntId,
+            name = "运算 固定数字",
+            mode = ExtractMode.RANDOM_INT,
+            useFixed = true,
+            fixedValue = "42",
+            randomMin = 0,
+            randomMax = 100,
             position = templateNodePosition(1)
         )
 
-        val extractVisitKey = ExtractNode(
-            id = extractVisitKeyId,
-            name = "提取 visit_key",
-            source = ParameterValue.NodeReference(visitId),
-            mode = ExtractMode.REGEX,
-            expression = "Visit key:\\s*([0-9a-fA-F-]+)",
-            group = 1,
-            defaultValue = "",
+        val randomInt = ExtractNode(
+            id = randomIntId,
+            name = "运算 随机数字",
+            mode = ExtractMode.RANDOM_INT,
+            useFixed = false,
+            randomMin = 1,
+            randomMax = 100,
             position = templateNodePosition(2)
         )
 
-        val followFirstLink = ExecuteNode(
-            id = followLinkId,
-            name = "跟进第1个链接",
-            actionType = "visit_web",
-            actionConfig = mapOf(
-                "visit_key" to ParameterValue.NodeReference(extractVisitKeyId),
-                "link_number" to ParameterValue.StaticValue("1")
-            ),
+        val fixedStr = ExtractNode(
+            id = fixedStrId,
+            name = "运算 固定字符串",
+            mode = ExtractMode.RANDOM_STRING,
+            useFixed = true,
+            fixedValue = "hello",
+            randomStringLength = 8,
+            randomStringCharset = "abcdefghijklmnopqrstuvwxyz",
             position = templateNodePosition(3)
         )
 
+        val randomStr = ExtractNode(
+            id = randomStrId,
+            name = "运算 随机字符串",
+            mode = ExtractMode.RANDOM_STRING,
+            useFixed = false,
+            randomStringLength = 8,
+            randomStringCharset = "abcdefghijklmnopqrstuvwxyz0123456789",
+            position = templateNodePosition(4)
+        )
+
+        val concat = ExtractNode(
+            id = concatId,
+            name = "运算 拼接",
+            mode = ExtractMode.CONCAT,
+            source = ParameterValue.NodeReference(fixedStrId),
+            others = listOf(
+                ParameterValue.StaticValue("-"),
+                ParameterValue.NodeReference(randomStrId),
+                ParameterValue.StaticValue("-"),
+                ParameterValue.NodeReference(randomIntId)
+            ),
+            position = templateNodePosition(5)
+        )
+
+        val sub = ExtractNode(
+            id = subId,
+            name = "运算 截取",
+            mode = ExtractMode.SUB,
+            source = ParameterValue.NodeReference(concatId),
+            startIndex = 0,
+            length = 12,
+            defaultValue = "",
+            position = templateNodePosition(6)
+        )
+
+        val compare = ConditionNode(
+            id = compareId,
+            name = "条件: 随机数字 > 50",
+            left = ParameterValue.NodeReference(randomIntId),
+            operator = ConditionOperator.GT,
+            right = ParameterValue.StaticValue("50"),
+            position = templateNodePosition(7)
+        )
+
+        val showResult = ExecuteNode(
+            id = showId,
+            name = "展示结果（Toast）",
+            actionType = "toast",
+            actionConfig = mapOf(
+                "message" to ParameterValue.NodeReference(subId)
+            ),
+            position = templateNodePosition(8)
+        )
+
         val connections = listOf(
-            WorkflowNodeConnection(sourceNodeId = triggerId, targetNodeId = visitId),
-            WorkflowNodeConnection(sourceNodeId = visitId, targetNodeId = extractVisitKeyId),
-            WorkflowNodeConnection(sourceNodeId = extractVisitKeyId, targetNodeId = followLinkId)
+            WorkflowNodeConnection(sourceNodeId = triggerId, targetNodeId = fixedIntId),
+            WorkflowNodeConnection(sourceNodeId = fixedIntId, targetNodeId = randomIntId),
+            WorkflowNodeConnection(sourceNodeId = randomIntId, targetNodeId = fixedStrId),
+            WorkflowNodeConnection(sourceNodeId = fixedStrId, targetNodeId = randomStrId),
+            WorkflowNodeConnection(sourceNodeId = randomStrId, targetNodeId = concatId),
+            WorkflowNodeConnection(sourceNodeId = concatId, targetNodeId = subId),
+            WorkflowNodeConnection(sourceNodeId = randomIntId, targetNodeId = compareId),
+            WorkflowNodeConnection(sourceNodeId = compareId, targetNodeId = showId, condition = "true")
         )
 
         return Workflow(
             name = name,
             description = description,
-            nodes = listOf(trigger, visitWeb, extractVisitKey, followFirstLink),
+            nodes = listOf(
+                trigger,
+                fixedInt,
+                randomInt,
+                fixedStr,
+                randomStr,
+                concat,
+                sub,
+                compare,
+                showResult
+            ),
             connections = connections
         )
     }

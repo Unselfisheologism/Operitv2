@@ -55,6 +55,32 @@ const os = __importStar(__nccwpck_require__(857));
  * MCP Bridge class
  */
 class McpBridge {
+    isFatalErrorText(text) {
+        if (!text)
+            return false;
+        return /environment variable .* is required/i.test(text)
+            || /api[_-]?key.*required/i.test(text)
+            || /missing required.*(api[_-]?key|token)/i.test(text);
+    }
+    appendServiceLog(serviceName, line) {
+        if (!serviceName)
+            return;
+        if (!line)
+            return;
+        const normalized = line.length > this.MAX_LOG_LINE_LENGTH
+            ? line.slice(0, this.MAX_LOG_LINE_LENGTH)
+            : line;
+        const list = this.serviceLogs.get(serviceName) || [];
+        list.push(normalized);
+        while (list.length > this.MAX_LOG_LINES) {
+            list.shift();
+        }
+        this.serviceLogs.set(serviceName, list);
+    }
+    getServiceLogText(serviceName) {
+        const list = this.serviceLogs.get(serviceName) || [];
+        return list.join('');
+    }
     constructor(config = {}) {
         this.server = null;
         // 统一的服务客户端映射 (本地和远程都使用 MCPClient)
@@ -75,6 +101,10 @@ class McpBridge {
         this.mcpErrors = new Map();
         this.serviceExitSignals = new Map();
         this.socketBuffers = new Map();
+        this.fatalServices = new Set();
+        this.serviceLogs = new Map();
+        this.MAX_LOG_LINES = 400;
+        this.MAX_LOG_LINE_LENGTH = 4000;
         // 重启跟踪
         this.restartAttempts = new Map();
         this.MAX_RESTART_ATTEMPTS = 5; // 最多重启5次
@@ -213,6 +243,10 @@ class McpBridge {
         console.log(`Service ${serviceName} connection closed or failed.`);
         this.serviceHelpers.delete(serviceName);
         this.serviceReadyMap.set(serviceName, false);
+        if (this.fatalServices.has(serviceName)) {
+            console.error(`[${serviceName}] Fatal startup error detected. Will not attempt restart.`);
+            return;
+        }
         const serviceInfo = this.serviceRegistry.get(serviceName);
         if (!serviceInfo) {
             return; // Service unregistered, don't reconnect
@@ -299,15 +333,22 @@ class McpBridge {
         });
         this.serviceHelpers.set(serviceName, helper);
         this.serviceReadyMap.set(serviceName, false);
-        this.mcpToolsMap.set(serviceName, []);
+        this.mcpToolsMap.delete(serviceName);
         this.mcpErrors.delete(serviceName);
         this.serviceExitSignals.delete(serviceName); // Initialize the new map
         helper.stdout?.on('data', (data) => {
-            console.log(`[${serviceName}-helper]: ${data.toString().trim()}`);
+            const text = data.toString();
+            this.appendServiceLog(serviceName, text);
+            console.log(`[${serviceName}-helper]: ${text.trim()}`);
         });
         helper.stderr?.on('data', (data) => {
             const stderrStr = data.toString();
+            this.appendServiceLog(serviceName, stderrStr);
             console.error(`[${serviceName}-helper-stderr]: ${stderrStr.trim()}`);
+            if (this.isFatalErrorText(stderrStr)) {
+                this.fatalServices.add(serviceName);
+                this.mcpErrors.set(serviceName, stderrStr.trim());
+            }
             if (/SIGABRT/i.test(stderrStr)) {
                 console.log(`[${serviceName}] SIGABRT detected in stderr stream. Flagging for immediate restart.`);
                 this.serviceExitSignals.set(serviceName, 'SIGABRT');
@@ -357,6 +398,7 @@ class McpBridge {
                 this.mcpToolsMap.set(serviceName, params.tools);
                 this.serviceReadyMap.set(serviceName, true);
                 this.restartAttempts.set(serviceName, 0); // Reset restart attempts on successful connection
+                this.fatalServices.delete(serviceName);
                 // 检查是否有等待此服务启动的 spawn 请求
                 const pendingSpawnRequest = this.pendingSpawnRequests.get(serviceName);
                 if (pendingSpawnRequest) {
@@ -396,6 +438,9 @@ class McpBridge {
                 if (params.error) {
                     this.mcpErrors.set(params.serviceName, params.error);
                 }
+                if (params.error && this.isFatalErrorText(params.error)) {
+                    this.fatalServices.add(params.serviceName);
+                }
                 if (params.signal) { // The synthetic signal from the helper
                     this.serviceExitSignals.set(params.serviceName, params.signal);
                 }
@@ -425,12 +470,40 @@ class McpBridge {
         let response;
         try {
             switch (cmdType) {
+                case 'logs':
+                    const logsServiceName = params?.name;
+                    if (!logsServiceName) {
+                        response = {
+                            id,
+                            success: false,
+                            error: {
+                                code: -32602,
+                                message: "Missing required parameter: name"
+                            }
+                        };
+                        socket.write(JSON.stringify(response) + '\n');
+                        break;
+                    }
+                    response = {
+                        id,
+                        success: true,
+                        result: {
+                            name: logsServiceName,
+                            active: this.isServiceActive(logsServiceName),
+                            ready: this.serviceReadyMap.get(logsServiceName) || false,
+                            lastError: this.mcpErrors.get(logsServiceName) || "",
+                            logs: this.getServiceLogText(logsServiceName)
+                        }
+                    };
+                    socket.write(JSON.stringify(response) + '\n');
+                    break;
                 case 'listtools':
                     // 查询特定服务的可用工具列表
                     const serviceToList = params?.name;
                     if (serviceToList) {
-                        const cachedTools = this.mcpToolsMap.get(serviceToList);
-                        if (cachedTools) {
+                        const hasCachedTools = this.mcpToolsMap.has(serviceToList);
+                        const cachedTools = this.mcpToolsMap.get(serviceToList) || [];
+                        if (hasCachedTools) {
                             // If tools are in the cache, it means the service has been spawned at least once.
                             response = {
                                 id,
@@ -554,6 +627,18 @@ class McpBridge {
                     let serviceArgs = params.args || [];
                     let serviceEnv = params.env;
                     let serviceCwd = params.cwd;
+                    if (this.fatalServices.has(spawnServiceName)) {
+                        response = {
+                            id,
+                            success: false,
+                            error: {
+                                code: -32603,
+                                message: this.mcpErrors.get(spawnServiceName) || `Service '${spawnServiceName}' failed with fatal error`
+                            }
+                        };
+                        socket.write(JSON.stringify(response) + '\n');
+                        break;
+                    }
                     // 优先从注册表查找服务信息
                     const serviceInfo = this.serviceRegistry.get(spawnServiceName);
                     // 如果未提供命令，但服务已注册，则使用注册表信息
@@ -591,13 +676,17 @@ class McpBridge {
                         socket.write(JSON.stringify(response) + '\n');
                         break;
                     }
-                    // 不立即返回响应，而是挂起此请求，等待服务启动完成
-                    this.pendingSpawnRequests.set(spawnServiceName, {
+                    response = {
                         id,
-                        socket,
-                        timestamp: Date.now()
-                    });
-                    console.log(`[${spawnServiceName}] Spawn request pending, waiting for service to be ready...`);
+                        success: true,
+                        result: {
+                            status: this.isServiceActive(spawnServiceName) ? "spawning" : "started",
+                            name: spawnServiceName,
+                            active: this.isServiceActive(spawnServiceName),
+                            ready: this.serviceReadyMap.get(spawnServiceName) || false
+                        }
+                    };
+                    socket.write(JSON.stringify(response) + '\n');
                     break;
                 case 'shutdown':
                     // 关闭特定的MCP服务

@@ -54,10 +54,10 @@ import com.ai.assistance.operit.ui.features.packages.dialogs.PackageDetailsDialo
 import com.ai.assistance.operit.ui.features.packages.dialogs.ScriptExecutionDialog
 import com.ai.assistance.operit.ui.features.packages.lists.PackagesList
 import java.io.File
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import androidx.compose.ui.draw.scale
+import kotlinx.coroutines.withContext
 import com.ai.assistance.operit.R
-
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -81,6 +81,7 @@ fun PackageManagerScreen(
     val importedPackages = remember { mutableStateOf<List<String>>(emptyList()) }
     // UI展示用的导入状态列表，与后端状态分离
     val visibleImportedPackages = remember { mutableStateOf<List<String>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
 
     // State for selected package and showing details
     var selectedPackage by remember { mutableStateOf<String?>(null) }
@@ -105,7 +106,7 @@ fun PackageManagerScreen(
         derivedStateOf {
             val packagesMap = availablePackages.value
             val imported = importedPackages.value.toSet()
- 
+
             imported
                 .mapNotNull { packageName -> packagesMap[packageName] }
                 .sortedBy { it.name }
@@ -129,18 +130,21 @@ fun PackageManagerScreen(
 
     // File picker launcher for importing external packages
     val packageFilePicker =
-        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri
-            ->
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
             uri?.let {
                 scope.launch {
                     try {
-                        var fileName: String? = null
-                        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                            val nameIndex = cursor.getColumnIndex("_display_name")
-                            if (cursor.moveToFirst() && nameIndex >= 0) {
-                                fileName = cursor.getString(nameIndex)
+                        val fileName: String? =
+                            withContext(Dispatchers.IO) {
+                                var name: String? = null
+                                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                                    val nameIndex = cursor.getColumnIndex("_display_name")
+                                    if (cursor.moveToFirst() && nameIndex >= 0) {
+                                        name = cursor.getString(nameIndex)
+                                    }
+                                }
+                                name
                             }
-                        }
 
                         if (fileName == null) {
                             snackbarHostState.showSnackbar(context.getString(R.string.no_filename))
@@ -156,63 +160,39 @@ fun PackageManagerScreen(
                                     return@launch
                                 }
 
-                                // Copy the file to a temporary location
-                                val inputStream = context.contentResolver.openInputStream(uri)
-                                val tempFile = File(context.cacheDir, fileNameNonNull)
+                                isLoading = true
+                                val loadResult =
+                                    withContext(Dispatchers.IO) {
+                                        val inputStream = context.contentResolver.openInputStream(uri)
+                                        val tempFile = File(context.cacheDir, fileNameNonNull)
 
-                                inputStream?.use { input ->
-                                    tempFile.outputStream().use { output -> input.copyTo(output) }
-                                }
+                                        inputStream?.use { input ->
+                                            tempFile.outputStream().use { output -> input.copyTo(output) }
+                                        }
 
-                                // Import the package from the temporary file
-                                packageManager.importPackageFromExternalStorage(
-                                    tempFile.absolutePath
-                                )
+                                        packageManager.importPackageFromExternalStorage(tempFile.absolutePath)
 
-                                // Refresh the lists
-                                availablePackages.value = packageManager.getAvailablePackages()
-                                importedPackages.value = packageManager.getImportedPackages()
+                                        val available = packageManager.getAvailablePackages()
+                                        val imported = packageManager.getImportedPackages()
+
+                                        tempFile.delete()
+
+                                        available to imported
+                                    }
+
+                                availablePackages.value = loadResult.first
+                                importedPackages.value = loadResult.second
+                                visibleImportedPackages.value = importedPackages.value.toList()
+                                isLoading = false
 
                                 snackbarHostState.showSnackbar(message = context.getString(R.string.external_package_imported))
-
-                                // Clean up the temporary file
-                                tempFile.delete()
                             }
-                            /*
-                            PackageTab.AUTOMATION_CONFIGS -> {
-                                if (!fileName!!.endsWith(".json")) {
-                                    snackbarHostState.showSnackbar(message = context.getString(R.string.automation_json_only))
-                                    return@launch
-                                }
-
-                                // Copy the file to a temporary location
-                                val inputStream = context.contentResolver.openInputStream(uri)
-                                val tempFile = File(context.cacheDir, fileName)
-
-                                inputStream?.use { input ->
-                                    tempFile.outputStream().use { output -> input.copyTo(output) }
-                                }
-
-                                // Import the automation config
-                                val result = automationManager.importPackage(tempFile.absolutePath)
-
-                                if (result.startsWith("Successfully")) {
-                                    // Refresh the automation configs list
-                                    automationConfigs.value = automationManager.getAllPackageInfo()
-                                    snackbarHostState.showSnackbar(message = "自动化配置导入成功")
-                                } else {
-                                    snackbarHostState.showSnackbar(message = result)
-                                }
-
-                                // Clean up the temporary file
-                                tempFile.delete()
-                            }
-                            */
                             else -> {
                                 snackbarHostState.showSnackbar(context.getString(R.string.current_tab_not_support_import))
                             }
                         }
                     } catch (e: Exception) {
+                        isLoading = false
                         AppLogger.e("PackageManagerScreen", "Failed to import file", e)
                         snackbarHostState.showSnackbar(
                             message = context.getString(
@@ -228,13 +208,23 @@ fun PackageManagerScreen(
 
     // Load packages
     LaunchedEffect(Unit) {
+        isLoading = true
         try {
-            availablePackages.value = packageManager.getAvailablePackages()
-            importedPackages.value = packageManager.getImportedPackages()
+            val loadResult =
+                withContext(Dispatchers.IO) {
+                    val available = packageManager.getAvailablePackages()
+                    val imported = packageManager.getImportedPackages()
+                    available to imported
+                }
+
+            availablePackages.value = loadResult.first
+            importedPackages.value = loadResult.second
             // 初始化UI显示状态
             visibleImportedPackages.value = importedPackages.value.toList()
         } catch (e: Exception) {
             AppLogger.e("PackageManagerScreen", "Failed to load packages", e)
+        } finally {
+            isLoading = false
         }
     }
 
@@ -250,7 +240,7 @@ fun PackageManagerScreen(
             }
         },
         floatingActionButton = {
-            if (selectedTab == PackageTab.PACKAGES) { // || selectedTab == PackageTab.AUTOMATION_CONFIGS) {
+            if (selectedTab == PackageTab.PACKAGES) {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.End
@@ -288,7 +278,6 @@ fun PackageManagerScreen(
                             imageVector = Icons.Rounded.Add,
                             contentDescription = when (selectedTab) {
                                 PackageTab.PACKAGES -> context.getString(R.string.import_external_package)
-                                // PackageTab.AUTOMATION_CONFIGS -> "导入自动化配置"
                                 else -> context.getString(R.string.import_action)
                             }
                         )
@@ -390,40 +379,6 @@ fun PackageManagerScreen(
                     }
                 }
 
-                // 自动化配置标签 - 临时隐藏
-                /*
-                Tab(
-                    selected = selectedTab == PackageTab.AUTOMATION_CONFIGS,
-                    onClick = { selectedTab = PackageTab.AUTOMATION_CONFIGS },
-                    modifier = Modifier.height(48.dp)
-                ) {
-                            Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                            imageVector = Icons.Default.Build,
-                                        contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = if (selectedTab == PackageTab.AUTOMATION_CONFIGS) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                        Spacer(Modifier.width(6.dp))
-                                Text(
-                            "自动化配置",
-                            style = MaterialTheme.typography.bodySmall,
-                            softWrap = false,
-                            color = if (selectedTab == PackageTab.AUTOMATION_CONFIGS) 
-                                MaterialTheme.colorScheme.primary 
-                            else 
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                    }
-                }
-                */
-
                 // MCP标签
                 Tab(
                     selected = selectedTab == PackageTab.MCP,
@@ -470,7 +425,11 @@ fun PackageManagerScreen(
                                 .fillMaxSize()
                                 .padding(horizontal = 16.dp)
                         ) {
-                            if (availablePackages.value.isEmpty()) {
+                            if (availablePackages.value.isEmpty() && isLoading) {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator()
+                                }
+                            } else if (availablePackages.value.isEmpty()) {
                                 EmptyState(message = context.getString(R.string.no_packages_available))
                             } else {
                                 Surface(
@@ -559,18 +518,17 @@ fun PackageManagerScreen(
                                                         // 后台执行实际的导入/移除操作
                                                         scope.launch {
                                                             try {
-                                                                if (isChecked) {
-                                                                    packageManager.importPackage(
-                                                                        packageName
-                                                                    )
-                                                                } else {
-                                                                    packageManager.removePackage(
-                                                                        packageName
-                                                                    )
-                                                                }
-                                                                // 操作成功后，更新真实的导入状态
-                                                                importedPackages.value =
-                                                                    packageManager.getImportedPackages()
+                                                                val updatedImported =
+                                                                    withContext(Dispatchers.IO) {
+                                                                        if (isChecked) {
+                                                                            packageManager.importPackage(packageName)
+                                                                        } else {
+                                                                            packageManager.removePackage(packageName)
+                                                                        }
+                                                                        packageManager.getImportedPackages()
+                                                                    }
+
+                                                                importedPackages.value = updatedImported
                                                             } catch (e: Exception) {
                                                                 AppLogger.e(
                                                                     "PackageManagerScreen",
@@ -595,6 +553,15 @@ fun PackageManagerScreen(
                                     }
                                 }
                             }
+
+                            if (isLoading && availablePackages.value.isNotEmpty()) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
                         }
 
                     }
@@ -607,21 +574,6 @@ fun PackageManagerScreen(
                         )
                     }
 
-                    /*
-                    PackageTab.AUTOMATION_CONFIGS -> {
-                        if (automationConfigs.value.isEmpty()) {
-                            EmptyState(message = "没有可用的自动化配置")
-                        } else {
-                            AutomationConfigList(
-                                configs = automationConfigs.value,
-                                onConfigClick = { config ->
-                                    selectedAutomationPackage = config
-                                    showAutomationDetails = true
-                                }
-                            )
-                        }
-                    }
-                    */
                     PackageTab.MCP -> {
                         MCPConfigScreen(
                             onNavigateToMCPMarket = onNavigateToMCPMarket
@@ -636,6 +588,7 @@ fun PackageManagerScreen(
                     packageName = selectedPackage!!,
                     packageDescription = availablePackages.value[selectedPackage]?.description?.resolve(context)
                         ?: "",
+                    toolPackage = availablePackages.value[selectedPackage],
                     packageManager = packageManager,
                     onRunScript = { tool ->
                         selectedTool = tool
@@ -650,13 +603,22 @@ fun PackageManagerScreen(
                                 "onPackageDeleted callback triggered. Refreshing package lists."
                             )
                             // Refresh the package lists after deletion
-                            availablePackages.value = packageManager.getAvailablePackages()
-                            importedPackages.value = packageManager.getImportedPackages()
+                            isLoading = true
+                            val loadResult =
+                                withContext(Dispatchers.IO) {
+                                    val available = packageManager.getAvailablePackages()
+                                    val imported = packageManager.getImportedPackages()
+                                    available to imported
+                                }
+
+                            availablePackages.value = loadResult.first
+                            importedPackages.value = loadResult.second
                             visibleImportedPackages.value = importedPackages.value.toList()
                             AppLogger.d(
                                 "PackageManagerScreen",
                                 "Lists refreshed. Available: ${availablePackages.value.keys}, Imported: ${importedPackages.value}"
                             )
+                            isLoading = false
                             snackbarHostState.showSnackbar("Package deleted successfully.")
                         }
                     }
@@ -708,7 +670,6 @@ fun PackageManagerScreen(
 @Composable
 private fun PackageEnvironmentVariablesDialog(
     requiredEnvByPackage: Map<String, List<EnvVar>>,
- // Changed to EnvVar objects
     currentValues: Map<String, String>,
     onDismiss: () -> Unit,
     onConfirm: (Map<String, String>) -> Unit

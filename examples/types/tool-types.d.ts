@@ -55,6 +55,8 @@ export interface ToolResultMap {
     'sleep': SleepResultData;
     'get_system_setting': SystemSettingData;
     'modify_system_setting': SystemSettingData;
+    'toast': StringResultData;
+    'send_notification': StringResultData;
     'install_app': AppOperationData;
     'uninstall_app': AppOperationData;
     'list_installed_apps': AppListData;

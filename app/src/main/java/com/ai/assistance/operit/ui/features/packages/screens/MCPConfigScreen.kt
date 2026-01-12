@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import com.ai.assistance.operit.ui.components.CustomScaffold
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -37,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.lifecycleScope
 import com.ai.assistance.operit.data.mcp.MCPLocalServer
 import com.ai.assistance.operit.data.mcp.MCPRepository
 import com.ai.assistance.operit.data.mcp.plugins.MCPDeployer
@@ -57,13 +59,12 @@ import androidx.compose.ui.res.stringResource
 import com.ai.assistance.operit.R
 
 import java.util.*
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.ai.assistance.operit.data.mcp.InstallResult
 import com.ai.assistance.operit.data.mcp.InstallProgress
-import com.ai.assistance.operit.ui.features.startup.screens.PluginLoadingState
-import com.ai.assistance.operit.ui.features.startup.screens.PluginLoadingScreenWithState
+import com.ai.assistance.operit.ui.features.startup.screens.LocalPluginLoadingState
 import com.ai.assistance.operit.data.mcp.plugins.MCPStarter
 
 /** MCP配置屏幕 - 极简风格界面，专注于插件快速部署 */
@@ -74,21 +75,13 @@ fun MCPConfigScreen(
     onNavigateToMCPMarket: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val activity = context as? androidx.activity.ComponentActivity
     val mcpLocalServer = remember { MCPLocalServer.getInstance(context) }
     val mcpRepository = remember { MCPRepository(context) }
 
     val scope = rememberCoroutineScope()
 
-    // 插件加载状态管理
-    val pluginLoadingState = remember { PluginLoadingState() }
-    
-    // 设置应用上下文
-    LaunchedEffect(Unit) {
-        pluginLoadingState.setAppContext(context)
-        pluginLoadingState.setOnSkipCallback {
-            // 跳过回调可以为空，或者添加一些逻辑
-        }
-    }
+    val pluginLoadingState = LocalPluginLoadingState.current
 
     // 实例化ViewModel
     val viewModel = remember {
@@ -100,12 +93,14 @@ fun MCPConfigScreen(
 
 
     // 状态收集
-    val serverStatus = mcpLocalServer.serverStatus.collectAsState().value
+    val serverStatusMap = mcpLocalServer.serverStatus.collectAsState().value
     val installProgress by viewModel.installProgress.collectAsState()
     val installResult by viewModel.installResult.collectAsState()
     val currentInstallingPlugin by viewModel.currentServer.collectAsState()
     val installedPlugins =
             mcpRepository.installedPluginIds.collectAsState(initial = emptySet()).value
+
+    val mcpConfigSnapshot = mcpLocalServer.mcpConfig.collectAsState().value
 
     // 部署状态
     val deploymentStatus by deployViewModel.deploymentStatus.collectAsState()
@@ -118,19 +113,46 @@ fun MCPConfigScreen(
     // 标记是否已经执行过初始化时的自动启动
     var initialAutoStartPerformed = remember { mutableStateOf(false) }
 
+    var isRefreshing by remember { mutableStateOf(false) }
+    var isToolsLoading by remember { mutableStateOf(false) }
+    var pendingPluginId by remember { mutableStateOf<String?>(null) }
+
+    suspend fun refreshMcpScreen() {
+        if (isRefreshing) return
+        isRefreshing = true
+        try {
+            mcpRepository.syncBridgeStatus()
+            mcpRepository.refreshPluginList()
+        } finally {
+            isRefreshing = false
+        }
+    }
+
+    fun awaitPluginVisible(pluginId: String, onDone: () -> Unit) {
+        pendingPluginId = pluginId
+        scope.launch {
+            try {
+                refreshMcpScreen()
+                withTimeoutOrNull(20_000) {
+                    mcpRepository.installedPluginIds.first { it.contains(pluginId) }
+                }
+            } finally {
+                pendingPluginId = null
+                onDone()
+            }
+        }
+    }
+
     // 在应用启动时检查自动启动设置，而不是等待UI完全加载
     LaunchedEffect(Unit) {
         // 仅在首次加载时执行一次
         if (!initialAutoStartPerformed.value) {
             com.ai.assistance.operit.util.AppLogger.d("MCPConfigScreen", "初始化 - 检查服务器状态")
 
-            // 从桥接器同步最新的服务运行状态
-            mcpRepository.syncBridgeStatus()
-            // 刷新列表以确保UI更新
-            mcpRepository.refreshPluginList()
+            refreshMcpScreen()
 
             // 只记录服务器状态，不再重复启动服务器(已由 Application 中的 initAndAutoStartPlugins 控制)
-            val anyServerRunning = serverStatus.values.any { it.active }
+            val anyServerRunning = serverStatusMap.values.any { it.active }
             if (anyServerRunning) {
                 com.ai.assistance.operit.util.AppLogger.d("MCPConfigScreen", "MCP服务器已在运行")
             } else {
@@ -219,11 +241,38 @@ fun MCPConfigScreen(
         successfulToolRequests.value = pluginToolsMap.filter { it.value.isNotEmpty() }.size
     }
 
+    val sortedPluginIds by remember(
+        installedPlugins,
+        pluginToolsMap,
+        serverStatusMap,
+        mcpConfigSnapshot
+    ) {
+        derivedStateOf {
+            installedPlugins
+                .toList()
+                .sortedWith(
+                    compareBy<String> { pluginId ->
+                        val enabled = mcpLocalServer.isServerEnabled(pluginId)
+                        val loaded = pluginToolsMap[pluginId]?.isNotEmpty() == true
+                        when {
+                            enabled && loaded -> 0
+                            enabled -> 1
+                            else -> 2
+                        }
+                    }.thenBy { pluginId ->
+                        getPluginDisplayName(pluginId, mcpRepository).lowercase(Locale.getDefault())
+                    }
+                )
+        }
+    }
+
     LaunchedEffect(installedPlugins, toolRefreshTrigger) {
+        isToolsLoading = true
         // 只有在安装了插件后才运行
         if (installedPlugins.isEmpty()) {
             AppLogger.d("MCPConfigScreen", "No installed plugins, clearing tool list.")
             pluginToolsMap = emptyMap()
+            isToolsLoading = false
             return@LaunchedEffect
         }
 
@@ -257,7 +306,6 @@ fun MCPConfigScreen(
 
             if (toolsMap.isNotEmpty()) {
                 val totalTools = toolsMap.values.sumOf { it.size }
-                Toast.makeText(context, context.getString(R.string.tools_loaded, totalTools), Toast.LENGTH_SHORT).show()
                 AppLogger.i("MCPConfigScreen", "Loaded $totalTools tools from ${toolsMap.size} plugins")
             } else {
                 AppLogger.i("MCPConfigScreen", "No tools found for any installed plugins.")
@@ -265,6 +313,8 @@ fun MCPConfigScreen(
         } catch (e: Exception) {
             AppLogger.e("MCPConfigScreen", "Error fetching tools", e)
             Toast.makeText(context, context.getString(R.string.tools_load_error, e.message), Toast.LENGTH_SHORT).show()
+        } finally {
+            isToolsLoading = false
         }
     }
 
@@ -736,7 +786,7 @@ fun MCPConfigScreen(
                                         result.onSuccess { count ->
                                             AppLogger.i("MCPConfigScreen", "配置导入成功，合并了 $count 个服务器")
                                             Toast.makeText(context, "已合并 $count 个服务器配置", Toast.LENGTH_SHORT).show()
-                                            mcpRepository.refreshPluginList()
+                                            refreshMcpScreen()
                                             configJsonInput = ""
                                             showImportDialog = false
                                         }.onFailure { error ->
@@ -805,7 +855,10 @@ fun MCPConfigScreen(
                             remoteConnectionTypeExpanded = false
                             remoteBearerToken = ""
                             showImportDialog = false
-                            isImporting = false
+
+                            awaitPluginVisible(importId) {
+                                isImporting = false
+                            }
                         } else {
                             val errorMessage = when (importTabIndex) {
                                 0 -> context.getString(R.string.enter_repo_link_and_name)
@@ -914,241 +967,268 @@ fun MCPConfigScreen(
             }
         )
     }
+
+    val isAnyLoading =
+        isRefreshing || isToolsLoading || isImporting || isPluginLoading || pendingPluginId != null
+
+    val isEmptyLoading = installedPlugins.isEmpty() && (isAnyLoading || !initialAutoStartPerformed.value)
     
     CustomScaffold(
             floatingActionButton = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    // 启动插件按钮
-                    FloatingActionButton(
-                        onClick = {
-                            pluginLoadingState.reset() // 确保每次都重置状态
-                            pluginLoadingState.show()
-                            pluginLoadingState.initializeMCPServer(context, scope)
-                        },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        modifier = Modifier.size(56.dp)
+                if (!isEmptyLoading) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.start_plugin))
-                    }
-                    
-                    // 市场按钮
-                    FloatingActionButton(
-                        onClick = onNavigateToMCPMarket,
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(Icons.Default.Store, contentDescription = stringResource(R.string.mcp_market))
-                    }
-                    
-                    // 导入按钮
-                    FloatingActionButton(
-                        onClick = {
-                            showImportDialog = true
-                        },
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Icon(Icons.Default.Download, contentDescription = stringResource(R.string.import_action))
+                        // 启动插件按钮
+                        FloatingActionButton(
+                            onClick = {
+                                if (!isAnyLoading) {
+                                    val lifecycleScope = activity?.lifecycleScope
+                                    if (lifecycleScope != null) {
+                                        pluginLoadingState.reset() // 确保每次都重置状态
+                                        pluginLoadingState.show()
+                                        pluginLoadingState.initializeMCPServer(context, lifecycleScope)
+                                    } else {
+                                        Toast.makeText(context, "Failed to start plugin loading", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            if (isAnyLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            } else {
+                                Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.start_plugin))
+                            }
+                        }
+                        
+                        // 市场按钮
+                        FloatingActionButton(
+                            onClick = onNavigateToMCPMarket,
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(Icons.Default.Store, contentDescription = stringResource(R.string.mcp_market))
+                        }
+                        
+                        // 导入按钮
+                        FloatingActionButton(
+                            onClick = {
+                                showImportDialog = true
+                            },
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(56.dp)
+                        ) {
+                            Icon(Icons.Default.Download, contentDescription = stringResource(R.string.import_action))
+                        }
                     }
                 }
             }
     ) { padding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            // 插件加载屏幕覆盖层
-            PluginLoadingScreenWithState(
-                loadingState = pluginLoadingState,
-                modifier = Modifier.fillMaxSize()
-            )
-            // 主界面内容
-            LazyColumn(
+        if (isEmptyLoading) {
+            Box(
                 modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(
-                    start = 8.dp,
-                    top = 8.dp,
-                    end = 8.dp,
-                    bottom = 200.dp // 为悬浮按钮留出空间
-                )
+                contentAlignment = Alignment.Center
             ) {
-                // 状态指示器
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.mcp_management),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.weight(1f)
-                            )
-                            
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(8.dp)
-                                        .background(
-                                            color = when {
-                                                totalEnabledPlugins == 0 -> Color.Gray
-                                                successfulToolRequests.value == totalEnabledPlugins -> Color.Green
-                                                successfulToolRequests.value > 0 -> Color(0xFFFFA500) // Orange
-                                                else -> Color.Red
-                                            },
-                                            shape = RoundedCornerShape(4.dp)
-                                        )
-                                )
-                                Text(
-                                    text = "${successfulToolRequests.value}/$totalEnabledPlugins",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-
-                
-                // 插件列表标题
-                if (installedPlugins.isNotEmpty()) {
-                    
-                    // 插件列表
-                    items(installedPlugins.toList()) { pluginId ->
-                        val pluginInfo = remember(pluginId) {
-                            mcpRepository.getInstalledPluginInfo(pluginId)
-                        }
-                        val isRemote = pluginInfo?.type == "remote"
-
-                        // 获取插件服务器状态
-                        val serverStatus = mcpLocalServer.getServerStatus(pluginId)
-
-                        // 获取插件部署状态（通过检查Linux文件系统）
-                        val deploySuccessState = remember(pluginId) {
-                            mutableStateOf(false)
-                        }
-
-                        // 获取插件启用状态 - 从配置读取
-                        val pluginEnabledState = remember(pluginId) {
-                            mutableStateOf(mcpLocalServer.isServerEnabled(pluginId))
-                        }
-
-                        // 获取插件运行状态
-                        val pluginRunningState = remember(pluginId) {
-                            mutableStateOf(serverStatus?.active == true)
-                        }
-                        
-                        // 检查部署状态
-                        LaunchedEffect(pluginId) {
-                            deploySuccessState.value = mcpLocalServer.isPluginDeployed(pluginId)
-                        }
-                        
-                        // 监听服务器状态变化
-                        LaunchedEffect(pluginId) {
-                            mcpLocalServer.serverStatus.collect { statusMap ->
-                                val status = statusMap[pluginId]
-                                pluginRunningState.value = status?.active == true
-                                // 重新检查部署状态
-                                deploySuccessState.value = mcpLocalServer.isPluginDeployed(pluginId)
-                            }
-                        }
-                        
-                        // 监听配置变化（isEnabled状态）
-                        LaunchedEffect(pluginId) {
-                            mcpLocalServer.mcpConfig.collect { _ ->
-                                pluginEnabledState.value = mcpLocalServer.isServerEnabled(pluginId)
-                            }
-                        }
-
-                        PluginListItem(
-                                pluginId = pluginId,
-                                displayName = getPluginDisplayName(pluginId, mcpRepository),
-                                isOfficial = pluginId.startsWith("official_"),
-                                isRemote = isRemote, // 传递插件类型
-                                toolNames = pluginToolsMap[pluginId] ?: emptyList(), // 传递工具信息
-                                onClick = {
-                                    selectedPluginId = pluginId
-                                    pluginConfigJson = mcpLocalServer.getPluginConfig(pluginId)
-                                    selectedPluginForDetails = getPluginAsServer(pluginId, mcpRepository, context)
-                                },
-                                onDeploy = {
-                                    pluginToDeploy = pluginId
-                                    showConfirmDialog = true // 显示确认对话框而不是直接进入命令编辑
-                                },
-                                onEdit = {
-                                    // 设置要编辑的服务器并显示对话框
-                                    val serverToEdit = getPluginAsServer(pluginId, mcpRepository,context)
-                                    if(serverToEdit != null){
-                                        editingRemoteServer = serverToEdit
-                                        showRemoteEditDialog = true
-                                    }
-                                },
-                                isEnabled = pluginEnabledState.value,
-                                onEnabledChange = { isChecked ->
-                                    scope.launch {
-                                        mcpLocalServer.setServerEnabled(pluginId, isChecked)
-                                    }
-                                },
-                                isRunning = pluginRunningState.value,
-                                isDeployed = deploySuccessState.value
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp))
-                    }
-                } else {
-                    // 无插件提示
+                CircularProgressIndicator()
+            }
+        } else {
+            Box(modifier = Modifier.fillMaxSize()) {
+                // 主界面内容
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(
+                        start = 8.dp,
+                        top = 8.dp,
+                        end = 8.dp,
+                        bottom = 200.dp // 为悬浮按钮留出空间
+                    )
+                ) {
+                    // 状态指示器
                     item {
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                             )
                         ) {
-                            Box(
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(32.dp),
-                                contentAlignment = Alignment.Center
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                Text(
+                                    text = stringResource(R.string.mcp_management),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(
-                                        Icons.Default.Extension,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(48.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    Box(
+                                        modifier = Modifier
+                                            .size(8.dp)
+                                            .background(
+                                                color = when {
+                                                    totalEnabledPlugins == 0 -> Color.Gray
+                                                    successfulToolRequests.value == totalEnabledPlugins -> Color.Green
+                                                    successfulToolRequests.value > 0 -> Color(0xFFFFA500) // Orange
+                                                    else -> Color.Red
+                                                },
+                                                shape = RoundedCornerShape(4.dp)
+                                            )
                                     )
                                     Text(
-                                        stringResource(R.string.no_plugins),
-                                        style = MaterialTheme.typography.titleMedium,
+                                        text = "${successfulToolRequests.value}/$totalEnabledPlugins",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        stringResource(R.string.use_import_function_to_add),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                                     )
                                 }
                             }
                         }
                     }
+
+                    
+                    // 插件列表标题
+                    if (installedPlugins.isNotEmpty()) {
+                        
+                        // 插件列表
+                        items(items = sortedPluginIds, key = { it }) { pluginId ->
+                            val pluginInfo = remember(pluginId) {
+                                mcpRepository.getInstalledPluginInfo(pluginId)
+                            }
+                            val isRemote = pluginInfo?.type == "remote"
+
+                            // 获取插件服务器状态
+                            val pluginServerStatus = mcpLocalServer.getServerStatus(pluginId)
+
+                            // 获取插件部署状态（通过检查Linux文件系统）
+                            val deploySuccessState = remember(pluginId) {
+                                mutableStateOf(false)
+                            }
+
+                            // 获取插件启用状态 - 从配置读取
+                            val pluginEnabledState = remember(pluginId) {
+                                mutableStateOf(mcpLocalServer.isServerEnabled(pluginId))
+                            }
+
+                            // 获取插件运行状态
+                            val pluginRunningState = remember(pluginId) {
+                                mutableStateOf(pluginServerStatus?.active == true)
+                            }
+                            
+                            // 检查部署状态
+                            LaunchedEffect(pluginId) {
+                                deploySuccessState.value = mcpLocalServer.isPluginDeployed(pluginId)
+                            }
+                            
+                            // 监听服务器状态变化
+                            LaunchedEffect(pluginId) {
+                                mcpLocalServer.serverStatus.collect { statusMap ->
+                                    val status = statusMap[pluginId]
+                                    pluginRunningState.value = status?.active == true
+                                    // 重新检查部署状态
+                                    deploySuccessState.value = mcpLocalServer.isPluginDeployed(pluginId)
+                                }
+                            }
+                            
+                            // 监听配置变化（isEnabled状态）
+                            LaunchedEffect(pluginId) {
+                                mcpLocalServer.mcpConfig.collect { _ ->
+                                    pluginEnabledState.value = mcpLocalServer.isServerEnabled(pluginId)
+                                }
+                            }
+
+                            PluginListItem(
+                                    pluginId = pluginId,
+                                    displayName = getPluginDisplayName(pluginId, mcpRepository),
+                                    isOfficial = pluginId.startsWith("official_"),
+                                    isRemote = isRemote, // 传递插件类型
+                                    toolNames = pluginToolsMap[pluginId] ?: emptyList(), // 传递工具信息
+                                    onClick = {
+                                        selectedPluginId = pluginId
+                                        pluginConfigJson = mcpLocalServer.getPluginConfig(pluginId)
+                                        selectedPluginForDetails = getPluginAsServer(pluginId, mcpRepository, context)
+                                    },
+                                    onDeploy = {
+                                        pluginToDeploy = pluginId
+                                        showConfirmDialog = true // 显示确认对话框而不是直接进入命令编辑
+                                    },
+                                    onEdit = {
+                                        // 设置要编辑的服务器并显示对话框
+                                        val serverToEdit = getPluginAsServer(pluginId, mcpRepository,context)
+                                        if(serverToEdit != null){
+                                            editingRemoteServer = serverToEdit
+                                            showRemoteEditDialog = true
+                                        }
+                                    },
+                                    isEnabled = pluginEnabledState.value,
+                                    onEnabledChange = { isChecked ->
+                                        scope.launch {
+                                            mcpLocalServer.setServerEnabled(pluginId, isChecked)
+                                        }
+                                    },
+                                    isRunning = pluginRunningState.value,
+                                    isDeployed = deploySuccessState.value
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 4.dp))
+                        }
+                    } else {
+                        // 无插件提示
+                        item {
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(32.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Extension,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(48.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            stringResource(R.string.no_plugins),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            stringResource(R.string.use_import_function_to_add),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+
             }
         }
     }

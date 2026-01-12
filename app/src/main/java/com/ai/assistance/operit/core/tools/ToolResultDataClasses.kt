@@ -1304,7 +1304,7 @@ data class WorkflowDetailResultData(
                     }
                 }
                 is com.ai.assistance.operit.data.model.ExtractNode -> {
-                    sb.appendLine("  - [提取] ${node.name} (${node.id})")
+                    sb.appendLine("  - [运算] ${node.name} (${node.id})")
                     sb.appendLine("    模式: ${node.mode}")
                     if (node.expression.isNotBlank()) {
                         sb.appendLine("    表达式: ${node.expression}")

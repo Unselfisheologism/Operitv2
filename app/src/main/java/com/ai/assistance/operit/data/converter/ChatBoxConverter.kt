@@ -41,11 +41,11 @@ class ChatBoxConverter : ChatFormatConverter {
     
     override fun convert(content: String): List<ChatHistory> {
         return try {
-            val rootElement = json.parseToJsonElement(content)
+            val rootElement = parseRootElement(content)
             
             when (rootElement) {
                 is JsonObject -> parseObjectFormat(rootElement)
-                is JsonArray -> parseArrayFormat(rootElement)
+                is JsonArray -> throw ConversionException("不支持的 ChatBox 格式：请导入 ChatBox 导出的 JSON（设置 > 常规设置 > 数据备份 > 导出勾选数据）")
                 else -> throw ConversionException("不支持的 ChatBox 格式")
             }
         } catch (e: Exception) {
@@ -60,42 +60,31 @@ class ChatBoxConverter : ChatFormatConverter {
      */
     private fun parseObjectFormat(obj: JsonObject): List<ChatHistory> {
         return when {
-            // 包含 sessions 数组
-            obj.containsKey("sessions") -> {
-                val sessions = obj["sessions"]
-                if (sessions is JsonArray) {
-                    sessions.mapNotNull { 
-                        if (it is JsonObject) parseSession(it) else null 
-                    }
-                } else {
-                    emptyList()
-                }
+            isKvExportFormat(obj) -> {
+                parseKvExportFormat(obj)
             }
             // 单个 session 对象
             obj.containsKey("messages") || obj.containsKey("name") -> {
                 val session = parseSession(obj)
                 if (session != null) listOf(session) else emptyList()
             }
-            else -> emptyList()
-        }
-    }
-    
-    /**
-     * 解析数组格式（多个 session）
-     */
-    private fun parseArrayFormat(array: JsonArray): List<ChatHistory> {
-        return array.mapNotNull { 
-            if (it is JsonObject) parseSession(it) else null 
+            else -> throw ConversionException("不是有效的 ChatBox 导出文件（请在 ChatBox 的 设置 > 常规设置 > 数据备份 中使用“导出勾选数据”导出 JSON）")
         }
     }
     
     /**
      * 解析单个 session
      */
-    private fun parseSession(sessionObj: JsonObject): ChatHistory? {
+    private fun parseSession(
+        sessionObj: JsonObject,
+        fallbackId: String? = null,
+        fallbackTitle: String? = null
+    ): ChatHistory? {
         try {
             // 基准时间戳
             val baseTimestamp = System.currentTimeMillis()
+            val sessionModelName = sessionObj["model"]?.jsonPrimitive?.contentOrNull
+                ?: sessionObj["modelName"]?.jsonPrimitive?.contentOrNull
             
             // 提取消息列表
             val messagesElement = sessionObj["messages"] ?: return null
@@ -105,7 +94,7 @@ class ChatBoxConverter : ChatFormatConverter {
             
             val messages = messagesElement.mapIndexedNotNull { index, element ->
                 if (element is JsonObject) {
-                    parseMessage(element, baseTimestamp, index)
+                    parseMessage(element, baseTimestamp, index, sessionModelName)
                 } else {
                     null
                 }
@@ -118,9 +107,11 @@ class ChatBoxConverter : ChatFormatConverter {
             // 提取会话信息
             val title = sessionObj["name"]?.jsonPrimitive?.contentOrNull
                 ?: sessionObj["title"]?.jsonPrimitive?.contentOrNull
+                ?: fallbackTitle
                 ?: "Imported from ChatBox"
             
             val id = sessionObj["id"]?.jsonPrimitive?.contentOrNull
+                ?: fallbackId
                 ?: UUID.randomUUID().toString()
             
             // 提取创建时间
@@ -154,24 +145,29 @@ class ChatBoxConverter : ChatFormatConverter {
     /**
      * 解析单条消息
      */
-    private fun parseMessage(msgObj: JsonObject, baseTimestamp: Long, index: Int): ChatMessage? {
+    private fun parseMessage(
+        msgObj: JsonObject,
+        baseTimestamp: Long,
+        index: Int,
+        fallbackModelName: String?
+    ): ChatMessage? {
         try {
             val role = msgObj["role"]?.jsonPrimitive?.contentOrNull ?: return null
-            val content = msgObj["content"]?.jsonPrimitive?.contentOrNull ?: return null
-            
-            if (content.isBlank()) return null
+            val content = buildMessageContent(msgObj) ?: return null
             
             // 规范化角色
             val sender = normalizeRole(role)
             
             // 提取时间戳（如果有的话，否则使用递增时间戳）
-            val timestamp = msgObj["createdAt"]?.jsonPrimitive?.longOrNull
+            val rawTimestamp = msgObj["createdAt"]?.jsonPrimitive?.longOrNull
                 ?: msgObj["timestamp"]?.jsonPrimitive?.longOrNull
+            val timestamp = rawTimestamp?.let { normalizeTimestamp(it) }
                 ?: (baseTimestamp + (index * 100L))
             
             // 提取模型信息
             val modelName = msgObj["model"]?.jsonPrimitive?.contentOrNull
                 ?: msgObj["modelName"]?.jsonPrimitive?.contentOrNull
+                ?: fallbackModelName
                 ?: "chatbox"
             
             val provider = msgObj["provider"]?.jsonPrimitive?.contentOrNull
@@ -186,6 +182,132 @@ class ChatBoxConverter : ChatFormatConverter {
             )
         } catch (e: Exception) {
             return null
+        }
+    }
+
+    private fun parseRootElement(content: String): JsonElement {
+        val normalizedContent = normalizeInput(content)
+        return try {
+            val element = json.parseToJsonElement(normalizedContent)
+            extractJsonIfStringWrapper(element)
+        } catch (e: Exception) {
+            val repaired = repairEscapedJson(normalizedContent)
+            if (repaired != normalizedContent) {
+                val element = json.parseToJsonElement(repaired)
+                extractJsonIfStringWrapper(element)
+            } else {
+                throw e
+            }
+        }
+    }
+
+    private fun normalizeInput(content: String): String {
+        return content
+            .removePrefix("\uFEFF")
+            .trim()
+    }
+
+    private fun extractJsonIfStringWrapper(element: JsonElement): JsonElement {
+        if (element is JsonPrimitive && element.isString) {
+            val inner = element.content.trim()
+            return json.parseToJsonElement(inner)
+        }
+        return element
+    }
+
+    private fun repairEscapedJson(content: String): String {
+        val trimmed = content.trim()
+
+        if (
+            (trimmed.startsWith("{\\\"") && trimmed.contains("\\\"")) ||
+            (trimmed.startsWith("[\\\"") && trimmed.contains("\\\""))
+        ) {
+            return trimmed.replace("\\\"", "\"")
+        }
+
+        return trimmed
+    }
+
+    private fun isKvExportFormat(obj: JsonObject): Boolean {
+        if (!obj.containsKey("chat-sessions-list")) return false
+        return obj.keys.any { it.startsWith("session:") }
+    }
+
+    private fun parseKvExportFormat(obj: JsonObject): List<ChatHistory> {
+        val sessionsList = obj["chat-sessions-list"] as? JsonArray ?: return emptyList()
+
+        return sessionsList.mapNotNull { metaElement ->
+            val metaObj = metaElement as? JsonObject ?: return@mapNotNull null
+            val sessionId = metaObj["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+
+            val sessionObj = obj["session:$sessionId"] as? JsonObject ?: return@mapNotNull null
+
+            val fallbackTitle = metaObj["title"]?.jsonPrimitive?.contentOrNull
+                ?: metaObj["name"]?.jsonPrimitive?.contentOrNull
+
+            parseSession(
+                sessionObj = sessionObj,
+                fallbackId = sessionId,
+                fallbackTitle = fallbackTitle
+            )
+        }
+    }
+
+    private fun buildMessageContent(msgObj: JsonObject): String? {
+        val content = extractMessageText(msgObj)
+        val errorText = extractErrorText(msgObj)
+
+        val finalContent = when {
+            !content.isNullOrBlank() -> content
+            !errorText.isNullOrBlank() -> "[消息生成失败: $errorText]"
+            else -> null
+        } ?: return null
+
+        val hasImages = (msgObj["contentParts"] as? JsonArray)
+            ?.any { (it as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "image" }
+            ?: false
+
+        return if (hasImages) {
+            "$finalContent\n[该消息原本包含图片，但未被保存]"
+        } else {
+            finalContent
+        }
+    }
+
+    private fun extractMessageText(msgObj: JsonObject): String? {
+        val content = msgObj["content"]?.jsonPrimitive?.contentOrNull
+        if (!content.isNullOrBlank()) return content
+
+        val parts = msgObj["contentParts"] as? JsonArray ?: return null
+        val text = parts.mapNotNull { partElement ->
+            val partObj = partElement as? JsonObject ?: return@mapNotNull null
+            val type = partObj["type"]?.jsonPrimitive?.contentOrNull
+            if (type != "text") return@mapNotNull null
+            partObj["text"]?.jsonPrimitive?.contentOrNull
+        }.joinToString("")
+
+        return text.ifBlank { null }
+    }
+
+    private fun extractErrorText(msgObj: JsonObject): String? {
+        val error = msgObj["error"]?.jsonPrimitive?.contentOrNull
+        if (!error.isNullOrBlank()) return error
+
+        val extra = msgObj["errorExtra"] as? JsonObject
+        val responseBody = extra?.get("responseBody")?.jsonPrimitive?.contentOrNull
+        if (!responseBody.isNullOrBlank()) return responseBody
+
+        val errorCode = msgObj["errorCode"]?.jsonPrimitive?.contentOrNull
+        if (!errorCode.isNullOrBlank()) return errorCode
+
+        return null
+    }
+
+    private fun normalizeTimestamp(raw: Long): Long {
+        return if (raw in 1..999_999_999_999L) {
+            raw * 1000L
+        } else {
+            raw
         }
     }
     

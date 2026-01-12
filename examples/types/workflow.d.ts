@@ -98,6 +98,16 @@ export namespace Workflow {
         expression?: string;
         group?: number;
         defaultValue?: string;
+
+        others?: ParameterValueInput[];
+        startIndex?: number;
+        length?: number;
+        randomMin?: number;
+        randomMax?: number;
+        randomStringLength?: number;
+        randomStringCharset?: string;
+        useFixed?: boolean;
+        fixedValue?: string;
     }
 
     /**

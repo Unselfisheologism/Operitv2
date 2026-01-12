@@ -19,12 +19,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.ai.assistance.operit.R
 import com.ai.assistance.operit.core.tools.PackageTool
+import com.ai.assistance.operit.core.tools.ToolPackage
 import com.ai.assistance.operit.core.tools.packTool.PackageManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun PackageDetailsDialog(
         packageName: String,
         packageDescription: String,
+        toolPackage: ToolPackage?,
         packageManager: PackageManager,
         onRunScript: (PackageTool) -> Unit,
         onDismiss: () -> Unit,
@@ -32,21 +36,19 @@ fun PackageDetailsDialog(
 ) {
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
 
-    val rawPackage = remember(packageName) {
-        try {
-            packageManager.getAvailablePackages()[packageName]
-        } catch (e: Exception) {
-            AppLogger.e("PackageDetailsDialog", "Failed to load raw package details", e)
-            null
-        }
-    }
+    val resolvedPackage by produceState<ToolPackage?>(initialValue = toolPackage, packageName, toolPackage) {
+        value = toolPackage
 
-    val resolvedPackage = remember(packageName) {
-        try {
-            packageManager.resolvePackageForDisplay(packageName)
-        } catch (e: Exception) {
-            AppLogger.e("PackageDetailsDialog", "Failed to load package details", e)
-            null
+        val resolved =
+            try {
+                withContext(Dispatchers.IO) { packageManager.resolvePackageForDisplay(packageName) }
+            } catch (e: Exception) {
+                AppLogger.e("PackageDetailsDialog", "Failed to load package details", e)
+                null
+            }
+
+        if (resolved != null) {
+            value = resolved
         }
     }
 
@@ -58,11 +60,11 @@ fun PackageDetailsDialog(
         }
     }
 
-    val metaPackage = rawPackage ?: resolvedPackage
+    val metaPackage = toolPackage ?: resolvedPackage
 
-    val states = rawPackage?.states.orEmpty()
+    val states = (toolPackage ?: resolvedPackage)?.states.orEmpty()
     val hasStates = states.isNotEmpty()
-    val baseTools = rawPackage?.tools.orEmpty()
+    val baseTools = (toolPackage ?: resolvedPackage)?.tools.orEmpty()
 
     var selectedTabIndex by remember(packageName, activeStateId, hasStates) {
         val initialIndex = if (!hasStates) {
@@ -247,7 +249,7 @@ fun PackageDetailsDialog(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            val toolsForTab = remember(selectedTabIndex, rawPackage) {
+                            val toolsForTab = remember(selectedTabIndex, toolPackage) {
                                 if (selectedTabIndex == 0) {
                                     baseTools
                                 } else {

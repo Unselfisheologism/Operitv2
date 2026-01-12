@@ -40,7 +40,7 @@ class StandardChatManagerTool(private val context: Context) {
         private const val TAG = "StandardChatManagerTool"
         private const val SERVICE_CONNECTION_TIMEOUT = 15000L // 15秒超时
         private const val RESPONSE_STREAM_ACQUIRE_TIMEOUT = 5000L
-        private const val AI_RESPONSE_TIMEOUT = 120000L
+        private const val AI_RESPONSE_TIMEOUT = 300000L
     }
 
     private val appContext = context.applicationContext
@@ -641,6 +641,21 @@ class StandardChatManagerTool(private val context: Context) {
                     success = false,
                     result = MessageSendResultData(chatId = "", message = message),
                     error = "无法获取当前对话ID"
+                )
+            }
+
+            try {
+                withTimeout(300000L) {
+                    core.activeStreamingChatIds.first { activeChatIds ->
+                        !activeChatIds.contains(currentChatId)
+                    }
+                }
+            } catch (e: TimeoutCancellationException) {
+                return ToolResult(
+                    toolName = tool.name,
+                    success = false,
+                    result = MessageSendResultData(chatId = currentChatId, message = message),
+                    error = "上一条消息仍在处理中"
                 )
             }
 

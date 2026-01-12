@@ -99,7 +99,7 @@ fun DraggableNodeCard(
             backgroundColor = Color(0xFFE0F2F1),
             borderColor = Color(0xFF4DB6AC),
             icon = Icons.Default.Settings,
-            label = "提取"
+            label = "运算"
         )
         else -> NodeStyle(
             primaryColor = Color(0xFF9E9E9E),

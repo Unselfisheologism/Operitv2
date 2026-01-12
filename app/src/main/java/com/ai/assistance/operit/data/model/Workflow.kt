@@ -123,21 +123,34 @@ data class LogicNode(
 @Serializable
 enum class ExtractMode {
     REGEX,
-    JSON
+    JSON,
+    SUB,
+    CONCAT,
+    RANDOM_INT,
+    RANDOM_STRING
 }
 
 @Serializable
 data class ExtractNode(
     override val id: String = UUID.randomUUID().toString(),
     override val type: String = "extract",
-    override var name: String = "提取",
+    override var name: String = "运算",
     override var description: String = "",
     override var position: NodePosition = NodePosition(0f, 0f),
     var source: ParameterValue = ParameterValue.StaticValue(""),
     var mode: ExtractMode = ExtractMode.REGEX,
     var expression: String = "",
     var group: Int = 0,
-    var defaultValue: String = ""
+    var defaultValue: String = "",
+    var others: List<ParameterValue> = emptyList(),
+    var startIndex: Int = 0,
+    var length: Int = -1,
+    var randomMin: Int = 0,
+    var randomMax: Int = 100,
+    var randomStringLength: Int = 8,
+    var randomStringCharset: String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+    var useFixed: Boolean = false,
+    var fixedValue: String = ""
 ) : WorkflowNode()
 
 /**

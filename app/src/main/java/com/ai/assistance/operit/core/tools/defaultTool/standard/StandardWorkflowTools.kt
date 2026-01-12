@@ -538,6 +538,19 @@ class StandardWorkflowTools(private val context: Context) {
                         val group = if (patchObj.has("group")) patchObj.optInt("group", existingNode.group) else existingNode.group
                         val defaultValue = if (patchObj.has("defaultValue")) patchObj.optString("defaultValue", existingNode.defaultValue) else existingNode.defaultValue
 
+                        val others = if (patchObj.has("others")) parseParameterValueList(patchObj.opt("others")) else existingNode.others
+                        val startIndex = if (patchObj.has("startIndex")) patchObj.optInt("startIndex", existingNode.startIndex) else existingNode.startIndex
+                        val length = if (patchObj.has("length")) patchObj.optInt("length", existingNode.length) else existingNode.length
+                        val randomMin = if (patchObj.has("randomMin")) patchObj.optInt("randomMin", existingNode.randomMin) else existingNode.randomMin
+                        val randomMax = if (patchObj.has("randomMax")) patchObj.optInt("randomMax", existingNode.randomMax) else existingNode.randomMax
+                        val randomStringLength =
+                            if (patchObj.has("randomStringLength")) patchObj.optInt("randomStringLength", existingNode.randomStringLength) else existingNode.randomStringLength
+                        val randomStringCharset =
+                            if (patchObj.has("randomStringCharset")) patchObj.optString("randomStringCharset", existingNode.randomStringCharset) else existingNode.randomStringCharset
+
+                        val useFixed = if (patchObj.has("useFixed")) patchObj.optBoolean("useFixed", existingNode.useFixed) else existingNode.useFixed
+                        val fixedValue = if (patchObj.has("fixedValue")) patchObj.optString("fixedValue", existingNode.fixedValue) else existingNode.fixedValue
+
                         existingNode.copy(
                             name = name,
                             description = description,
@@ -546,7 +559,16 @@ class StandardWorkflowTools(private val context: Context) {
                             mode = mode,
                             expression = expression,
                             group = group,
-                            defaultValue = defaultValue
+                            defaultValue = defaultValue,
+                            others = others,
+                            startIndex = startIndex,
+                            length = length,
+                            randomMin = randomMin,
+                            randomMax = randomMax,
+                            randomStringLength = randomStringLength,
+                            randomStringCharset = randomStringCharset,
+                            useFixed = useFixed,
+                            fixedValue = fixedValue
                         )
                     }
                 }
@@ -921,16 +943,39 @@ class StandardWorkflowTools(private val context: Context) {
                     val defaultValue = nodeObj.optString("defaultValue", "")
                     val source = parseParameterValue(nodeObj.opt("source"))
 
+                    val others = parseParameterValueList(nodeObj.opt("others"))
+                    val startIndex = nodeObj.optInt("startIndex", 0)
+                    val length = nodeObj.optInt("length", -1)
+                    val randomMin = nodeObj.optInt("randomMin", 0)
+                    val randomMax = nodeObj.optInt("randomMax", 100)
+                    val randomStringLength = nodeObj.optInt("randomStringLength", 8)
+                    val randomStringCharset = nodeObj.optString(
+                        "randomStringCharset",
+                        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                    )
+
+                    val useFixed = nodeObj.optBoolean("useFixed", false)
+                    val fixedValue = nodeObj.optString("fixedValue", "")
+
                     ExtractNode(
                         id = id,
-                        name = name.ifBlank { "提取" },
+                        name = name.ifBlank { "运算" },
                         description = description,
                         position = position,
                         source = source,
                         mode = mode,
                         expression = expression,
                         group = group,
-                        defaultValue = defaultValue
+                        defaultValue = defaultValue,
+                        others = others,
+                        startIndex = startIndex,
+                        length = length,
+                        randomMin = randomMin,
+                        randomMax = randomMax,
+                        randomStringLength = randomStringLength,
+                        randomStringCharset = randomStringCharset,
+                        useFixed = useFixed,
+                        fixedValue = fixedValue
                     )
                 }
                 else -> {
@@ -1129,6 +1174,19 @@ class StandardWorkflowTools(private val context: Context) {
             is Number -> ParameterValue.StaticValue(raw.toString())
             is Boolean -> ParameterValue.StaticValue(raw.toString())
             else -> ParameterValue.StaticValue(raw.toString())
+        }
+    }
+
+    private fun parseParameterValueList(raw: Any?): List<ParameterValue> {
+        return when (raw) {
+            null, JSONObject.NULL -> emptyList()
+            is JSONArray -> {
+                (0 until raw.length()).map { idx ->
+                    parseParameterValue(raw.opt(idx))
+                }
+            }
+            is List<*> -> raw.map { item -> parseParameterValue(item) }
+            else -> listOf(parseParameterValue(raw))
         }
     }
 

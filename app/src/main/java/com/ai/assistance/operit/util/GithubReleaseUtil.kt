@@ -39,6 +39,7 @@ class GithubReleaseUtil(private val context: Context) {
             "GhProxy" to "https://ghproxy.com/",
             "GhProxyNet" to "https://ghproxy.net/",
             "GhProxyMirror" to "https://mirror.ghproxy.com/",
+            "Flash" to "https://flash.aaswordsman.org/",
             "Gh-Proxy" to "https://gh-proxy.com/",
             "GitMirror" to "https://hub.gitmirror.com/",
             "Moeyy" to "https://github.moeyy.xyz/",

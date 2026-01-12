@@ -175,7 +175,16 @@ def main() -> int:
         return 2
 
     system_prompt = (
-        "You are an expert software engineer. Generate a concise English git commit subject line."
+        "You are an expert software engineer writing a git commit subject line. "
+        "You must base the subject ONLY on the provided staged change summary (git diff --cached --stat) "
+        "and the staged diff. "
+        "Your subject must reflect ALL meaningful staged changes, including small or scattered updates; "
+        "do not ignore secondary changes. "
+        "If the staged changes span multiple areas and a single narrow theme would omit changes, "
+        "choose a broader but accurate subject and optionally use 'and/plus' or a 'misc'/'follow-up' phrasing "
+        "to cover secondary updates while staying concise. "
+        "If the diff content is truncated (contains '[diff truncated]'), avoid overly specific wording and rely more on --stat. "
+        "Never invent changes that are not present in the inputs."
     )
 
     user_prompt = textwrap.dedent(

@@ -683,6 +683,17 @@ class MCPBridge private constructor(private val context: Context) {
                 }
             }
 
+    suspend fun getServiceLogs(serviceName: String): JSONObject? {
+        val command =
+            JSONObject().apply {
+                put("command", "logs")
+                put("id", UUID.randomUUID().toString())
+                put("params", JSONObject().apply { put("name", serviceName) })
+            }
+
+        return sendCommand(command)
+    }
+
     /**
      * 重置桥接器 - 关闭所有服务、清空注册表和池子
      * 

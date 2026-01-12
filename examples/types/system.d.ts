@@ -6,13 +6,15 @@ import {
     SleepResultData, SystemSettingData, AppOperationData, AppListData,
     DeviceInfoResultData, NotificationData, LocationData,
     ADBResultData, IntentResultData, TerminalCommandResultData,
-    TerminalSessionCreationResultData, TerminalSessionCloseResultData
+    TerminalSessionCreationResultData, TerminalSessionCloseResultData,
+    StringResultData
 } from './results';
 
 /**
  * System operations namespace
  */
 export namespace System {
+
     /**
      * Sleep for specified milliseconds
      * @param milliseconds - Milliseconds to sleep
@@ -38,6 +40,19 @@ export namespace System {
      * Get device information
      */
     function getDeviceInfo(): Promise<DeviceInfoResultData>;
+
+    /**
+     * Show a toast message on device.
+     * @param message - The message to show
+     */
+    function toast(message: string): Promise<StringResultData>;
+
+    /**
+     * Send a notification using the same channel as AI reply completion.
+     * @param message - Notification content
+     * @param title - Optional notification title
+     */
+    function sendNotification(message: string, title?: string): Promise<StringResultData>;
 
     /**
      * Use a tool package

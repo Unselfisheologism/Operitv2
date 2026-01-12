@@ -184,6 +184,14 @@ fun getJsToolsDefinition(): String {
                 getSetting: (setting, namespace) => toolCall("get_system_setting", { setting, namespace }),
                 setSetting: (setting, value, namespace) => toolCall("modify_system_setting", { setting, value, namespace }),
                 getDeviceInfo: () => toolCall("device_info"),
+                toast: (message) => toolCall("toast", { message: String(message ?? "") }),
+                sendNotification: (message, title) => {
+                    const params = { message: String(message ?? "") };
+                    if (title !== undefined && title !== null && String(title).trim() !== "") {
+                        params.title = String(title);
+                    }
+                    return toolCall("send_notification", params);
+                },
                 // 使用工具包
                 usePackage: (packageName) => toolCall("use_package", { package_name: packageName }),
                 // 安装应用

@@ -936,6 +936,38 @@ object SystemToolPromptsInternal {
                                 )
                         ),
                         ToolPrompt(
+                            name = "toast",
+                            description = "Show a short toast message on the device.",
+                            parametersStructured =
+                                listOf(
+                                    ToolParameterSchema(
+                                        name = "message",
+                                        type = "string",
+                                        description = "toast text",
+                                        required = true
+                                    )
+                                )
+                        ),
+                        ToolPrompt(
+                            name = "send_notification",
+                            description = "Send a notification using the AI reply completion notification channel.",
+                            parametersStructured =
+                                listOf(
+                                    ToolParameterSchema(
+                                        name = "title",
+                                        type = "string",
+                                        description = "optional",
+                                        required = false
+                                    ),
+                                    ToolParameterSchema(
+                                        name = "message",
+                                        type = "string",
+                                        description = "notification body",
+                                        required = true
+                                    )
+                                )
+                        ),
+                        ToolPrompt(
                             name = "get_device_location",
                             description = "Get device location.",
                             parametersStructured =
@@ -1939,6 +1971,38 @@ object SystemToolPromptsInternal {
                                         description = "可选",
                                         required = false,
                                         default = "false"
+                                    )
+                                )
+                        ),
+                        ToolPrompt(
+                            name = "toast",
+                            description = "在设备上显示 Toast 提示。",
+                            parametersStructured =
+                                listOf(
+                                    ToolParameterSchema(
+                                        name = "message",
+                                        type = "string",
+                                        description = "Toast 文本",
+                                        required = true
+                                    )
+                                )
+                        ),
+                        ToolPrompt(
+                            name = "send_notification",
+                            description = "使用 AI 回复完成的通知通道发送通知。",
+                            parametersStructured =
+                                listOf(
+                                    ToolParameterSchema(
+                                        name = "title",
+                                        type = "string",
+                                        description = "可选",
+                                        required = false
+                                    ),
+                                    ToolParameterSchema(
+                                        name = "message",
+                                        type = "string",
+                                        description = "通知内容",
+                                        required = true
                                     )
                                 )
                         ),

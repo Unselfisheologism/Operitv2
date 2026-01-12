@@ -33,6 +33,7 @@ import com.ai.assistance.operit.data.model.SerializableTypography
 import com.ai.assistance.operit.data.model.toComposeColorScheme
 import com.ai.assistance.operit.data.model.toComposeTypography
 import com.ai.assistance.operit.data.model.PromptFunctionType
+import com.ai.assistance.operit.api.chat.AIForegroundService
 import com.ai.assistance.operit.api.speech.SpeechServiceFactory
 import com.ai.assistance.operit.api.voice.VoiceServiceFactory
 import com.ai.assistance.operit.services.floating.FloatingWindowCallback
@@ -47,8 +48,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
@@ -138,6 +139,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
     inner class LocalBinder : Binder() {
         private var closeCallback: (() -> Unit)? = null
         private var reloadCallback: (() -> Unit)? = null
+        private var chatSyncCallback: ((String?, List<ChatMessage>) -> Unit)? = null
         
         fun getService(): FloatingChatService = this@FloatingChatService
         fun getChatCore(): ChatServiceCore = chatCore
@@ -156,6 +158,22 @@ class FloatingChatService : Service(), FloatingWindowCallback {
         
         fun notifyReload() {
             reloadCallback?.invoke()
+        }
+
+        fun setChatSyncCallback(callback: (chatId: String?, messages: List<ChatMessage>) -> Unit) {
+            this.chatSyncCallback = callback
+        }
+
+        fun notifyChatSync(chatId: String?, messages: List<ChatMessage>): Boolean {
+            val cb = chatSyncCallback ?: return false
+            cb(chatId, messages)
+            return true
+        }
+
+        fun clearCallbacks() {
+            closeCallback = null
+            reloadCallback = null
+            chatSyncCallback = null
         }
     }
 
@@ -213,8 +231,13 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             
             // 设置额外的 onTurnComplete 回调，用于通知应用重新加载消息
             chatCore.setAdditionalOnTurnComplete {
-                AppLogger.d(TAG, "流完成，通知应用重新加载消息")
-                binder.notifyReload()
+                val chatId = chatCore.currentChatId.value
+                val messages = chatMessages.value
+                AppLogger.d(TAG, "流完成，推送消息到主界面. chatId=$chatId, messages=${messages.size}")
+                if (!binder.notifyChatSync(chatId, messages)) {
+                    AppLogger.d(TAG, "主界面未注册同步回调，回退为重新加载请求")
+                    binder.notifyReload()
+                }
             }
             
             // 订阅聊天历史更新
@@ -411,6 +434,14 @@ class FloatingChatService : Service(), FloatingWindowCallback {
                 }
             }
 
+            val isFullscreenMode =
+                windowState.currentMode.value == FloatingMode.FULLSCREEN ||
+                    windowState.currentMode.value == FloatingMode.SCREEN_OCR
+            AIForegroundService.setWakeListeningSuspendedForFloatingFullscreen(
+                applicationContext,
+                isFullscreenMode
+            )
+
             if (intent?.getBooleanExtra(EXTRA_AUTO_ENTER_VOICE_CHAT, false) == true) {
                 autoEnterVoiceChat.value = true
             }
@@ -584,8 +615,17 @@ class FloatingChatService : Service(), FloatingWindowCallback {
 
     override fun onDestroy() {
         try {
+            AIForegroundService.setWakeListeningSuspendedForFloatingFullscreen(
+                applicationContext,
+                false
+            )
             scheduleAutoExit(null)
             releaseWakeLock()
+
+            try {
+                binder.clearCallbacks()
+            } catch (_: Exception) {
+            }
 
             try {
                 chatCore.cancelCurrentMessage()
@@ -622,6 +662,10 @@ class FloatingChatService : Service(), FloatingWindowCallback {
     override fun onClose() {
         AppLogger.d(TAG, "Close request from window manager")
         try {
+            AIForegroundService.setWakeListeningSuspendedForFloatingFullscreen(
+                applicationContext,
+                false
+            )
             chatCore.cancelCurrentMessage()
         } catch (_: Exception) {
         }

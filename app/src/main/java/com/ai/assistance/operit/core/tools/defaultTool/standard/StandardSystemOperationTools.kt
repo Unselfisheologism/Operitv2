@@ -1,9 +1,16 @@
 package com.ai.assistance.operit.core.tools.defaultTool.standard
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
 import android.location.Geocoder
 import android.location.Location
 import android.location.LocationManager
+import androidx.core.app.NotificationCompat
 import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AppListData
 import com.ai.assistance.operit.core.tools.AppOperationData
@@ -20,7 +27,6 @@ import kotlinx.coroutines.launch
 import android.content.pm.PackageManager
 import android.content.pm.ApplicationInfo
 import android.app.ActivityManager
-import android.app.NotificationManager
 import android.content.ComponentName
 import android.os.Build
 import android.content.Intent
@@ -34,6 +40,113 @@ open class StandardSystemOperationTools(private val context: Context) {
 
     companion object {
         private const val TAG = "SystemOperationTools"
+
+        private const val AI_REPLY_CHANNEL_ID = "AI_REPLY_CHANNEL"
+        private const val AI_REPLY_CHANNEL_NAME = "对话完成提醒"
+    }
+
+    open suspend fun toast(tool: AITool): ToolResult {
+        val message = tool.parameters.find { it.name == "message" }?.value
+        if (message.isNullOrBlank()) {
+            return ToolResult(
+                toolName = tool.name,
+                success = false,
+                result = StringResultData(""),
+                error = "必须提供 message 参数"
+            )
+        }
+
+        return try {
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(context.applicationContext, message, Toast.LENGTH_SHORT).show()
+            }
+            ToolResult(toolName = tool.name, success = true, result = StringResultData("OK"))
+        } catch (e: Exception) {
+            ToolResult(
+                toolName = tool.name,
+                success = false,
+                result = StringResultData(""),
+                error = "Toast失败: ${e.message}"
+            )
+        }
+    }
+
+    open suspend fun sendNotification(tool: AITool): ToolResult {
+        val title = tool.parameters.find { it.name == "title" }?.value?.takeIf { it.isNotBlank() } ?: "通知"
+        val message = tool.parameters.find { it.name == "message" }?.value
+        if (message.isNullOrBlank()) {
+            return ToolResult(
+                toolName = tool.name,
+                success = false,
+                result = StringResultData(""),
+                error = "必须提供 message 参数"
+            )
+        }
+
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val manager =
+                    context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val channel = NotificationChannel(
+                    AI_REPLY_CHANNEL_ID,
+                    AI_REPLY_CHANNEL_NAME,
+                    NotificationManager.IMPORTANCE_HIGH
+                )
+                manager.createNotificationChannel(channel)
+            }
+
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val pendingIntent = if (launchIntent != null) {
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    launchIntent,
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                    } else {
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                    }
+                )
+            } else {
+                null
+            }
+
+            val builder =
+                NotificationCompat.Builder(context, AI_REPLY_CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setContentTitle(title)
+                    .setContentText(message.take(100))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
+                    .setCategory(NotificationCompat.CATEGORY_STATUS)
+                    .setAutoCancel(true)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+
+            if (pendingIntent != null) {
+                builder.setContentIntent(pendingIntent)
+            }
+
+            val notification = builder.build()
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val id = (System.currentTimeMillis() and 0x7FFFFFFF).toInt()
+            manager.notify(id, notification)
+
+            ToolResult(toolName = tool.name, success = true, result = StringResultData("OK"))
+        } catch (e: SecurityException) {
+            ToolResult(
+                toolName = tool.name,
+                success = false,
+                result = StringResultData(""),
+                error = "发送通知失败(缺少权限): ${e.message}"
+            )
+        } catch (e: Exception) {
+            ToolResult(
+                toolName = tool.name,
+                success = false,
+                result = StringResultData(""),
+                error = "发送通知失败: ${e.message}"
+            )
+        }
     }
 
     /** 修改系统设置 支持修改各种系统设置，如音量、亮度等 */
