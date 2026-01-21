@@ -236,9 +236,8 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             // 设置额外的 onTurnComplete 回调，用于通知应用重新加载消息
             chatCore.setAdditionalOnTurnComplete {
                 val chatId = chatCore.currentChatId.value
-                val messages = chatMessages.value
-                AppLogger.d(TAG, "流完成，推送消息到主界面. chatId=$chatId, messages=${messages.size}")
-                if (!binder.notifyChatSync(chatId, messages)) {
+                AppLogger.d(TAG, "流完成，通知主界面重新加载消息. chatId=$chatId")
+                if (!binder.notifyChatSync(chatId, emptyList())) {
                     AppLogger.d(TAG, "主界面未注册同步回调，回退为重新加载请求")
                     binder.notifyReload()
                 }

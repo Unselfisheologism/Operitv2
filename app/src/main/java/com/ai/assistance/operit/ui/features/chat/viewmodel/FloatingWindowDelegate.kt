@@ -79,8 +79,8 @@ class FloatingWindowDelegate(
 
                             val currentId = chatHistoryDelegate?.currentChatId?.value
                             if (currentId == chatId) {
-                                AppLogger.d(TAG, "收到悬浮窗消息同步: chatId=$chatId, messages=${messages.size}")
-                                chatHistoryDelegate?.updateChatHistory(messages)
+                                AppLogger.d(TAG, "收到悬浮窗消息同步(改为DB重新加载): chatId=$chatId, messages=${messages.size}")
+                                chatHistoryDelegate?.reloadChatMessagesSmart(chatId)
                             }
                         } catch (e: Exception) {
                             AppLogger.e(TAG, "处理悬浮窗消息同步失败", e)
