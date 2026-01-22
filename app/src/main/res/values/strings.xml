@@ -3945,12 +3945,42 @@
     <string name="backup_import_result_skipped">\n- 跳过无效记录：%1$d条</string>
     <string name="backup_import_result_failed">导入失败：未找到有效的聊天记录</string>
     <string name="backup_export_result_success">成功导出到：%1$s</string>
-    
+
+    <string name="backup_character_cards_title">角色卡</string>
+    <string name="backup_character_cards_subtitle">备份与恢复角色卡配置</string>
+    <string name="backup_character_cards_current_count">当前共有 %1$d 个角色卡。导出的文件会保存在「下载/Operit」文件夹中。</string>
+    <string name="backup_character_card_count">角色卡</string>
+    <string name="backup_character_card_files">角色卡</string>
+
+    <string name="backup_character_cards_export_result_success">成功导出 %1$d 个角色卡到：\n%2$s</string>
+    <string name="backup_character_cards_import_result_success">成功导入角色卡：\n- 新增角色卡：%1$d个\n- 更新角色卡：%2$d个%3$s</string>
+    <string name="backup_character_cards_import_result_skipped">\n- 跳过无效角色卡：%1$d个</string>
+    <string name="backup_character_cards_import_result_failed">导入失败：未找到有效的角色卡</string>
+
+    <string name="backup_export_failed_create_file">导出失败：无法创建文件</string>
+    <string name="backup_export_failed_with_reason">导出失败：%1$s</string>
+    <string name="backup_import_failed_unreadable_file">导入失败：无法读取文件</string>
+    <string name="backup_import_failed_with_reason">导入失败：%1$s</string>
+    <string name="backup_clear_failed_with_reason">清除失败：%1$s</string>
+    <string name="backup_delete_skipped_locked">\n已跳过 %1$d 条锁定聊天</string>
+
+    <string name="backup_open_file_failed">无法打开文件</string>
+    <string name="backup_import_file_empty">导入的文件为空</string>
+
+    <string name="backup_memory_import_result_success">导入到配置「%1$s」成功：\n- 新增记忆：%2$d条\n- 更新记忆：%3$d条\n- 跳过记忆：%4$d条\n- 新增链接：%5$d个</string>
+    <string name="backup_memory_export_result_success">成功从配置「%1$s」导出 %2$d 条记忆和 %3$d 个链接到：\n%4$s</string>
+
+    <string name="backup_model_config_import_result_success">成功导入模型配置：\n- 新增配置：%1$d个\n- 更新配置：%2$d个%3$s</string>
+    <string name="backup_model_config_import_result_skipped">\n- 跳过无效配置：%1$d个</string>
+
+    <string name="backup_chat_export_result_success">成功导出 %1$d 条聊天记录为 %2$s 格式到：\n%3$s</string>
+    <string name="backup_format_unknown">未知格式</string>
+    <string name="backup_format_claude">Claude</string>
+
     <!-- 删除确认对话框 -->
     <string name="backup_delete_confirm_title">确认删除</string>
     <string name="backup_delete_confirm_message">删除所有聊天记录将无法恢复。建议在执行此操作前先导出备份。\n\n确定要删除吗？</string>
     <string name="backup_delete_result_success">成功清除 %1$d 条聊天记录</string>
-    
     <!-- 模型配置导出安全警告 -->
     <string name="backup_model_config_warning_title">安全提示</string>
     <string name="backup_model_config_warning_contains">该配置文件包含以下敏感信息：</string>
@@ -3966,6 +3996,13 @@
     <!-- 记忆库导入策略 -->
     <string name="backup_memory_import_strategy_title">选择导入策略</string>
     <string name="backup_memory_import_profile_title">选择配置</string>
+    <string name="backup_memory_import_strategy_question">遇到重复的记忆（UUID相同）时如何处理？</string>
+    <string name="backup_memory_import_strategy_skip_title">跳过（推荐）</string>
+    <string name="backup_memory_import_strategy_skip_desc">保留现有记忆，不导入重复数据</string>
+    <string name="backup_memory_import_strategy_update_title">更新</string>
+    <string name="backup_memory_import_strategy_update_desc">用导入的数据更新现有记忆</string>
+    <string name="backup_memory_import_strategy_create_new_title">创建新记录</string>
+    <string name="backup_memory_import_strategy_create_new_desc">即使UUID相同也创建新记忆（可能导致重复）</string>
     <string name="backup_confirm">确认</string>
     <string name="backup_cancel">取消</string>
     <string name="provider_doubao">豆包（火山模型）</string>

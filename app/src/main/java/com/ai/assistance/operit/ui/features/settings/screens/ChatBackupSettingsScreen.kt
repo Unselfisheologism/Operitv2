@@ -81,6 +81,28 @@ import com.ai.assistance.operit.data.repository.ChatHistoryManager
 import com.ai.assistance.operit.data.repository.MemoryRepository
 import com.ai.assistance.operit.data.converter.ExportFormat
 import com.ai.assistance.operit.data.converter.ChatFormat
+import com.ai.assistance.operit.ui.features.settings.components.BackupFilesStatisticsCard
+import com.ai.assistance.operit.ui.features.settings.components.CharacterCardManagementCard
+import com.ai.assistance.operit.ui.features.settings.components.ChatHistoryOperation
+import com.ai.assistance.operit.ui.features.settings.components.DataManagementCard
+import com.ai.assistance.operit.ui.features.settings.components.DeleteConfirmationDialog
+import com.ai.assistance.operit.ui.features.settings.components.ExportFormatDialog
+import com.ai.assistance.operit.ui.features.settings.components.FaqCard
+import com.ai.assistance.operit.ui.features.settings.components.ImportFormatDialog
+import com.ai.assistance.operit.ui.features.settings.components.MemoryImportStrategyDialog
+import com.ai.assistance.operit.ui.features.settings.components.MemoryManagementCard
+import com.ai.assistance.operit.ui.features.settings.components.MemoryOperation
+import com.ai.assistance.operit.ui.features.settings.components.ModelConfigExportWarningDialog
+import com.ai.assistance.operit.ui.features.settings.components.ModelConfigManagementCard
+import com.ai.assistance.operit.ui.features.settings.components.ModelConfigOperation
+import com.ai.assistance.operit.ui.features.settings.components.ManagementButton
+import com.ai.assistance.operit.ui.features.settings.components.OperationProgressView
+import com.ai.assistance.operit.ui.features.settings.components.OperationResultCard
+import com.ai.assistance.operit.ui.features.settings.components.OverviewCard
+import com.ai.assistance.operit.ui.features.settings.components.ProfileSelectionDialog
+import com.ai.assistance.operit.ui.features.settings.components.RoomDbBackupListItem
+import com.ai.assistance.operit.ui.features.settings.components.SectionHeader
+import com.ai.assistance.operit.ui.features.settings.components.CharacterCardOperation
 import com.ai.assistance.operit.ui.main.MainActivity
 import java.io.File
 import java.text.SimpleDateFormat
@@ -91,91 +113,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-enum class ChatHistoryOperation {
-    IDLE,
-    EXPORTING,
-    EXPORTED,
-    IMPORTING,
-    IMPORTED,
-    DELETING,
-    DELETED,
-    FAILED
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun CharacterCardManagementCard(
-    totalCharacterCardCount: Int,
-    operationState: CharacterCardOperation,
-    operationMessage: String,
-    onExport: () -> Unit,
-    onImport: () -> Unit
-) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            SectionHeader(
-                title = "角色卡",
-                subtitle = "备份与恢复角色卡配置",
-                icon = Icons.Default.Person
-            )
-
-            Text(
-                text = "当前共有 $totalCharacterCardCount 个角色卡。导出的文件会保存在「下载/Operit」文件夹中。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ManagementButton(
-                    text = "导出",
-                    icon = Icons.Default.CloudDownload,
-                    onClick = onExport,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                ManagementButton(
-                    text = "导入",
-                    icon = Icons.Default.CloudUpload,
-                    onClick = onImport,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
-
-            AnimatedVisibility(visible = operationState != CharacterCardOperation.IDLE) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    when (operationState) {
-                        CharacterCardOperation.EXPORTING -> OperationProgressView(message = "正在导出角色卡...")
-                        CharacterCardOperation.IMPORTING -> OperationProgressView(message = "正在导入角色卡...")
-                        CharacterCardOperation.EXPORTED -> OperationResultCard(
-                            title = "导出成功",
-                            message = operationMessage,
-                            icon = Icons.Default.CloudDownload
-                        )
-                        CharacterCardOperation.IMPORTED -> OperationResultCard(
-                            title = "导入成功",
-                            message = operationMessage,
-                            icon = Icons.Default.CloudUpload
-                        )
-                        CharacterCardOperation.FAILED -> OperationResultCard(
-                            title = "操作失败",
-                            message = operationMessage,
-                            icon = Icons.Default.Info,
-                            isError = true
-                        )
-                        else -> {}
-                    }
-                }
-            }
-        }
-    }
-}
 
 enum class RoomDatabaseBackupOperation {
     IDLE,
@@ -188,33 +125,6 @@ enum class RoomDatabaseRestoreOperation {
     IDLE,
     RESTORING,
     SUCCESS,
-    FAILED
-}
-
-enum class MemoryOperation {
-    IDLE,
-    EXPORTING,
-    EXPORTED,
-    IMPORTING,
-    IMPORTED,
-    FAILED
-}
-
-enum class CharacterCardOperation {
-    IDLE,
-    EXPORTING,
-    EXPORTED,
-    IMPORTING,
-    IMPORTED,
-    FAILED
-}
-
-enum class ModelConfigOperation {
-    IDLE,
-    EXPORTING,
-    EXPORTED,
-    IMPORTING,
-    IMPORTED,
     FAILED
 }
 
@@ -403,22 +313,37 @@ fun ChatBackupSettingsScreen() {
                             val importResult = characterCardManager.importAllCharacterCardsFromBackupContent(jsonContent)
                             if (importResult.total > 0) {
                                 characterCardOperationState = CharacterCardOperation.IMPORTED
-                                characterCardOperationMessage = "成功导入角色卡：\n" +
-                                    "- 新增角色卡：${importResult.new}个\n" +
-                                    "- 更新角色卡：${importResult.updated}个" +
-                                    (if (importResult.skipped > 0) "\n- 跳过无效角色卡：${importResult.skipped}个" else "")
+                                val skippedText = if (importResult.skipped > 0) {
+                                    context.getString(
+                                        R.string.backup_character_cards_import_result_skipped,
+                                        importResult.skipped
+                                    )
+                                } else {
+                                    ""
+                                }
+                                characterCardOperationMessage = context.getString(
+                                    R.string.backup_character_cards_import_result_success,
+                                    importResult.new,
+                                    importResult.updated,
+                                    skippedText
+                                )
                             } else {
                                 characterCardOperationState = CharacterCardOperation.FAILED
-                                characterCardOperationMessage = "导入失败：未找到有效的角色卡"
+                                characterCardOperationMessage =
+                                    context.getString(R.string.backup_character_cards_import_result_failed)
                             }
                         } else {
                             characterCardOperationState = CharacterCardOperation.FAILED
-                            characterCardOperationMessage = "导入失败：无法读取文件"
+                            characterCardOperationMessage =
+                                context.getString(R.string.backup_import_failed_unreadable_file)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
                         characterCardOperationState = CharacterCardOperation.FAILED
-                        characterCardOperationMessage = "导入失败：${e.localizedMessage ?: e.toString()}"
+                        characterCardOperationMessage = context.getString(
+                            R.string.backup_import_failed_with_reason,
+                            e.localizedMessage ?: e.toString()
+                        )
                     }
                 }
             }
@@ -478,18 +403,32 @@ fun ChatBackupSettingsScreen() {
                                 val (newCount, updatedCount, skippedCount) =
                                     modelConfigManager.importConfigs(jsonContent)
                                 modelConfigOperationState = ModelConfigOperation.IMPORTED
-                                modelConfigOperationMessage = "成功导入模型配置：\n" +
-                                    "- 新增配置：${newCount}个\n" +
-                                    "- 更新配置：${updatedCount}个" +
-                                    (if (skippedCount > 0) "\n- 跳过无效配置：${skippedCount}个" else "")
+                                val skippedText = if (skippedCount > 0) {
+                                    context.getString(
+                                        R.string.backup_model_config_import_result_skipped,
+                                        skippedCount
+                                    )
+                                } else {
+                                    ""
+                                }
+                                modelConfigOperationMessage = context.getString(
+                                    R.string.backup_model_config_import_result_success,
+                                    newCount,
+                                    updatedCount,
+                                    skippedText
+                                )
                             } else {
                                 modelConfigOperationState = ModelConfigOperation.FAILED
-                                modelConfigOperationMessage = "导入失败：无法读取文件"
+                                modelConfigOperationMessage =
+                                    context.getString(R.string.backup_import_failed_unreadable_file)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
                             modelConfigOperationState = ModelConfigOperation.FAILED
-                            modelConfigOperationMessage = "导入失败：${e.localizedMessage ?: e.toString()}"
+                            modelConfigOperationMessage = context.getString(
+                                R.string.backup_import_failed_with_reason,
+                                e.localizedMessage ?: e.toString()
+                            )
                         }
                     }
                 }
@@ -497,7 +436,8 @@ fun ChatBackupSettingsScreen() {
         }
 
     val activeProfileName =
-        allProfiles.find { it.id == activeProfileId }?.name ?: "默认配置"
+        allProfiles.find { it.id == activeProfileId }?.name
+            ?: stringResource(R.string.default_profile_name)
 
     LazyColumn(
         modifier = Modifier
@@ -508,6 +448,7 @@ fun ChatBackupSettingsScreen() {
         item {
             OverviewCard(
                 totalChatCount = totalChatCount,
+                totalCharacterCardCount = totalCharacterCardCount,
                 totalMemoryCount = totalMemoryCount,
                 totalLinkCount = totalMemoryLinkCount,
                 activeProfileName = activeProfileName
@@ -880,15 +821,23 @@ fun ChatBackupSettingsScreen() {
                             val filePath = characterCardManager.exportAllCharacterCardsToBackupFile()
                             if (filePath != null) {
                                 characterCardOperationState = CharacterCardOperation.EXPORTED
-                                characterCardOperationMessage = "成功导出 $totalCharacterCardCount 个角色卡到：\n$filePath"
+                                characterCardOperationMessage = context.getString(
+                                    R.string.backup_character_cards_export_result_success,
+                                    totalCharacterCardCount,
+                                    filePath
+                                )
                             } else {
                                 characterCardOperationState = CharacterCardOperation.FAILED
-                                characterCardOperationMessage = "导出失败：无法创建文件"
+                                characterCardOperationMessage =
+                                    context.getString(R.string.backup_export_failed_create_file)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
                             characterCardOperationState = CharacterCardOperation.FAILED
-                            characterCardOperationMessage = "导出失败：${e.localizedMessage ?: e.toString()}"
+                            characterCardOperationMessage = context.getString(
+                                R.string.backup_export_failed_with_reason,
+                                e.localizedMessage ?: e.toString()
+                            )
                         }
                     }
                 },
@@ -940,7 +889,10 @@ fun ChatBackupSettingsScreen() {
                         } catch (e: Exception) {
                             e.printStackTrace()
                             modelConfigOperationState = ModelConfigOperation.FAILED
-                            modelConfigOperationMessage = "导出失败：${e.localizedMessage ?: e.toString()}"
+                            modelConfigOperationMessage = context.getString(
+                                R.string.backup_export_failed_with_reason,
+                                e.localizedMessage ?: e.toString()
+                            )
                         }
                     }
                 },
@@ -968,12 +920,25 @@ fun ChatBackupSettingsScreen() {
                     try {
                         val result = deleteAllChatHistories(context)
                         operationState = ChatHistoryOperation.DELETED
+                        val skippedText = if (result.skippedLockedCount > 0) {
+                            context.getString(
+                                R.string.backup_delete_skipped_locked,
+                                result.skippedLockedCount
+                            )
+                        } else {
+                            ""
+                        }
                         operationMessage =
-                            "成功清除 ${result.deletedCount} 条聊天记录" +
-                            (if (result.skippedLockedCount > 0) "\n已跳过 ${result.skippedLockedCount} 条锁定聊天" else "")
+                            context.getString(
+                                R.string.backup_delete_result_success,
+                                result.deletedCount
+                            ) + skippedText
                     } catch (e: Exception) {
                         operationState = ChatHistoryOperation.FAILED
-                        operationMessage = "清除失败：${e.localizedMessage ?: e.toString()}"
+                        operationMessage = context.getString(
+                            R.string.backup_clear_failed_with_reason,
+                            e.localizedMessage ?: e.toString()
+                        )
                     }
                 }
             }
@@ -1000,11 +965,14 @@ fun ChatBackupSettingsScreen() {
                             memoryOperationState = MemoryOperation.IMPORTED
                             val profileName = allProfiles.find { it.id == selectedImportProfileId }?.name
                                 ?: selectedImportProfileId
-                            memoryOperationMessage = "导入到配置「$profileName」成功：\n" +
-                                "- 新增记忆：${result.newMemories}条\n" +
-                                "- 更新记忆：${result.updatedMemories}条\n" +
-                                "- 跳过记忆：${result.skippedMemories}条\n" +
-                                "- 新增链接：${result.newLinks}个"
+                            memoryOperationMessage = context.getString(
+                                R.string.backup_memory_import_result_success,
+                                profileName,
+                                result.newMemories,
+                                result.updatedMemories,
+                                result.skippedMemories,
+                                result.newLinks
+                            )
 
                             if (selectedImportProfileId == activeProfileId) {
                                 val repo = memoryRepo
@@ -1018,7 +986,10 @@ fun ChatBackupSettingsScreen() {
                         } catch (e: Exception) {
                             e.printStackTrace()
                             memoryOperationState = MemoryOperation.FAILED
-                            memoryOperationMessage = "导入失败：${e.localizedMessage ?: e.toString()}"
+                            memoryOperationMessage = context.getString(
+                                R.string.backup_import_failed_with_reason,
+                                e.localizedMessage ?: e.toString()
+                            )
                         }
                     }
                 }
@@ -1028,7 +999,7 @@ fun ChatBackupSettingsScreen() {
 
     if (showExportProfileDialog) {
         ProfileSelectionDialog(
-            title = "选择要导出的配置",
+            title = stringResource(R.string.select_export_profile),
             profiles = allProfiles,
             selectedProfileId = selectedExportProfileId,
             onProfileSelected = { selectedExportProfileId = it },
@@ -1048,16 +1019,25 @@ fun ChatBackupSettingsScreen() {
                             val memoryCount = memories.count { !it.isDocumentNode }
                             val graph = exportRepo.getMemoryGraph()
                             val linkCount = graph.edges.size
-                            memoryOperationMessage =
-                                "成功从配置「$profileName」导出 $memoryCount 条记忆和 $linkCount 个链接到：\n$filePath"
+                            memoryOperationMessage = context.getString(
+                                R.string.backup_memory_export_result_success,
+                                profileName,
+                                memoryCount,
+                                linkCount,
+                                filePath
+                            )
                         } else {
                             memoryOperationState = MemoryOperation.FAILED
-                            memoryOperationMessage = "导出失败：无法创建文件"
+                            memoryOperationMessage =
+                                context.getString(R.string.backup_export_failed_create_file)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
                         memoryOperationState = MemoryOperation.FAILED
-                        memoryOperationMessage = "导出失败：${e.localizedMessage ?: e.toString()}"
+                        memoryOperationMessage = context.getString(
+                            R.string.backup_export_failed_with_reason,
+                            e.localizedMessage ?: e.toString()
+                        )
                     }
                 }
             }
@@ -1066,7 +1046,7 @@ fun ChatBackupSettingsScreen() {
 
     if (showImportProfileDialog) {
         ProfileSelectionDialog(
-            title = "选择要导入到的配置",
+            title = stringResource(R.string.select_import_profile),
             profiles = allProfiles,
             selectedProfileId = selectedImportProfileId,
             onProfileSelected = { selectedImportProfileId = it },
@@ -1096,21 +1076,30 @@ fun ChatBackupSettingsScreen() {
                             operationState = ChatHistoryOperation.EXPORTED
                             val chatCount = chatHistoryManager.chatHistoriesFlow.first().size
                             val formatName = when (selectedExportFormat) {
-                                ExportFormat.JSON -> "JSON"
-                                ExportFormat.MARKDOWN -> "Markdown"
-                                ExportFormat.HTML -> "HTML"
-                                ExportFormat.TXT -> "文本"
+                                ExportFormat.JSON -> context.getString(R.string.backup_format_json)
+                                ExportFormat.MARKDOWN -> context.getString(R.string.backup_format_markdown)
+                                ExportFormat.HTML -> context.getString(R.string.backup_format_html)
+                                ExportFormat.TXT -> context.getString(R.string.backup_format_txt)
                                 ExportFormat.CSV -> "CSV"
                             }
-                            operationMessage = "成功导出 $chatCount 条聊天记录为 $formatName 格式到：\n$filePath"
+                            operationMessage = context.getString(
+                                R.string.backup_chat_export_result_success,
+                                chatCount,
+                                formatName,
+                                filePath
+                            )
                         } else {
                             operationState = ChatHistoryOperation.FAILED
-                            operationMessage = "导出失败：无法创建文件"
+                            operationMessage =
+                                context.getString(R.string.backup_export_failed_create_file)
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
                         operationState = ChatHistoryOperation.FAILED
-                        operationMessage = "导出失败：${e.localizedMessage ?: e.toString()}"
+                        operationMessage = context.getString(
+                            R.string.backup_export_failed_with_reason,
+                            e.localizedMessage ?: e.toString()
+                        )
                     }
                 }
             }
@@ -1135,26 +1124,40 @@ fun ChatBackupSettingsScreen() {
                             operationMessage = if (importResult.total > 0) {
                                 operationState = ChatHistoryOperation.IMPORTED
                                 val formatName = when (selectedImportFormat) {
-                                    ChatFormat.OPERIT -> "Operit JSON"
-                                    ChatFormat.CHATGPT -> "ChatGPT"
-                                    ChatFormat.CHATBOX -> "ChatBox"
-                                    ChatFormat.MARKDOWN -> "Markdown"
-                                    ChatFormat.GENERIC_JSON -> "通用 JSON"
-                                    ChatFormat.CLAUDE -> "Claude"
-                                    else -> "未知格式"
+                                    ChatFormat.OPERIT -> context.getString(R.string.backup_format_operit)
+                                    ChatFormat.CHATGPT -> context.getString(R.string.backup_format_chatgpt)
+                                    ChatFormat.CHATBOX -> context.getString(R.string.backup_format_chatbox)
+                                    ChatFormat.MARKDOWN -> context.getString(R.string.backup_format_markdown)
+                                    ChatFormat.GENERIC_JSON -> context.getString(R.string.backup_format_generic_json)
+                                    ChatFormat.CLAUDE -> context.getString(R.string.backup_format_claude)
+                                    else -> context.getString(R.string.backup_format_unknown)
                                 }
-                                "成功导入 $formatName 格式：\n" +
-                                    "- 新增记录：${importResult.new}条\n" +
-                                    "- 更新记录：${importResult.updated}条\n" +
-                                    (if (importResult.skipped > 0) "- 跳过无效记录：${importResult.skipped}条" else "")
+                                val skippedText = if (importResult.skipped > 0) {
+                                    context.getString(
+                                        R.string.backup_import_result_skipped,
+                                        importResult.skipped
+                                    )
+                                } else {
+                                    ""
+                                }
+                                context.getString(
+                                    R.string.backup_import_result_success,
+                                    formatName,
+                                    importResult.new,
+                                    importResult.updated,
+                                    skippedText
+                                )
                             } else {
                                 operationState = ChatHistoryOperation.FAILED
-                                "导入失败：未找到有效的聊天记录"
+                                context.getString(R.string.backup_import_result_failed)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
                             operationState = ChatHistoryOperation.FAILED
-                            operationMessage = "导入失败：${e.localizedMessage ?: e.toString()}"
+                            operationMessage = context.getString(
+                                R.string.backup_import_failed_with_reason,
+                                e.localizedMessage ?: e.toString()
+                            )
                         } finally {
                             pendingImportUri = null
                         }
@@ -1170,7 +1173,10 @@ fun ChatBackupSettingsScreen() {
             exportPath = exportedModelConfigPath,
             onDismiss = {
                 showModelConfigExportWarning = false
-                modelConfigOperationMessage = "成功导出到：$exportedModelConfigPath"
+                modelConfigOperationMessage = context.getString(
+                    R.string.backup_export_result_success,
+                    exportedModelConfigPath
+                )
             }
         )
     }
@@ -1273,751 +1279,6 @@ fun ChatBackupSettingsScreen() {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun OverviewCard(
-    totalChatCount: Int,
-    totalMemoryCount: Int,
-    totalLinkCount: Int,
-    activeProfileName: String
-) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = stringResource(R.string.backup_data_overview),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Text(
-                    text = stringResource(R.string.backup_current_profile, activeProfileName),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatChip(
-                    icon = Icons.Default.History,
-                    title = "$totalChatCount",
-                    subtitle = stringResource(R.string.backup_chat_count)
-                )
-                StatChip(
-                    icon = Icons.Default.Psychology,
-                    title = "$totalMemoryCount",
-                    subtitle = stringResource(R.string.backup_memory_count)
-                )
-                StatChip(
-                    icon = Icons.Default.Link,
-                    title = "$totalLinkCount",
-                    subtitle = stringResource(R.string.backup_memory_link_count)
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun BackupFilesStatisticsCard(
-    chatBackupCount: Int,
-    characterCardBackupCount: Int,
-    memoryBackupCount: Int,
-    modelConfigBackupCount: Int,
-    roomDbBackupCount: Int,
-    isScanning: Boolean,
-    onRefresh: () -> Unit
-) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "📁 " + stringResource(R.string.backup_files_statistics),
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = stringResource(R.string.backup_files_statistics_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                
-                if (isScanning) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    FilledTonalButton(
-                        onClick = onRefresh,
-                        modifier = Modifier.size(40.dp),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = stringResource(R.string.backup_refresh),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-            
-            HorizontalDivider()
-            
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                BackupFileStatItem(
-                    icon = Icons.Default.History,
-                    count = chatBackupCount,
-                    label = stringResource(R.string.backup_chat_files),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                BackupFileStatItem(
-                    icon = Icons.Default.Person,
-                    count = characterCardBackupCount,
-                    label = "角色卡",
-                    color = MaterialTheme.colorScheme.primary
-                )
-                BackupFileStatItem(
-                    icon = Icons.Default.Psychology,
-                    count = memoryBackupCount,
-                    label = stringResource(R.string.backup_memory_files),
-                    color = MaterialTheme.colorScheme.secondary
-                )
-                BackupFileStatItem(
-                    icon = Icons.Default.Settings,
-                    count = modelConfigBackupCount,
-                    label = stringResource(R.string.backup_model_config_files),
-                    color = MaterialTheme.colorScheme.tertiary
-                )
-                BackupFileStatItem(
-                    icon = Icons.Default.Storage,
-                    count = roomDbBackupCount,
-                    label = stringResource(R.string.backup_room_db_files),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-            
-            if (!isScanning) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Text(
-                        text = "💡 " + stringResource(R.string.backup_files_location_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(12.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BackupFileStatItem(
-    icon: ImageVector,
-    count: Int,
-    label: String,
-    color: androidx.compose.ui.graphics.Color
-) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.1f)
-        ),
-        border = BorderStroke(1.dp, color.copy(alpha = 0.3f))
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(24.dp)
-            )
-            Column {
-                Text(
-                    text = "$count",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = color
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun RoomDbBackupListItem(
-    file: File,
-    onRestoreClick: () -> Unit
-) {
-    val parsed = remember(file.name) {
-        val name = file.name
-        when {
-            name.startsWith("room_db_backup_") && name.endsWith(".zip") -> {
-                Pair(
-                    R.string.backup_room_db_backup_type_auto,
-                    name.removePrefix("room_db_backup_").removeSuffix(".zip")
-                )
-            }
-            name.startsWith("room_db_manual_backup_") && name.endsWith(".zip") -> {
-                val raw = name.removePrefix("room_db_manual_backup_").removeSuffix(".zip")
-                val formatted = try {
-                    val input = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault())
-                    val output = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    output.format(input.parse(raw)!!)
-                } catch (_: Exception) {
-                    raw
-                }
-                Pair(R.string.backup_room_db_backup_type_manual, formatted)
-            }
-            else -> Pair(R.string.backup_room_db_backup_type_manual, name)
-        }
-    }
-    val typeLabel = stringResource(parsed.first)
-    val displayTime = parsed.second
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Storage,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = stringResource(R.string.backup_room_db_restore_to_day, "$typeLabel $displayTime"),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = file.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            TextButton(onClick = onRestoreClick) {
-                Icon(
-                    imageVector = Icons.Default.Restore,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(text = stringResource(R.string.backup_room_db_restore_confirm_action))
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatChip(
-    icon: ImageVector,
-    title: String,
-    subtitle: String
-) {
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SectionHeader(
-    title: String,
-    subtitle: String,
-    icon: ImageVector
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(10.dp)
-            )
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun DataManagementCard(
-    totalChatCount: Int,
-    operationState: ChatHistoryOperation,
-    operationMessage: String,
-    onExport: () -> Unit,
-    onImport: () -> Unit,
-    onDelete: () -> Unit
-) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            SectionHeader(
-                title = "聊天记录",
-                subtitle = "备份、恢复或清空历史记录",
-                icon = Icons.Default.History
-            )
-
-            Text(
-                text = "当前共有 $totalChatCount 条聊天记录。导出的文件会保存在「下载/Operit」文件夹中。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ManagementButton(
-                    text = "导出",
-                    icon = Icons.Default.CloudDownload,
-                    onClick = onExport,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                ManagementButton(
-                    text = "导入",
-                    icon = Icons.Default.CloudUpload,
-                    onClick = onImport,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                ManagementButton(
-                    text = "清除所有记录",
-                    icon = Icons.Default.Delete,
-                    onClick = onDelete,
-                    isDestructive = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            AnimatedVisibility(visible = operationState != ChatHistoryOperation.IDLE) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    when (operationState) {
-                        ChatHistoryOperation.EXPORTING -> OperationProgressView(message = "正在导出聊天记录...")
-                        ChatHistoryOperation.IMPORTING -> OperationProgressView(message = "正在导入聊天记录...")
-                        ChatHistoryOperation.DELETING -> OperationProgressView(message = "正在删除聊天记录...")
-                        ChatHistoryOperation.EXPORTED -> OperationResultCard(
-                            title = "导出成功",
-                            message = operationMessage,
-                            icon = Icons.Default.CloudDownload
-                        )
-                        ChatHistoryOperation.IMPORTED -> OperationResultCard(
-                            title = "导入成功",
-                            message = operationMessage,
-                            icon = Icons.Default.CloudUpload
-                        )
-                        ChatHistoryOperation.DELETED -> OperationResultCard(
-                            title = "删除成功",
-                            message = operationMessage,
-                            icon = Icons.Default.Delete
-                        )
-                        ChatHistoryOperation.FAILED -> OperationResultCard(
-                            title = "操作失败",
-                            message = operationMessage,
-                            icon = Icons.Default.Info,
-                            isError = true
-                        )
-                        else -> {}
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ManagementButton(
-    text: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isDestructive: Boolean = false,
-    isWarning: Boolean = false
-) {
-    val colors = if (isDestructive) {
-        ButtonDefaults.filledTonalButtonColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer,
-            contentColor = MaterialTheme.colorScheme.error
-        )
-    } else if (isWarning) {
-        ButtonDefaults.filledTonalButtonColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.tertiary
-        )
-    } else {
-        ButtonDefaults.filledTonalButtonColors()
-    }
-
-    FilledTonalButton(
-        onClick = onClick,
-        modifier = modifier,
-        colors = colors,
-        shape = RoundedCornerShape(14.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = text,
-            modifier = Modifier.size(ButtonDefaults.IconSize)
-        )
-        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-        Text(text)
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun MemoryManagementCard(
-    totalMemoryCount: Int,
-    totalLinkCount: Int,
-    operationState: MemoryOperation,
-    operationMessage: String,
-    onExport: () -> Unit,
-    onImport: () -> Unit
-) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            SectionHeader(
-                title = "记忆库",
-                subtitle = "跨配置备份与恢复，保持思维链一致",
-                icon = Icons.Default.Psychology
-            )
-
-            Text(
-                text = "当前共有 $totalMemoryCount 条记忆和 $totalLinkCount 个链接。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ManagementButton(
-                    text = "导出",
-                    icon = Icons.Default.CloudDownload,
-                    onClick = onExport,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                ManagementButton(
-                    text = "导入",
-                    icon = Icons.Default.CloudUpload,
-                    onClick = onImport,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
-
-            AnimatedVisibility(visible = operationState != MemoryOperation.IDLE) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    when (operationState) {
-                        MemoryOperation.EXPORTING -> OperationProgressView(message = "正在导出记忆库...")
-                        MemoryOperation.IMPORTING -> OperationProgressView(message = "正在导入记忆库...")
-                        MemoryOperation.EXPORTED -> OperationResultCard(
-                            title = "导出成功",
-                            message = operationMessage,
-                            icon = Icons.Default.CloudDownload
-                        )
-                        MemoryOperation.IMPORTED -> OperationResultCard(
-                            title = "导入成功",
-                            message = operationMessage,
-                            icon = Icons.Default.CloudUpload
-                        )
-                        MemoryOperation.FAILED -> OperationResultCard(
-                            title = "操作失败",
-                            message = operationMessage,
-                            icon = Icons.Default.Info,
-                            isError = true
-                        )
-                        else -> {}
-                    }
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun ModelConfigManagementCard(
-    totalConfigCount: Int,
-    operationState: ModelConfigOperation,
-    operationMessage: String,
-    onExport: () -> Unit,
-    onImport: () -> Unit
-) {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            SectionHeader(
-                title = stringResource(R.string.backup_model_config),
-                subtitle = stringResource(R.string.backup_model_config_subtitle),
-                icon = Icons.Default.Settings
-            )
-
-            Text(
-                text = stringResource(R.string.backup_model_config_current_count, totalConfigCount),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                ManagementButton(
-                    text = stringResource(R.string.backup_export),
-                    icon = Icons.Default.CloudDownload,
-                    onClick = onExport,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-                ManagementButton(
-                    text = stringResource(R.string.backup_import),
-                    icon = Icons.Default.CloudUpload,
-                    onClick = onImport,
-                    modifier = Modifier.weight(1f, fill = false)
-                )
-            }
-
-            AnimatedVisibility(visible = operationState != ModelConfigOperation.IDLE) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    when (operationState) {
-                        ModelConfigOperation.EXPORTING -> OperationProgressView(message = stringResource(R.string.backup_exporting, stringResource(R.string.backup_model_config)))
-                        ModelConfigOperation.IMPORTING -> OperationProgressView(message = stringResource(R.string.backup_importing, stringResource(R.string.backup_model_config)))
-                        ModelConfigOperation.EXPORTED -> OperationResultCard(
-                            title = stringResource(R.string.backup_export_success),
-                            message = operationMessage,
-                            icon = Icons.Default.CloudDownload
-                        )
-                        ModelConfigOperation.IMPORTED -> OperationResultCard(
-                            title = stringResource(R.string.backup_import_success),
-                            message = operationMessage,
-                            icon = Icons.Default.CloudUpload
-                        )
-                        ModelConfigOperation.FAILED -> OperationResultCard(
-                            title = stringResource(R.string.backup_operation_failed),
-                            message = operationMessage,
-                            icon = Icons.Default.Info,
-                            isError = true
-                        )
-                        else -> {}
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun FaqCard() {
-    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "常见问题",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Text(
-                text = "了解备份与导入时的注意事项，避免常见误区。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            HorizontalDivider()
-            FaqItem(
-                question = "为什么要备份数据？",
-                answer = "备份聊天记录可以防止应用卸载或数据丢失时，您的重要内容丢失。定期备份是个好习惯！"
-            )
-            FaqItem(
-                question = "导出的文件保存在哪里？",
-                answer = "导出的备份文件会保存在您手机的「下载/Operit」文件夹中，文件名包含导出的数据类型、日期和时间。"
-            )
-            FaqItem(
-                question = "导入后会出现重复的数据吗？",
-                answer = "系统会根据记录ID判断，相同ID的记录会被更新而不是重复导入。不同ID的记录会作为新记录添加。"
-            )
-        }
-    }
-}
-
-@Composable
-private fun FaqItem(question: String, answer: String) {
-    Column(modifier = Modifier.padding(top = 16.dp)) {
-        Text(
-            text = question,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Text(
-            text = answer,
-            style = MaterialTheme.typography.bodySmall
-        )
-    }
-}
-
-@Composable
-private fun DeleteConfirmationDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("确认清除聊天记录") },
-        text = { Text("您确定要清除所有聊天记录吗？此操作无法撤销，建议先备份数据。") },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) { Text("确认清除") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
-        }
-    )
-}
-
-@Composable
-private fun OperationResultCard(
-    title: String,
-    message: String,
-    icon: ImageVector,
-    isError: Boolean = false
-) {
-    val containerColor = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer
-    val contentColor = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = containerColor.copy(alpha = 0.2f))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = contentColor,
-                modifier = Modifier.padding(end = 16.dp)
-            )
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = contentColor,
-                    modifier = Modifier.padding(bottom = 4.dp)
-                )
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun OperationProgressView(message: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        CircularProgressIndicator(modifier = Modifier.size(24.dp))
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyLarge,
-        )
-    }
-}
-
 private data class DeleteAllChatsResult(
     val deletedCount: Int,
     val skippedLockedCount: Int
@@ -2050,106 +1311,6 @@ private suspend fun deleteAllChatHistories(context: Context): DeleteAllChatsResu
         }
     }
 
-@Composable
-private fun MemoryImportStrategyDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (ImportStrategy) -> Unit
-) {
-    var selectedStrategy by remember { mutableStateOf(ImportStrategy.SKIP) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("选择导入策略") },
-        text = {
-            Column {
-                Text(
-                    text = "遇到重复的记忆（UUID相同）时如何处理？",
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StrategyOption(
-                        title = "跳过（推荐）",
-                        description = "保留现有记忆，不导入重复数据",
-                        selected = selectedStrategy == ImportStrategy.SKIP,
-                        onClick = { selectedStrategy = ImportStrategy.SKIP }
-                    )
-
-                    StrategyOption(
-                        title = "更新",
-                        description = "用导入的数据更新现有记忆",
-                        selected = selectedStrategy == ImportStrategy.UPDATE,
-                        onClick = { selectedStrategy = ImportStrategy.UPDATE }
-                    )
-
-                    StrategyOption(
-                        title = "创建新记录",
-                        description = "即使UUID相同也创建新记忆（可能导致重复）",
-                        selected = selectedStrategy == ImportStrategy.CREATE_NEW,
-                        onClick = { selectedStrategy = ImportStrategy.CREATE_NEW }
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(selectedStrategy) }) {
-                Text("开始导入")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
-        }
-    )
-}
-
-@Composable
-private fun StrategyOption(
-    title: String,
-    description: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        border = if (selected)
-            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        else
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            RadioButton(
-                selected = selected,
-                onClick = onClick
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
 private suspend fun exportMemories(_context: Context, memoryRepository: MemoryRepository): String? =
     withContext(Dispatchers.IO) {
         try {
@@ -2177,435 +1338,14 @@ private suspend fun importMemoriesFromUri(
     strategy: ImportStrategy
 ) = withContext(Dispatchers.IO) {
     val inputStream = context.contentResolver.openInputStream(uri)
-        ?: throw Exception("无法打开文件")
+        ?: throw Exception(context.getString(R.string.backup_open_file_failed))
     val jsonString = inputStream.bufferedReader().use { it.readText() }
     inputStream.close()
 
     if (jsonString.isBlank()) {
-        throw Exception("导入的文件为空")
+        throw Exception(context.getString(R.string.backup_import_file_empty))
     }
 
     memoryRepository.importMemoriesFromJson(jsonString, strategy)
-}
-
-@Composable
-private fun ProfileSelectionDialog(
-    title: String,
-    profiles: List<PreferenceProfile>,
-    selectedProfileId: String,
-    onProfileSelected: (String) -> Unit,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column {
-                profiles.forEach { profile ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        onClick = { onProfileSelected(profile.id) },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (selectedProfileId == profile.id)
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                            else
-                                MaterialTheme.colorScheme.surface
-                        ),
-                        border = if (selectedProfileId == profile.id)
-                            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-                        else
-                            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = selectedProfileId == profile.id,
-                                onClick = { onProfileSelected(profile.id) }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = profile.name,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = if (selectedProfileId == profile.id) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("确定")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ExportFormatDialog(
-    selectedFormat: ExportFormat,
-    onFormatSelected: (ExportFormat) -> Unit,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("选择导出格式") },
-        text = {
-            Column {
-                Text(
-                    text = "请选择导出聊天记录的文件格式：",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-                
-                FormatOption(
-                    format = ExportFormat.JSON,
-                    title = "JSON",
-                    description = "标准格式，支持完整数据结构（推荐）",
-                    selected = selectedFormat == ExportFormat.JSON,
-                    onClick = { onFormatSelected(ExportFormat.JSON) }
-                )
-                
-                FormatOption(
-                    format = ExportFormat.MARKDOWN,
-                    title = "Markdown",
-                    description = "纯文本格式，易于阅读和编辑",
-                    selected = selectedFormat == ExportFormat.MARKDOWN,
-                    onClick = { onFormatSelected(ExportFormat.MARKDOWN) }
-                )
-                
-                FormatOption(
-                    format = ExportFormat.HTML,
-                    title = "HTML",
-                    description = "网页格式，在浏览器中查看",
-                    selected = selectedFormat == ExportFormat.HTML,
-                    onClick = { onFormatSelected(ExportFormat.HTML) }
-                )
-                
-                FormatOption(
-                    format = ExportFormat.TXT,
-                    title = "纯文本",
-                    description = "简单文本格式，通用性最强",
-                    selected = selectedFormat == ExportFormat.TXT,
-                    onClick = { onFormatSelected(ExportFormat.TXT) }
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("导出")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ImportFormatDialog(
-    selectedFormat: ChatFormat,
-    onFormatSelected: (ChatFormat) -> Unit,
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("选择导入格式") },
-        text = {
-            Column {
-                Text(
-                    text = "请选择要导入的聊天记录格式：",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-                
-                ImportFormatOption(
-                    format = ChatFormat.OPERIT,
-                    title = "Operit JSON（推荐）",
-                    description = "本应用的原生格式，完整保留所有数据",
-                    selected = selectedFormat == ChatFormat.OPERIT,
-                    onClick = { onFormatSelected(ChatFormat.OPERIT) }
-                )
-                
-                ImportFormatOption(
-                    format = ChatFormat.CHATGPT,
-                    title = "ChatGPT",
-                    description = "OpenAI ChatGPT conversations.json 导出格式",
-                    selected = selectedFormat == ChatFormat.CHATGPT,
-                    onClick = { onFormatSelected(ChatFormat.CHATGPT) }
-                )
-                
-                ImportFormatOption(
-                    format = ChatFormat.CHATBOX,
-                    title = "ChatBox",
-                    description = "ChatBox 桌面应用导出格式",
-                    selected = selectedFormat == ChatFormat.CHATBOX,
-                    onClick = { onFormatSelected(ChatFormat.CHATBOX) }
-                )
-                
-                ImportFormatOption(
-                    format = ChatFormat.MARKDOWN,
-                    title = "Markdown",
-                    description = "Markdown 格式的聊天记录文件",
-                    selected = selectedFormat == ChatFormat.MARKDOWN,
-                    onClick = { onFormatSelected(ChatFormat.MARKDOWN) }
-                )
-                
-                ImportFormatOption(
-                    format = ChatFormat.GENERIC_JSON,
-                    title = "通用 JSON",
-                    description = "标准 role-content 结构的 JSON（支持 Claude、LibreChat 等）",
-                    selected = selectedFormat == ChatFormat.GENERIC_JSON,
-                    onClick = { onFormatSelected(ChatFormat.GENERIC_JSON) }
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("导入")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-@Composable
-private fun ImportFormatOption(
-    format: ChatFormat,
-    title: String,
-    description: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        border = if (selected)
-            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        else
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            RadioButton(
-                selected = selected,
-                onClick = onClick
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FormatOption(
-    format: ExportFormat,
-    title: String,
-    description: String,
-    selected: Boolean,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected)
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        border = if (selected)
-            BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
-        else
-            BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            RadioButton(
-                selected = selected,
-                onClick = onClick
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ModelConfigExportWarningDialog(
-    exportPath: String,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.error,
-                modifier = Modifier.size(32.dp)
-            )
-        },
-        title = {
-            Text(
-                text = "⚠️ " + stringResource(R.string.backup_model_config_warning_title),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = stringResource(R.string.backup_model_config_warning_contains),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                Column(
-                    modifier = Modifier.padding(start = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    SecurityWarningItem("🔑 " + stringResource(R.string.backup_model_config_warning_api_key))
-                    SecurityWarningItem("🌐 " + stringResource(R.string.backup_model_config_warning_api_endpoint))
-                    SecurityWarningItem("⚙️ " + stringResource(R.string.backup_model_config_warning_model_params))
-                    SecurityWarningItem("🔧 " + stringResource(R.string.backup_model_config_warning_custom_params))
-                }
-                
-                Spacer(modifier = Modifier.size(8.dp))
-                
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                    )
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "📋 " + stringResource(R.string.backup_model_config_warning_security_tips),
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
-                        )
-                        Text(
-                            text = stringResource(R.string.backup_model_config_warning_tips),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
-                
-                Spacer(modifier = Modifier.size(4.dp))
-                
-                Text(
-                    text = stringResource(R.string.backup_model_config_warning_export_path),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                ) {
-                    Text(
-                        text = exportPath,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(8.dp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            FilledTonalButton(
-                onClick = onDismiss,
-                colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text(stringResource(R.string.backup_model_config_warning_confirm))
-            }
-        }
-    )
-}
-
-@Composable
-private fun SecurityWarningItem(text: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Info,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.error,
-            modifier = Modifier.size(16.dp)
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium
-        )
-    }
 }
 

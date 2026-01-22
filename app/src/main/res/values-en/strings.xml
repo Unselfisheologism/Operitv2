@@ -3884,7 +3884,38 @@
     <string name="backup_import_result_skipped">\n- Skipped invalid records: %1$d</string>
     <string name="backup_import_result_failed">Import failed: No valid chat history found</string>
     <string name="backup_export_result_success">Successfully exported to: %1$s</string>
-    
+
+    <string name="backup_character_cards_title">Character Cards</string>
+    <string name="backup_character_cards_subtitle">Backup and restore character card settings</string>
+    <string name="backup_character_cards_current_count">Currently %1$d character card(s). Exported files will be saved in the "Download/Operit" folder.</string>
+    <string name="backup_character_card_count">Character Cards</string>
+    <string name="backup_character_card_files">Character Cards</string>
+
+    <string name="backup_character_cards_export_result_success">Successfully exported %1$d character card(s) to:\n%2$s</string>
+    <string name="backup_character_cards_import_result_success">Successfully imported character cards:\n- New: %1$d\n- Updated: %2$d%3$s</string>
+    <string name="backup_character_cards_import_result_skipped">\n- Skipped invalid cards: %1$d</string>
+    <string name="backup_character_cards_import_result_failed">Import failed: no valid character cards found</string>
+
+    <string name="backup_export_failed_create_file">Export failed: unable to create file</string>
+    <string name="backup_export_failed_with_reason">Export failed: %1$s</string>
+    <string name="backup_import_failed_unreadable_file">Import failed: unable to read file</string>
+    <string name="backup_import_failed_with_reason">Import failed: %1$s</string>
+    <string name="backup_clear_failed_with_reason">Clear failed: %1$s</string>
+    <string name="backup_delete_skipped_locked">\nSkipped locked chats: %1$d</string>
+
+    <string name="backup_open_file_failed">Unable to open file</string>
+    <string name="backup_import_file_empty">The imported file is empty</string>
+
+    <string name="backup_memory_import_result_success">Imported into profile "%1$s":\n- New memories: %2$d\n- Updated memories: %3$d\n- Skipped memories: %4$d\n- New links: %5$d</string>
+    <string name="backup_memory_export_result_success">Exported from profile "%1$s": %2$d memory(ies) and %3$d link(s) to:\n%4$s</string>
+
+    <string name="backup_model_config_import_result_success">Successfully imported model configurations:\n- New: %1$d\n- Updated: %2$d%3$s</string>
+    <string name="backup_model_config_import_result_skipped">\n- Skipped invalid configs: %1$d</string>
+
+    <string name="backup_chat_export_result_success">Successfully exported %1$d chat record(s) as %2$s to:\n%3$s</string>
+    <string name="backup_format_unknown">Unknown format</string>
+    <string name="backup_format_claude">Claude</string>
+
     <!-- Delete Confirmation Dialog -->
     <string name="backup_delete_confirm_title">Confirm Delete</string>
     <string name="backup_delete_confirm_message">Deleting all chat history cannot be undone. It is recommended to export a backup before performing this operation.\n\nAre you sure you want to delete?</string>
@@ -3905,6 +3936,13 @@
     <!-- Memory Import Strategy -->
     <string name="backup_memory_import_strategy_title">Select Import Strategy</string>
     <string name="backup_memory_import_profile_title">Select Profile</string>
+    <string name="backup_memory_import_strategy_question">How should duplicates be handled (same UUID)?</string>
+    <string name="backup_memory_import_strategy_skip_title">Skip (Recommended)</string>
+    <string name="backup_memory_import_strategy_skip_desc">Keep existing memories and do not import duplicates</string>
+    <string name="backup_memory_import_strategy_update_title">Update</string>
+    <string name="backup_memory_import_strategy_update_desc">Update existing memories with imported data</string>
+    <string name="backup_memory_import_strategy_create_new_title">Create New</string>
+    <string name="backup_memory_import_strategy_create_new_desc">Create new memories even if UUIDs are the same (may cause duplicates)</string>
     <string name="backup_confirm">Confirm</string>
     <string name="backup_cancel">Cancel</string>
 
