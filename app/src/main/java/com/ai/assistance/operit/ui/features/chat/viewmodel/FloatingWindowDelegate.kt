@@ -29,7 +29,8 @@ class FloatingWindowDelegate(
     private val coroutineScope: CoroutineScope,
     private val inputProcessingState: StateFlow<InputProcessingState>,
     private val chatHistoryFlow: StateFlow<List<ChatMessage>>? = null,
-    private val chatHistoryDelegate: ChatHistoryDelegate? = null
+    private val chatHistoryDelegate: ChatHistoryDelegate? = null,
+    private val onChatStatsUpdate: ((chatId: String?, inputTokens: Int, outputTokens: Int, windowSize: Int) -> Unit)? = null
 ) {
     companion object {
         private const val TAG = "FloatingWindowDelegate"
@@ -104,6 +105,10 @@ class FloatingWindowDelegate(
                             AppLogger.e(TAG, "处理悬浮窗消息同步失败", e)
                         }
                     }
+                }
+
+                binder.setChatStatsCallback { chatId, inputTokens, outputTokens, windowSize ->
+                    onChatStatsUpdate?.invoke(chatId, inputTokens, outputTokens, windowSize)
                 }
                 // 订阅聊天历史更新
                 setupChatHistoryCollection()

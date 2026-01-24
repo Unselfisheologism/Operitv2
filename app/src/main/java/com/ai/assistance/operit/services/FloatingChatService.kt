@@ -146,6 +146,7 @@ class FloatingChatService : Service(), FloatingWindowCallback {
         private var closeCallback: (() -> Unit)? = null
         private var reloadCallback: (() -> Unit)? = null
         private var chatSyncCallback: ((String?, List<ChatMessage>) -> Unit)? = null
+        private var chatStatsCallback: ((String?, Int, Int, Int) -> Unit)? = null
         
         fun getService(): FloatingChatService = this@FloatingChatService
         fun getChatCore(): ChatServiceCore = chatCore
@@ -176,10 +177,21 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             return true
         }
 
+        fun setChatStatsCallback(callback: (chatId: String?, inputTokens: Int, outputTokens: Int, windowSize: Int) -> Unit) {
+            this.chatStatsCallback = callback
+        }
+
+        fun notifyChatStats(chatId: String?, inputTokens: Int, outputTokens: Int, windowSize: Int): Boolean {
+            val cb = chatStatsCallback ?: return false
+            cb(chatId, inputTokens, outputTokens, windowSize)
+            return true
+        }
+
         fun clearCallbacks() {
             closeCallback = null
             reloadCallback = null
             chatSyncCallback = null
+            chatStatsCallback = null
         }
     }
 
@@ -244,8 +256,8 @@ class FloatingChatService : Service(), FloatingWindowCallback {
             AppLogger.d(TAG, "ChatServiceCore 已初始化")
             
             // 设置额外的 onTurnComplete 回调，用于通知应用重新加载消息
-            chatCore.setAdditionalOnTurnComplete {
-                val chatId = chatCore.currentChatId.value
+            chatCore.setAdditionalOnTurnComplete { chatId, inputTokens, outputTokens, windowSize ->
+                binder.notifyChatStats(chatId, inputTokens, outputTokens, windowSize)
                 AppLogger.d(TAG, "流完成，通知主界面重新加载消息. chatId=$chatId")
                 if (!binder.notifyChatSync(chatId, emptyList())) {
                     AppLogger.d(TAG, "主界面未注册同步回调，回退为重新加载请求")

@@ -445,7 +445,13 @@ class ChatViewModel(private val context: Context) : ViewModel() {
                         coroutineScope = viewModelScope,
                         inputProcessingState = this.currentChatInputProcessingState,
                         chatHistoryFlow = chatHistoryDelegate.chatHistory,
-                        chatHistoryDelegate = chatHistoryDelegate
+                        chatHistoryDelegate = chatHistoryDelegate,
+                        onChatStatsUpdate = { chatId, inputTokens, outputTokens, windowSize ->
+                            if (chatId != null) {
+                                tokenStatsDelegate.setActiveChatId(chatId)
+                                tokenStatsDelegate.setTokenCounts(chatId, inputTokens, outputTokens, windowSize)
+                            }
+                        }
                 )
 
         viewModelScope.launch {
