@@ -266,7 +266,7 @@ fun ContextSummarySettingsScreen(
                 if (showValidationError) {
                         AlertDialog(
                                 onDismissRequest = { showValidationError = false },
-                                title = { Text("验证失败") },
+                                title = { Text(stringResource(R.string.context_validation_failed)) },
                                 text = { Text(validationErrorMessage) },
                                 confirmButton = {
                                         TextButton(onClick = { showValidationError = false }) {

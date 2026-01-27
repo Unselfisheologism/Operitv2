@@ -380,7 +380,7 @@ private fun UpdateAvailableInfo(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("立即更新")
+                Text(stringResource(R.string.a11y_update_now))
             }
         }
     }

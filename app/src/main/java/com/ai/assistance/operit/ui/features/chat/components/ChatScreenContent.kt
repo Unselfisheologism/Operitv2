@@ -659,7 +659,7 @@ fun ChatScreenContent(
                         showAndroidExportDialog = false
                         showExportProgressDialog = true
                         exportProgress = 0f
-                        exportStatus = "开始导出..."
+                        exportStatus = context.getString(R.string.chat_starting_export)
 
                         // 启动导出过程
                         coroutineScope.launch {
@@ -697,7 +697,7 @@ fun ChatScreenContent(
                         showWindowsExportDialog = false
                         showExportProgressDialog = true
                         exportProgress = 0f
-                        exportStatus = "开始导出..."
+                        exportStatus = context.getString(R.string.chat_starting_export)
 
                         // 启动导出过程
                         coroutineScope.launch {

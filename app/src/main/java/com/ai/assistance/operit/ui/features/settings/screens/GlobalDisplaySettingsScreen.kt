@@ -363,7 +363,7 @@ fun GlobalDisplaySettingsScreen(
                                 .apply()
                             showSaveSuccessMessage = true
                         },
-                        label = { Text("全屏彩虹边框") }
+                        label = { Text(stringResource(R.string.display_rainbow_border)) }
                     )
                     FilterChip(
                         selected = statusIndicatorStyle == StatusIndicatorStyle.TOP_BAR,
@@ -377,7 +377,7 @@ fun GlobalDisplaySettingsScreen(
                                 .apply()
                             showSaveSuccessMessage = true
                         },
-                        label = { Text("顶部提示条") }
+                        label = { Text(stringResource(R.string.display_top_hint)) }
                     )
                 }
             }
@@ -416,7 +416,7 @@ fun GlobalDisplaySettingsScreen(
                                 showSaveSuccessMessage = true
                             }
                         },
-                        label = { Text("PNG（无损，默认）") }
+                        label = { Text(stringResource(R.string.display_png_default)) }
                     )
                     FilterChip(
                         selected = screenshotFormat.equals("JPG", ignoreCase = true) ||
@@ -427,7 +427,7 @@ fun GlobalDisplaySettingsScreen(
                                 showSaveSuccessMessage = true
                             }
                         },
-                        label = { Text("JPG（有损，体积更小）") }
+                        label = { Text(stringResource(R.string.display_jpg_smaller)) }
                     )
                 }
 

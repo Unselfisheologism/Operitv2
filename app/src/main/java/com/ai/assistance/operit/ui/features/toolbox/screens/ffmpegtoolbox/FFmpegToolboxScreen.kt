@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -406,7 +407,7 @@ fun TemplateItem(template: CommandTemplate, onSelect: () -> Unit) {
             IconButton(onClick = onSelect) {
                 Icon(
                     imageVector = Icons.Default.ContentCopy,
-                    contentDescription = "使用此模板",
+                    contentDescription = stringResource(R.string.ffmpeg_use_template),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }

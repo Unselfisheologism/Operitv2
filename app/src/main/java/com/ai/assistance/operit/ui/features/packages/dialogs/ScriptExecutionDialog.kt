@@ -221,7 +221,7 @@ fun ScriptExecutionDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
                 ) {
                     OutlinedButton(onClick = onDismiss) {
-                        Text("取消")
+                        Text(stringResource(R.string.common_cancel))
                     }
 
                     FilledTonalButton(
@@ -310,7 +310,7 @@ fun ScriptExecutionDialog(
                                 strokeWidth = 2.dp
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("执行中")
+                            Text(stringResource(R.string.script_executing))
                         } else {
                             Icon(
                                 imageVector = Icons.Default.PlayArrow,
@@ -318,7 +318,7 @@ fun ScriptExecutionDialog(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("执行")
+                            Text(stringResource(R.string.script_execute))
                         }
                     }
                 }

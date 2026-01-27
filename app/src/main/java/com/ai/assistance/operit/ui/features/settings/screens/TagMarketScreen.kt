@@ -455,7 +455,7 @@ private fun PresetTagCard(preset: PresetTag, onUseClick: (PresetTag) -> Unit) {
             Spacer(modifier = Modifier.height(12.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(12.dp))
-            Text("标签内容:", style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.tag_content), style = MaterialTheme.typography.labelMedium)
             Text(
                 text = preset.promptContent,
                 style = MaterialTheme.typography.bodySmall,
@@ -471,7 +471,7 @@ private fun PresetTagCard(preset: PresetTag, onUseClick: (PresetTag) -> Unit) {
             ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("添加标签")
+                Text(stringResource(R.string.tag_add))
             }
         }
     }

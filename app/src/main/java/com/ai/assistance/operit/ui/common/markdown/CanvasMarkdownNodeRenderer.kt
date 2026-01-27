@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.ai.assistance.operit.R
 import com.ai.assistance.operit.ui.common.displays.LatexCache
 import com.ai.assistance.operit.util.markdown.MarkdownNode
 import com.ai.assistance.operit.util.markdown.MarkdownNodeStable
@@ -576,7 +577,7 @@ private fun renderNodeContent(
                                 textView.setCompoundDrawables(null, drawable, null, null)
                             } catch (e: Exception) {
                                 // 渲染失败时回退到纯文本显示
-                                textView.text = e.message ?: "渲染失败"
+                                textView.text = e.message ?: textView.context.getString(R.string.common_render_failed)
                                 textView.setTextColor(textColor.toArgb())
                                 textView.textSize = 16f
                                 textView.typeface = android.graphics.Typeface.MONOSPACE

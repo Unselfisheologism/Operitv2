@@ -259,7 +259,7 @@ fun PackageManagerScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "管理环境变量"
+                            contentDescription = stringResource(R.string.pkg_manage_env_vars)
                         )
                     }
 
@@ -695,11 +695,11 @@ private fun PackageEnvironmentVariablesDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = "配置环境变量") },
+        title = { Text(text = stringResource(R.string.pkg_config_env_vars)) },
         text = {
             if (requiredEnvKeys.isEmpty()) {
                 Text(
-                    text = "当前已导入的工具包没有声明需要的环境变量。",
+                    text = stringResource(R.string.pkg_no_env_vars),
                     style = MaterialTheme.typography.bodyMedium
                 )
             } else {
@@ -819,7 +819,7 @@ private fun PackageEnvironmentVariablesDialog(
                                 // 显示默认值（如果有）
                                 if (envVar.defaultValue != null) {
                                     Text(
-                                        text = "默认: ${envVar.defaultValue}",
+                                        text = stringResource(R.string.pkg_default, envVar.defaultValue),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.padding(start = 8.dp)
@@ -839,7 +839,7 @@ private fun PackageEnvironmentVariablesDialog(
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = {
                                     Text(
-                                        text = if (envVar.required) "输入值（必需）" else "输入值（可选）",
+                                        text = if (envVar.required) stringResource(R.string.pkg_input_required) else stringResource(R.string.pkg_input_optional),
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 },
@@ -853,12 +853,12 @@ private fun PackageEnvironmentVariablesDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(editableValues) }) {
-                Text(text = "保存")
+                Text(text = stringResource(R.string.pkg_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "取消")
+                Text(text = stringResource(R.string.pkg_cancel))
             }
         }
     )

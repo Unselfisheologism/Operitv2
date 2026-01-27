@@ -13,9 +13,16 @@ import com.ai.assistance.operit.ui.features.chat.webview.workspace.process.GitIg
 import com.ai.assistance.operit.util.FileUtils
 
 @Serializable
+data class FileStat(
+    val size: Long,
+    val lastModified: Long
+)
+
+@Serializable
 data class BackupManifest(
     val timestamp: Long,
-    val files: Map<String, String> // relativePath -> hash
+    val files: Map<String, String>, // relativePath -> hash
+    val fileStats: Map<String, FileStat> = emptyMap() // relativePath -> (size, lastModified)
 )
 
 class WorkspaceBackupManager(private val context: Context) {
@@ -93,23 +100,50 @@ class WorkspaceBackupManager(private val context: Context) {
                 return
             }
             AppLogger.i(TAG, "No newer backups found for timestamp $messageTimestamp. Creating a new backup.")
-            createNewBackup(workspaceDir, backupDir, messageTimestamp)
+            createNewBackup(workspaceDir, backupDir, messageTimestamp, existingBackups)
         }
     }
 
-    private fun createNewBackup(workspaceDir: File, backupDir: File, newTimestamp: Long) {
+    private fun createNewBackup(
+        workspaceDir: File,
+        backupDir: File,
+        newTimestamp: Long,
+        existingBackups: List<Long>
+    ) {
         val objectsDir = File(backupDir, OBJECTS_DIR_NAME)
         objectsDir.mkdirs()
 
         val newManifestFiles = mutableMapOf<String, String>()
+        val newManifestFileStats = mutableMapOf<String, FileStat>()
+
+        val previousManifest = existingBackups.lastOrNull()?.let { loadBackupManifest(backupDir, it) }
+        val previousFiles = previousManifest?.files ?: emptyMap()
+        val previousFileStats = previousManifest?.fileStats ?: emptyMap()
 
         val gitignoreRules = GitIgnoreFilter.loadRules(workspaceDir)
         workspaceDir.walkTopDown()
             .filter { FileUtils.isWorkspaceFile(it, workspaceDir, gitignoreRules) }
             .forEach { file ->
                 try {
-                    val hash = getFileHash(file)
                     val relativePath = file.relativeTo(workspaceDir).path
+                    val currentStat = FileStat(size = file.length(), lastModified = file.lastModified())
+                    newManifestFileStats[relativePath] = currentStat
+
+                    val previousHash = previousFiles[relativePath]
+                    val previousStat = previousFileStats[relativePath]
+
+                    val hash = if (
+                        previousHash != null &&
+                        previousStat != null &&
+                        previousStat.size == currentStat.size &&
+                        previousStat.lastModified == currentStat.lastModified &&
+                        File(objectsDir, previousHash).exists()
+                    ) {
+                        previousHash
+                    } else {
+                        getFileHash(file)
+                    }
+
                     newManifestFiles[relativePath] = hash
 
                     val objectFile = File(objectsDir, hash)
@@ -121,7 +155,12 @@ class WorkspaceBackupManager(private val context: Context) {
                 }
             }
 
-        val manifest = BackupManifest(timestamp = newTimestamp, files = newManifestFiles)
+        val manifest =
+            BackupManifest(
+                timestamp = newTimestamp,
+                files = newManifestFiles,
+                fileStats = newManifestFileStats
+            )
         val manifestFile = File(backupDir, "$newTimestamp.json")
         try {
             manifestFile.writeText(json.encodeToString(manifest))

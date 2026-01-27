@@ -1059,14 +1059,14 @@ fun ChatHistorySelector(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "聊天记录设置",
+                        text = stringResource(R.string.chat_history_settings),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    
+
                     Text(
-                        text = "显示模式",
+                        text = stringResource(R.string.chat_display_mode),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -1270,7 +1270,7 @@ fun ChatHistorySelector(
                     ) {
                         Icon(
                             Icons.Default.Tune,
-                            contentDescription = "设置",
+                            contentDescription = stringResource(R.string.settings),
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
                         )
@@ -1282,7 +1282,7 @@ fun ChatHistorySelector(
                         ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回",
+                                contentDescription = stringResource(R.string.back),
                                 tint = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.size(20.dp)
                             )

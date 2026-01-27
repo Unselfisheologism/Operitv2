@@ -19,7 +19,87 @@
     <string name="nav_terminal">Terminal</string>
     <string name="nav_toolbox">Toolbox</string>
     <string name="nav_item_agreement">User Agreement</string>
+
+    <!-- Chat Module -->
+    <string name="chat_fullscreen_input">Fullscreen Input</string>
+    <string name="chat_history_settings">Chat History Settings</string>
+    <string name="chat_display_mode">Display Mode</string>
+    <string name="chat_autoglm_warning">Using autoglm as the main conversation model is prohibited. The conversation model and UI control model are separated. Please choose any other smart large model. If you have questions, please read the documentation carefully to learn about the model configuration mechanism.</string>
+    <string name="chat_model_count">%d models</string>
+    <string name="chat_starting_export">Starting export...</string>
+    <string name="chat_reply_instruction">User is replying to your previous message:</string>
+    <string name="chat_workspace_status">Workspace Status</string>
+
+    <!-- Floating Window Module -->
+    <string name="floating_screen_content">Screen Content</string>
+    <string name="floating_notification">Notification</string>
+    <string name="floating_position">Position</string>
+    <string name="floating_ocr_selected">Selected</string>
+    <string name="floating_ocr_select">Select to Recognize</string>
+    <string name="floating_input_or_hold_voice">Input or hold for voice</string>
+    <string name="floating_voice_call">Voice Call</string>
+    <string name="floating_send">Send</string>
+    <string name="floating_release_to_cancel">Release to Cancel</string>
+    <string name="floating_release_to_finish">Release to Finish</string>
+    <string name="floating_back_to_window">Back to Window Mode</string>
+    <string name="floating_shrink_to_ball">Shrink to Ball</string>
+    <string name="floating_edit">Edit</string>
+    <string name="floating_cancel">Cancel</string>
+    <string name="floating_cancel_recording">Cancel Recording</string>
+    <string name="floating_edit_recording">Edit Recording</string>
+    <string name="floating_hold_to_speak">Hold to Speak</string>
+    <string name="floating_edit_your_message">Edit your message</string>
+    <string name="floating_enter_or_edit_message">Enter or edit your message here...</string>
+    <string name="floating_fullscreen">Fullscreen</string>
+    <string name="floating_back_to_main">Back to Main App</string>
+    <string name="floating_minimize">Minimize</string>
+    <string name="floating_close">Close</string>
+    <string name="floating_enter_your_question">Enter your question...</string>
+    <string name="floating_using_tool">Using tool: %1$s</string>
+    <string name="floating_processing_tool_result">Processing tool result: %1$s</string>
+    <string name="floating_error">Error: %1$s</string>
+    <string name="floating_processing">Processing...</string>
+    <string name="floating_hold_microphone_to_speak">Hold the microphone below to start speaking</string>
+    <string name="floating_thinking">Thinking...</string>
+    <string name="floating_cannot_get_input_service">Cannot get input method service</string>
+    <string name="floating_close_floating_window">Close floating window</string>
+    <string name="floating_add_attachment">Add attachment</string>
+    <string name="floating_cannot_get_focus">Cannot get focus</string>
+    <string name="floating_listening">Listening...</string>
+    <string name="floating_hold_microphone">Hold microphone</string>
+    <string name="floating_start_recording_failed">Failed to start recording</string>
+    <string name="floating_recognizing">Recognizing...</string>
+    <string name="floating_thinking_2">Thinking...</string>
+    <string name="floating_didnt_hear_clearly">Didn\'t hear clearly</string>
+    <string name="floating_hello">Hello</string>
+
+
     <string name="nav_help">User Manual</string>
+
+    <!-- Color Picker -->
+    <string name="colorpicker_select_primary">Select primary color</string>
+    <string name="colorpicker_select_secondary">Select secondary color</string>
+    <string name="colorpicker_select_statusbar">Select status bar color</string>
+    <string name="colorpicker_select_history_icon">Select history icon color</string>
+    <string name="colorpicker_select_pip_icon">Select floating window icon color</string>
+    <string name="colorpicker_select_color">Select color</string>
+    <string name="colorpicker_sample_text">Sample text</string>
+    <string name="colorpicker_high_contrast">High contrast</string>
+    <string name="colorpicker_low_contrast">Low contrast</string>
+    <string name="colorpicker_manual_input">Manually input color</string>
+    <string name="colorpicker_paste">Paste</string>
+    <string name="colorpicker_apply">Apply</string>
+    <string name="colorpicker_apply_rgb">Apply RGB</string>
+    <string name="colorpicker_apply_hsv">Apply HSV</string>
+    <string name="colorpicker_recently_used">Recently used</string>
+    <string name="colorpicker_recommended">Recommended colors</string>
+    <string name="colorpicker_confirm">OK</string>
+    <string name="colorpicker_cancel">Cancel</string>
+
+    <!-- Chat History Settings -->
+    <string name="chathistory_internal_storage">Internal storage</string>
+    <string name="chathistory_external_storage">External storage</string>
+
     <string name="nav_workflow">Workflow</string>
     <string name="nav_group_ai_features">AI Features</string>
     <string name="nav_group_tools">Tools</string>
@@ -336,7 +416,6 @@
     <string name="toolbox">Toolbox</string>
     <string name="mcp">MCP</string>
     <string name="token_config_title">DeepSeek Token Configuration</string>
-    <string name="chat_history_settings">Chat History Management</string>
     <string name="character_card_change_title">Character Card Updated</string>
     <string name="character_card_change_prompt">The character card has changed. Do you want to go to Chat Management to handle chats bound to it?</string>
     <string name="go_to_chat_management">Go to Chat Management</string>
@@ -1927,10 +2006,9 @@
     
     <!-- Stream Markdown Demo -->
     <string name="stream_markdown_title">Streaming Rendering</string>
-    <string name="stream_markdown_demo_title">Stream Markdown Rendering Demo</string>
     <string name="static_rendering">Static rendering</string>
     <string name="stream_speed_format">Speed (x%.1f)</string>
-    
+
     <!-- Additional Actions -->
     <string name="clear">Clear</string>
     <string name="back">Back</string>
@@ -2543,7 +2621,45 @@
     <string name="no_description">No description</string>
     <string name="builtin">Built-in</string>
     <string name="external">External</string>
-    
+    <string name="pkg_tip">Tip</string>
+    <string name="pkg_automation_removed">Kotlin UI automation configuration feature has been removed.</string>
+    <string name="pkg_automation_func_removed">Kotlin UI automation function execution (route/config) has been removed.</string>
+    <string name="pkg_automation_feature">Automation Feature</string>
+    <string name="pkg_close">Close</string>
+    <string name="dialog_command_result">Command Result</string>
+    <string name="dialog_copied_to_clipboard">Copied to clipboard</string>
+    <string name="dialog_copy_failed">Copy failed: %1$s</string>
+    <string name="dialog_confirm">OK</string>
+    <string name="dialog_copy">Copy</string>
+    <string name="dialog_select_sample_command">Select a sample command:</string>
+    <string name="skillmarket_logged_out">Logged out</string>
+    <string name="skillmarket_removed_from_market">Removed from market</string>
+    <string name="skillmarket_login_failed">Login failed: %1$s</string>
+    <string name="skillmarket_logout_failed">Logout failed: %1$s</string>
+    <string name="skillmarket_remove_failed">Remove failed: %1$s</string>
+    <string name="skillmgr_refreshed">Refreshed</string>
+    <string name="skillmgr_only_zip_files">Only .zip files are supported</string>
+    <string name="skillmgr_import_failed">Import failed: %1$s</string>
+    <string name="skillmgr_deleted">Deleted: %1$s</string>
+    <string name="skillmgr_delete_failed">Delete failed: %1$s</string>
+    <string name="skillmgr_no_skills_found">No Skills found. Please place Skill folders in: %1$s, and ensure they contain SKILL.md.</string>
+    <string name="skillmgr_cannot_read_file">Cannot read file</string>
+    <string name="skillmgr_delete">Delete</string>
+    <string name="skillmgr_close">Close</string>
+    <string name="foldernav_close_sidebar">Close sidebar</string>
+    <string name="foldernav_refresh_folders">Refresh folder list</string>
+    <string name="foldernav_new_folder">New folder</string>
+    <string name="foldernav_folder">Folder</string>
+    <string name="uidebugger_copy_activity_name">Copy activity name</string>
+    <string name="uidebugger_close_panel">Close panel</string>
+    <string name="uidebugger_minimize">Minimize</string>
+    <string name="activity_monitor_close">Close</string>
+    <string name="theme_background_preview">Background image preview</string>
+    <string name="theme_recrop">Recrop</string>
+    <string name="filediff_tool_result">Tool execution result</string>
+    <string name="ffmpeg_use_template">Use this template</string>
+    <string name="filelist_go_back">Go back to parent directory</string>
+
     <!-- Chat Components -->
     <string name="memory_attachment_active">Memory attachment activated</string>
     <string name="thinking_mode_active">Thinking mode activated</string>
@@ -4218,6 +4334,7 @@
     <string name="html_content_block">HTML Content</string>
     <string name="mood_tag_block">Mood Tag</string>
     <string name="thinking_tools_group_title_with_count">Thinking &amp; Tool Calls (%1$d)</string>
+    <string name="tools_group_title_with_count">Tool Calls (%1$d)</string>
     
     <!-- Backup Settings Screen -->
     <string name="backup_data_overview">Data Overview</string>
@@ -4642,5 +4759,256 @@
     <string name="screen_ocr_inline_instruction" formatted="false">Please do not read the file. Answer directly based on the attachment content and the user question.</string>
     <string name="screen_ocr_selection_content_captured">Selection content captured</string>
     <string name="screen_ocr_error_prefix">Error: %1$s</string>
+
+    <!-- Memory Module -->
+    <string name="memory_title">Title</string>
+    <string name="memory_content">Content</string>
+    <string name="memory_create_new">New Memory</string>
+    <string name="memory_edit_memory">Edit Memory</string>
+    <string name="memory_folder">Folder</string>
+    <string name="memory_uncategorized">Uncategorized</string>
+    <string name="memory_uuid">UUID</string>
+    <string name="memory_source">Source</string>
+    <string name="memory_importance">Importance</string>
+    <string name="memory_credibility">Credibility</string>
+    <string name="memory_created_at">Created</string>
+    <string name="memory_updated_at">Updated</string>
+    <string name="memory_edit">Edit</string>
+    <string name="memory_delete">Delete</string>
+    <string name="memory_close">Close</string>
+    <string name="memory_link_details">Link Details</string>
+    <string name="memory_from">From</string>
+    <string name="memory_to">To</string>
+    <string name="memory_type">Type</string>
+    <string name="memory_weight">Weight</string>
+    <string name="memory_description">Description</string>
+    <string name="memory_edit_link">Edit Link</string>
+    <string name="memory_save">Save</string>
+    <string name="memory_cancel">Cancel</string>
+    <string name="memory_link_nodes">Link \'%1$s\' to \'%2$s\'</string>
+    <string name="memory_create_link">Create Link</string>
+    <string name="memory_test_ai_tool">Test AI Memory Tool</string>
+    <string name="memory_test_tool_hint">Enter a query to simulate AI retrieving relevant memories from the knowledge base:</string>
+    <string name="memory_test_results">Results</string>
+    <string name="memory_document_title">Document Title</string>
+    <string name="memory_search_in_document">Search in document...</string>
+    <string name="memory_save_all">Save All</string>
+    <string name="memory_delete_document">Delete Document</string>
+    <string name="memory_folder_operations">Folder Operations</string>
+    <string name="memory_folder_label">Folder</string>
+    <string name="memory_rename_folder">Rename</string>
+    <string name="memory_create_folder">Create Folder</string>
+    <string name="memory_create">Create</string>
+    <string name="memory_folder_path_hint">Enter folder path (use / to separate levels)</string>
+    <string name="memory_folder_path_label">Folder Path</string>
+    <string name="memory_folder_path_example">e.g.: Work/ProjectA</string>
+    <string name="memory_current_path">Current Path</string>
+    <string name="memory_new_path">New Path</string>
+    <string name="memory_confirm_delete_folder">Delete Folder</string>
+    <string name="memory_confirm_delete_folder_message">Are you sure you want to delete this folder?</string>
+    <string name="memory_delete_folder_warning">Note: All memories in this folder will be moved to \"Uncategorized\".</string>
+    <string name="memory_confirm_delete_action">Confirm Delete</string>
+    <string name="memory_expand">Expand</string>
+    <string name="memory_collapse">Collapse</string>
+    <string name="memory_search_hint">Search memories...</string>
+    <string name="memory_folder_placeholder">This is a folder placeholder. Please create a new memory.</string>
+    <string name="memory_error_create_folder">Failed to create folder: %1$s</string>
+    <string name="memory_error_rename_folder">Failed to rename folder: %1$s</string>
+    <string name="memory_error_delete_folder">Failed to delete folder: %1$s</string>
+    <string name="memory_error_load_graph">Failed to load memory graph: %1$s</string>
+    <string name="memory_error_search">Failed to search memories: %1$s</string>
+    <string name="memory_error_load_folders">Failed to load folder list: %1$s</string>
+    <string name="memory_error_refresh_folders">Failed to refresh folder list: %1$s</string>
+    <string name="memory_error_load_folder_graph">Failed to load folder graph: %1$s</string>
+    <string name="memory_error_move_memories">Failed to move memories</string>
+    <string name="memory_error_move_memories_detail">Failed to move memories: %1$s</string>
+    <string name="memory_error_import_document">Failed to import document: %1$s</string>
+    <string name="memory_error_create_memory">Failed to create memory: %1$s</string>
+    <string name="memory_error_update_memory">Failed to update memory: %1$s</string>
+    <string name="memory_error_delete_memory">Failed to delete memory: %1$s</string>
+    <string name="memory_error_delete_selected">Failed to batch delete: %1$s</string>
+    <string name="memory_error_update_link">Failed to update link: %1$s</string>
+    <string name="memory_error_delete_link">Failed to delete link: %1$s</string>
+    <string name="memory_error_link_memories">Failed to link memories: %1$s</string>
+
+    <!-- Common Module -->
+    <string name="common_phone_agent">Phone Agent</string>
+    <string name="common_resume_agent">Resume Agent</string>
+    <string name="common_take_over">Take Over</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_show_code">Show Code</string>
+    <string name="common_render_mermaid">Render Mermaid</string>
+    <string name="common_preview_html">Preview HTML</string>
+    <string name="common_fullscreen_preview">Fullscreen Preview</string>
+    <string name="common_disable_autowrap">Disable Auto Wrap</string>
+    <string name="common_enable_autowrap">Enable Auto Wrap</string>
+    <string name="common_copy_code">Copy Code</string>
+    <string name="common_copied">Copied</string>
+    <string name="common_exit_fullscreen">Exit Fullscreen</string>
+    <string name="common_load_failed">Load Failed</string>
+    <string name="common_close">Close</string>
+    <string name="common_reset_zoom">Reset Zoom</string>
+    <string name="common_render_failed">Render Failed</string>
+
+    <!-- MCP Config Module -->
+    <string name="mcp_config_import">Config Import</string>
+    <string name="mcp_more_options">More Options</string>
+    <string name="mcp_swipe_for_more">Swipe left for more options</string>
+    <string name="mcp_paste_config_json">Paste MCP Config JSON</string>
+    <string name="mcp_config_content">Config Content</string>
+    <string name="mcp_open_config_file">Open Config File</string>
+    <string name="mcp_config_file_location">Config file location: %1$s</string>
+    <string name="mcp_merged_servers">Merged %1$d server configs</string>
+    <string name="mcp_merge_failed">✗ Merge failed: %1$s</string>
+    <string name="mcp_import_exception">✗ Import exception: %1$s</string>
+    <string name="mcp_please_enter_config">Please enter config content</string>
+
+    <!-- Package Manager Module -->
+    <string name="pkg_manage_env_vars">Manage Environment Variables</string>
+    <string name="pkg_config_env_vars">Configure Environment Variables</string>
+    <string name="pkg_no_env_vars">The currently imported tool packages have not declared any required environment variables.</string>
+    <string name="pkg_default">Default: %1$s</string>
+    <string name="pkg_input_required">Input value (required)</string>
+    <string name="pkg_input_optional">Input value (optional)</string>
+    <string name="pkg_save">Save</string>
+    <string name="pkg_cancel">Cancel</string>
+
+    <!-- Package Details Dialog -->
+    <string name="pkg_confirm_delete">Confirm Delete</string>
+    <string name="pkg_delete_warning">Are you sure you want to delete package "%1$s"? This action cannot be undone.</string>
+    <string name="pkg_delete">Delete</string>
+    <string name="pkg_tool_list">Tool List</string>
+    <string name="pkg_no_tools">No tools available</string>
+
+    <!-- MCP Market Screen -->
+    <string name="mcp_market_search_hint">Search plugin name, description, author...</string>
+    <string name="mcp_market_search">Search</string>
+    <string name="mcp_market_clear_search">Clear search</string>
+    <string name="mcp_market_refresh">Refresh</string>
+
+    <!-- Tag Market Screen -->
+    <string name="tag_content">Tag content:</string>
+    <string name="tag_add">Add Tag</string>
+
+    <!-- Custom Headers Screen -->
+    <string name="headers_load_preset">Load Preset</string>
+    <string name="headers_saved">Headers saved</string>
+
+    <!-- Context Summary Settings Screen -->
+    <string name="context_validation_failed">Validation Failed</string>
+
+    <!-- Global Display Settings Screen -->
+    <string name="display_rainbow_border">Fullscreen Rainbow Border</string>
+    <string name="display_top_hint">Top Hint Bar</string>
+    <string name="display_png_default">PNG (lossless, default)</string>
+    <string name="display_jpg_smaller">JPG (lossy, smaller size)</string>
+
+    <!-- Script Execution Dialog -->
+    <string name="script_execute">Execute</string>
+
+    <!-- Accessibility Wizard Card -->
+    <string name="a11y_update_now">Update Now</string>
+
+    <!-- MCP Environment Variables Dialog -->
+    <string name="mcp_var_name">Variable Name</string>
+    <string name="mcp_var_value">Variable Value</string>
+    <string name="mcp_add_var">Add Variable</string>
+    <string name="mcp_confirm">Confirm</string>
+
+    <!-- Edit Memory Sheet -->
+    <string name="memory_folder_label2">Folder</string>
+    <string name="memory_tags">Tags</string>
+    <string name="memory_add_tag_hint">Add new tag...</string>
+
+    <!-- Memory App Bar -->
+    <string name="memory_search_hint2">Search memories</string>
+
+    <!-- UI Debugger -->
+    <string name="uidebugger_stop_monitoring">Stop Monitoring</string>
+    <string name="uidebugger_start_monitoring">Start Monitoring</string>
+    <string name="uidebugger_clear">Clear</string>
+
+    <!-- Auto GLM Tool Screen -->
+    <string name="autoglm_virtual_screen">Virtual screen this time</string>
+
+    <!-- HTML Packager Screen -->
+    <string name="htmlpackager_step1_title">Step 1: Select project folder</string>
+    <string name="htmlpackager_select_folder">Select Folder</string>
+    <string name="htmlpackager_selected">Selected: %1$s</string>
+    <string name="htmlpackager_step2_title">Step 2: Specify entry file</string>
+    <string name="htmlpackager_main_html">Main HTML file</string>
+    <string name="htmlpackager_generate_package">Generate Package</string>
+
+    <!-- Common Expand/Collapse -->
+    <string name="common_expand">Expand</string>
+
+    <!-- Document View Dialog -->
+    <string name="document_no_content_found">No relevant content found.</string>
+    <string name="document_block_label">Block %1$d</string>
+
+    <!-- Auto GLM One Click Tool Screen -->
+    <string name="autoglm_go_to_model_config">Go to Model Config</string>
+    <string name="autoglm_custom_endpoint">Custom Endpoint (OpenAI Compatible)</string>
+    <string name="autoglm_model_name">Model Name</string>
+    <string name="autoglm_restore_original">Restore Original Automation Logic</string>
+
+    <!-- UI Debugger Components -->
+    <string name="uidebugger_create_new_package">Create New Config Package</string>
+    <string name="uidebugger_app_name">App Name</string>
+    <string name="uidebugger_package_name">Package Name</string>
+    <string name="uidebugger_description_optional">Description (Optional)</string>
+    <string name="uidebugger_create">Create</string>
+    <string name="uidebugger_cancel2">Cancel</string>
+
+    <!-- Stream Markdown Demo -->
+    <string name="stream_markdown_pause">Pause</string>
+    <string name="stream_markdown_resume">Resume</string>
+    <string name="stream_markdown_start">Start</string>
+    <string name="stream_markdown_reset">Reset</string>
+    <string name="stream_markdown_speed">Speed (x%1$s)</string>
+    <string name="stream_markdown_demo_title">Streaming Markdown Rendering Demo</string>
+    <string name="stream_markdown_static_render">Static Rendering</string>
+
+    <!-- MCP Deploy Progress Dialog -->
+    <string name="mcp_deploy_success">Deployment Successful</string>
+    <string name="mcp_deploy_failed">Deployment Failed</string>
+    <string name="mcp_deploy_in_progress">Deploying</string>
+    <string name="mcp_env_variables">Environment Variables</string>
+    <string name="mcp_close">Close</string>
+    <string name="mcp_preparing_deploy">Preparing to deploy...</string>
+    <string name="mcp_deploy_completed">Deployment Completed</string>
+    <string name="mcp_deploy_log">Deployment Log</string>
+    <string name="mcp_lines_count">%1$d lines</string>
+    <string name="mcp_retry">Retry</string>
+
+    <!-- MCP Deploy Confirm Dialog -->
+    <string name="mcp_deploy_confirm_title">Deployment Confirmation</string>
+    <string name="mcp_deploying_plugin">About to deploy plugin: %1$s</string>
+    <string name="mcp_deploy_choice_hint">You can choose direct deployment or customize deployment commands</string>
+    <string name="mcp_cancel">Cancel</string>
+    <string name="mcp_custom_command">Custom Command</string>
+    <string name="mcp_direct_deploy">Direct Deploy</string>
+
+    <!-- MCP Commands Edit Dialog -->
+    <string name="mcp_edit_deploy_commands">Edit Deployment Commands</string>
+    <string name="mcp_command_hint">One command per line. Ensure correctness. Start command will be skipped.</string>
+    <string name="mcp_deploy_commands">Deployment Commands</string>
+    <string name="mcp_loading_commands">Loading commands...</string>
+    <string name="mcp_lines_suffix">%1$d lines</string>
+    <string name="mcp_confirm_and_deploy">Confirm and Deploy</string>
+
+    <!-- MCP Install Progress Dialog -->
+    <string name="mcp_uninstall_success">Uninstall successful!</string>
+    <string name="mcp_operation_success">%1$s successful!</string>
+    <string name="mcp_plugin_installed_to">Plugin has been %1$s to:</string>
+    <string name="mcp_operation_failed">%1$s failed</string>
+    <string name="mcp_preparing_operation">Preparing %1$s...</string>
+    <string name="mcp_downloading_plugin">Downloading plugin...</string>
+    <string name="mcp_deleting_files">Deleting files...</string>
+    <string name="mcp_extracting_files">Extracting files...</string>
+    <string name="mcp_operation_complete">%1$s complete!</string>
+    <string name="mcp_preparing">Preparing...</string>
+    <string name="mcp_ok">OK</string>
+    <string name="mcp_operation_in_progress">%1$s in progress...</string>
 
 </resources>

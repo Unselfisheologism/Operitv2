@@ -11,7 +11,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.ai.assistance.operit.ui.components.CustomScaffold
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.ai.assistance.operit.R
 import com.ai.assistance.operit.data.preferences.ApiPreferences
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -110,9 +112,9 @@ fun CustomHeadersSettingsScreen(onBackPressed: () -> Unit) {
             Box(modifier = Modifier.fillMaxWidth()) {
                  Box(modifier = Modifier.align(Alignment.CenterEnd)) {
                     OutlinedButton(onClick = { showPresetsMenu = true }) {
-                        Icon(Icons.Default.List, contentDescription = "Load Preset", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.List, contentDescription = stringResource(R.string.headers_load_preset), modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("加载预设")
+                        Text(stringResource(R.string.headers_load_preset))
                     }
                     DropdownMenu(
                         expanded = showPresetsMenu,
@@ -189,7 +191,7 @@ fun CustomHeadersSettingsScreen(onBackPressed: () -> Unit) {
                     }
                 }
             ) {
-                Text("请求头已保存")
+                Text(stringResource(R.string.headers_saved))
             }
         }
     }

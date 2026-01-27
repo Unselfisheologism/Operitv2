@@ -48,6 +48,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color.Companion.Transparent
+import androidx.compose.ui.res.stringResource
+import com.ai.assistance.operit.R
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -145,7 +147,7 @@ fun ActivityMonitorPanel(
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "关闭"
+                            contentDescription = stringResource(R.string.activity_monitor_close)
                         )
                     }
                 }
@@ -211,7 +213,7 @@ fun ActivityMonitorPanel(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("停止监听")
+                            Text(stringResource(R.string.uidebugger_stop_monitoring))
                         }
                     } else {
                         Button(
@@ -224,7 +226,7 @@ fun ActivityMonitorPanel(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("开始监听")
+                            Text(stringResource(R.string.uidebugger_start_monitoring))
                         }
                     }
 
@@ -238,7 +240,7 @@ fun ActivityMonitorPanel(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("清除")
+                        Text(stringResource(R.string.uidebugger_clear))
                     }
                 }
 

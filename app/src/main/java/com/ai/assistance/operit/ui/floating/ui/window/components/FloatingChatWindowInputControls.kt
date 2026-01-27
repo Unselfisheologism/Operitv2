@@ -198,7 +198,7 @@ private fun BottomInputBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "添加附件",
+                    contentDescription = stringResource(R.string.floating_add_attachment),
                     tint = if (floatContext.showAttachmentPanel)
                         MaterialTheme.colorScheme.onPrimary
                     else
@@ -243,7 +243,7 @@ private fun BottomInputBar(
             ) {
                 Icon(
                     imageVector = if (isProcessing) Icons.Default.Close else Icons.Default.Send,
-                    contentDescription = if (isProcessing) "取消" else "发送",
+                    contentDescription = if (isProcessing) stringResource(R.string.floating_cancel) else stringResource(R.string.floating_send),
                     tint = when {
                         isProcessing -> MaterialTheme.colorScheme.onError
                         hasContent || floatContext.attachments.isNotEmpty() -> MaterialTheme.colorScheme.onPrimary

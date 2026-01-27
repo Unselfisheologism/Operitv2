@@ -50,28 +50,28 @@ fun MemoryInfoDialog(
                         modifier = Modifier.verticalScroll(scrollState),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("标题: ${memory.title}", style = MaterialTheme.typography.titleMedium)
+                    Text("${stringResource(R.string.memory_title)}: ${memory.title}", style = MaterialTheme.typography.titleMedium)
                     HorizontalDivider()
-                    Text("内容:", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.memory_content) + ":", style = MaterialTheme.typography.titleSmall)
                     Text(memory.content)
                     HorizontalDivider()
-                    Text("文件夹: ${memory.folderPath?.ifEmpty { "未分类" }}", style = MaterialTheme.typography.bodySmall)
-                    Text("UUID: ${memory.uuid}", style = MaterialTheme.typography.bodySmall)
-                    Text("来源: ${memory.source}", style = MaterialTheme.typography.bodySmall)
+                    Text("${stringResource(R.string.memory_folder)}: ${memory.folderPath?.ifEmpty { stringResource(R.string.memory_uncategorized) }}", style = MaterialTheme.typography.bodySmall)
+                    Text("${stringResource(R.string.memory_uuid)}: ${memory.uuid}", style = MaterialTheme.typography.bodySmall)
+                    Text("${stringResource(R.string.memory_source)}: ${memory.source}", style = MaterialTheme.typography.bodySmall)
                     Text(
-                            "重要性: ${String.format("%.2f", memory.importance)}",
+                            "${stringResource(R.string.memory_importance)}: ${String.format("%.2f", memory.importance)}",
                             style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                            "可信度: ${String.format("%.2f", memory.credibility)}",
+                            "${stringResource(R.string.memory_credibility)}: ${String.format("%.2f", memory.credibility)}",
                             style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                            "创建时间: ${dateFormat.format(memory.createdAt)}",
+                            "${stringResource(R.string.memory_created_at)}: ${dateFormat.format(memory.createdAt)}",
                             style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                            "更新时间: ${dateFormat.format(memory.updatedAt)}",
+                            "${stringResource(R.string.memory_updated_at)}: ${dateFormat.format(memory.updatedAt)}",
                             style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -82,15 +82,15 @@ fun MemoryInfoDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                         verticalArrangement = Arrangement.Center
                 ) {
-                    Button(onClick = onEdit) { Text("编辑") }
+                    Button(onClick = onEdit) { Text(stringResource(R.string.memory_edit)) }
                     Button(
                             onClick = onDelete,
                             colors =
                                     ButtonDefaults.buttonColors(
                                             containerColor = MaterialTheme.colorScheme.error
                                     )
-                    ) { Text("删除") }
-                    OutlinedButton(onClick = onDismiss) { Text("关闭") }
+                    ) { Text(stringResource(R.string.memory_delete)) }
+                    OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.memory_close)) }
                 }
             }
     )
@@ -110,15 +110,14 @@ fun EdgeInfoDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("连接详情") },
+        title = { Text(stringResource(R.string.memory_link_details)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("从: ${sourceNode?.label ?: "未知"}")
-                Text("到: ${targetNode?.label ?: "未知"}")
+                Text("${stringResource(R.string.memory_from)}: ${sourceNode?.label ?: stringResource(R.string.memory_uncategorized)}")
+                Text("${stringResource(R.string.memory_to)}: ${targetNode?.label ?: stringResource(R.string.memory_uncategorized)}")
                 HorizontalDivider()
-                Text("类型: ${edge.label}")
-                Text("权重: ${edge.weight}")
-                // 这里可以显示description，如果MemoryLink里有的话
+                Text("${stringResource(R.string.memory_type)}: ${edge.label}")
+                Text("${stringResource(R.string.memory_weight)}: ${edge.weight}")
             }
         },
         confirmButton = {
@@ -127,12 +126,12 @@ fun EdgeInfoDialog(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                 verticalArrangement = Arrangement.Center
             ) {
-                Button(onClick = onEdit) { Text("编辑") }
+                Button(onClick = onEdit) { Text(stringResource(R.string.memory_edit)) }
                 Button(
                     onClick = onDelete,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("删除") }
-                OutlinedButton(onClick = onDismiss) { Text("关闭") }
+                ) { Text(stringResource(R.string.memory_delete)) }
+                OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.memory_close)) }
             }
         }
     )
@@ -150,20 +149,20 @@ fun EditEdgeDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("编辑连接") },
+        title = { Text(stringResource(R.string.memory_edit_link)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(value = type, onValueChange = { type = it }, label = { Text("类型") })
-                OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text("权重") })
-                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("描述") })
+                OutlinedTextField(value = type, onValueChange = { type = it }, label = { Text(stringResource(R.string.memory_type)) })
+                OutlinedTextField(value = weight, onValueChange = { weight = it }, label = { Text(stringResource(R.string.memory_weight)) })
+                OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(stringResource(R.string.memory_description)) })
             }
         },
         confirmButton = {
             Button(onClick = {
                 onSave(type, weight.toFloatOrNull() ?: 1.0f, description)
-            }) { Text("保存") }
+            }) { Text(stringResource(R.string.memory_save)) }
         },
-        dismissButton = { OutlinedButton(onClick = onDismiss) { Text("取消") } }
+        dismissButton = { OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.memory_cancel)) } }
     )
 }
 
@@ -179,23 +178,23 @@ fun LinkMemoryDialog(
     var description by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("连接 '$sourceNodeLabel' 到 '$targetNodeLabel'") },
+        title = { Text(stringResource(R.string.memory_link_nodes, sourceNodeLabel, targetNodeLabel)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = type,
                     onValueChange = { type = it },
-                    label = { Text("类型") }
+                    label = { Text(stringResource(R.string.memory_type)) }
                 )
                 OutlinedTextField(
                     value = weight,
                     onValueChange = { weight = it },
-                    label = { Text("权重") }
+                    label = { Text(stringResource(R.string.memory_weight)) }
                 )
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("描述") }
+                    label = { Text(stringResource(R.string.memory_description)) }
                 )
             }
         },
@@ -205,9 +204,9 @@ fun LinkMemoryDialog(
                     val w = weight.toFloatOrNull() ?: 1.0f
                     onLink(type, w, description)
                 }
-            ) { Text("创建连接") }
+            ) { Text(stringResource(R.string.memory_create_link)) }
         },
-        dismissButton = { OutlinedButton(onClick = onDismiss) { Text("取消") } }
+        dismissButton = { OutlinedButton(onClick = onDismiss) { Text(stringResource(R.string.memory_cancel)) } }
     )
 }
 

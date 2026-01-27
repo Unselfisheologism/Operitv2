@@ -2295,7 +2295,7 @@ fun ThemeSettingsScreen() {
                                                 rememberAsyncImagePainter(
                                                         Uri.parse(backgroundImageUriInput)
                                                 ),
-                                        contentDescription = "背景图片预览",
+                                        contentDescription = stringResource(R.string.theme_background_preview),
                                         modifier = Modifier.fillMaxSize(),
                                         contentScale = ContentScale.Crop
                                 )
@@ -2318,7 +2318,7 @@ fun ThemeSettingsScreen() {
                                 ) {
                                     Icon(
                                             imageVector = Icons.Default.Crop,
-                                            contentDescription = "重新裁剪",
+                                            contentDescription = stringResource(R.string.theme_recrop),
                                             tint = MaterialTheme.colorScheme.primary
                                     )
                                 }

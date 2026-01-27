@@ -31,6 +31,7 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.ai.assistance.operit.R
 
 class SkillMarketViewModel(
     private val context: Context,
@@ -209,7 +210,7 @@ class SkillMarketViewModel(
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
         } catch (e: Exception) {
-            _errorMessage.value = "启动登录失败: ${e.message}"
+            _errorMessage.value = context.getString(R.string.skillmarket_login_failed, e.message ?: "")
             AppLogger.e(TAG, "Failed to initiate GitHub login", e)
         }
     }
@@ -218,9 +219,9 @@ class SkillMarketViewModel(
         viewModelScope.launch {
             try {
                 githubAuth.logout()
-                Toast.makeText(context, "已退出登录", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.skillmarket_logged_out), Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
-                _errorMessage.value = "退出登录失败: ${e.message}"
+                _errorMessage.value = context.getString(R.string.skillmarket_logout_failed, e.message ?: "")
                 AppLogger.e(TAG, "Failed to logout from GitHub", e)
             }
         }
@@ -445,17 +446,17 @@ class SkillMarketViewModel(
 
                 result.fold(
                     onSuccess = {
-                        Toast.makeText(context, "已从市场移除", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.skillmarket_removed_from_market), Toast.LENGTH_SHORT).show()
                         loadUserPublishedSkills()
                         loadSkillMarketData()
                     },
                     onFailure = { error ->
-                        _errorMessage.value = "移除失败: ${error.message}"
+                        _errorMessage.value = context.getString(R.string.skillmarket_remove_failed, error.message ?: "")
                         AppLogger.e(TAG, "Failed to remove skill from market", error)
                     }
                 )
             } catch (e: Exception) {
-                _errorMessage.value = "移除失败: ${e.message}"
+                _errorMessage.value = context.getString(R.string.skillmarket_remove_failed, e.message ?: "")
                 AppLogger.e(TAG, "Failed to remove skill from market", e)
             } finally {
                 _isLoading.value = false

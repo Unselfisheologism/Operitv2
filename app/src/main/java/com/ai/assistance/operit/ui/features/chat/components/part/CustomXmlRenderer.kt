@@ -217,7 +217,7 @@ class CustomXmlRenderer(
 
                 Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = if (expanded) "收起" else "展开",
+                        contentDescription = if (expanded) stringResource(R.string.common_collapse) else stringResource(R.string.common_expand),
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                         modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = rotation }
                 )
@@ -365,7 +365,7 @@ class CustomXmlRenderer(
 
                 Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = if (expanded) "收起" else "展开",
+                        contentDescription = if (expanded) stringResource(R.string.common_collapse) else stringResource(R.string.common_expand),
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
                         modifier = Modifier.size(20.dp).graphicsLayer { rotationZ = rotation }
                 )

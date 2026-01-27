@@ -282,7 +282,7 @@ private fun AutoGlmOneClickScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedButton(onClick = onNavigateToModelConfig) {
-                    Text("前往模型配置")
+                    Text(stringResource(R.string.autoglm_go_to_model_config))
                 }
             }
         }
@@ -359,7 +359,7 @@ private fun AutoGlmOneClickScreen(
                         value = advancedEndpoint,
                         onValueChange = { advancedEndpoint = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("自定义 Endpoint（OpenAI 兼容）") },
+                        label = { Text(stringResource(R.string.autoglm_custom_endpoint)) },
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -367,7 +367,7 @@ private fun AutoGlmOneClickScreen(
                         value = advancedModelName,
                         onValueChange = { advancedModelName = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("模型名称") },
+                        label = { Text(stringResource(R.string.autoglm_model_name)) },
                         singleLine = true
                     )
                 }
@@ -411,7 +411,7 @@ private fun AutoGlmOneClickScreen(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isConfiguring
                 ) {
-                    Text("恢复原本的自动化逻辑")
+                    Text(stringResource(R.string.autoglm_restore_original))
                 }
             }
         }
