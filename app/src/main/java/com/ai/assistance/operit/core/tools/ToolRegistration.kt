@@ -753,13 +753,13 @@ fun registerAllTools(handler: AIToolHandler, context: Context) {
                                 "buy",
                                 "delete",
                                 "remove",
-                                "发送",
-                                "提交",
-                                "确认",
-                                "支付",
-                                "购买",
-                                "删除",
-                                "移除"
+                                s(R.string.tool_action_send),
+                                s(R.string.tool_action_submit),
+                                s(R.string.tool_action_confirm),
+                                s(R.string.tool_action_pay),
+                                s(R.string.tool_action_purchase),
+                                s(R.string.tool_action_delete),
+                                s(R.string.tool_action_remove)
                         )
 
                 dangerousWords.any { word ->

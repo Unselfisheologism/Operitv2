@@ -704,18 +704,18 @@ class GeminiProvider(
                     currentHistory = chatHistory
                 }
 
-                val requestBody = createRequestBody(currentMessage, currentHistory, modelParameters, enableThinking, availableTools, preserveThinkInHistory)
+                val requestBody = createRequestBody(context, currentMessage, currentHistory, modelParameters, enableThinking, availableTools, preserveThinkInHistory)
                 onTokensUpdated(
                         tokenCacheManager.totalInputTokenCount,
                         tokenCacheManager.cachedInputTokenCount,
                         tokenCacheManager.outputTokenCount
                 )
-                val request = createRequest(requestBody, stream, requestId) // 根据stream参数决定使用流式还是非流式
+                val request = createRequest(context, requestBody, stream, requestId) // 根据stream参数决定使用流式还是非流式
 
                 val call = client.newCall(request)
                 activeCall = call
 
-                emitConnectionStatus("建立连接中...")
+                emitConnectionStatus(context.getString(R.string.gemini_connecting))
 
                 val startTime = System.currentTimeMillis()
                 withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -725,7 +725,7 @@ class GeminiProvider(
                         val duration = System.currentTimeMillis() - startTime
                         AppLogger.d(TAG, "收到初始响应, 耗时: ${duration}ms, 状态码: ${response.code}")
 
-                        emitConnectionStatus("连接成功，处理响应...")
+                        emitConnectionStatus(context.getString(R.string.gemini_connected_success))
 
                         if (!response.isSuccessful) {
                             val errorBody = response.body?.string() ?: context.getString(R.string.gemini_error_no_error_details)
@@ -741,10 +741,10 @@ class GeminiProvider(
                         // 根据stream参数处理响应
                         if (stream) {
                             // 处理流式响应
-                            processStreamingResponse(response, streamCollector, requestId, onTokensUpdated, receivedContent)
+                            processStreamingResponse(context, response, streamCollector, requestId, onTokensUpdated, receivedContent)
                         } else {
                             // 处理非流式响应并转换为Stream
-                            processNonStreamingResponse(response, streamCollector, requestId, onTokensUpdated, receivedContent)
+                            processNonStreamingResponse(context, response, streamCollector, requestId, onTokensUpdated, receivedContent)
                         }
                     } finally {
                         response.close()
@@ -819,6 +819,7 @@ class GeminiProvider(
 
     /** 创建请求体 */
     private fun createRequestBody(
+            context: Context,
             message: String,
             chatHistory: List<Pair<String, String>>,
             modelParameters: List<ModelParameter<*>>,
@@ -939,13 +940,14 @@ class GeminiProvider(
             logJson.put("tools", "[${toolsArray.length()} tools omitted for brevity]")
         }
         sanitizeImageDataForLogging(logJson)
-        logLargeString(TAG, logJson.toString(4), "请求体JSON: ")
+        logLargeString(TAG, logJson.toString(4), context.getString(R.string.gemini_request_body_json))
 
         return jsonString.toRequestBody(JSON)
     }
 
     /** 创建HTTP请求 */
     private suspend fun createRequest(
+            context: Context,
             requestBody: RequestBody,
             isStreaming: Boolean,
             requestId: String
@@ -979,7 +981,7 @@ class GeminiProvider(
                 .addHeader("Content-Type", "application/json")
                 .build()
 
-        logLargeString(TAG, "请求头: \n${request.headers}")
+        logLargeString(TAG, context.getString(R.string.gemini_request_headers, request.headers.toString()))
         return request
     }
 
@@ -997,6 +999,7 @@ class GeminiProvider(
 
     /** 处理API流式响应 */
     private suspend fun processStreamingResponse(
+            context: Context,
             response: Response,
             streamCollector: StreamCollector<String>,
             requestId: String,
@@ -1004,7 +1007,7 @@ class GeminiProvider(
             receivedContent: StringBuilder
     ) {
         AppLogger.d(TAG, "开始处理响应流")
-        val responseBody = response.body ?: throw IOException("响应为空")
+        val responseBody = response.body ?: throw IOException(context.getString(R.string.gemini_response_empty))
         val reader = responseBody.charStream().buffered()
 
         // 注意：不再使用fullContent累积所有内容
@@ -1044,7 +1047,7 @@ class GeminiProvider(
                             val json = JSONObject(data)
                             jsonCount++
 
-                            val content = extractContentFromJson(json, requestId, onTokensUpdated)
+                            val content = extractContentFromJson(context, json, requestId, onTokensUpdated)
                             if (content.isNotEmpty()) {
                                 contentCount++
                                 logDebug("提取SSE内容，长度: ${content.length}")
@@ -1104,6 +1107,7 @@ class GeminiProvider(
                                                     jsonCount++
                                                     val content =
                                                             extractContentFromJson(
+                                                                    context,
                                                                     jsonObject,
                                                                     requestId,
                                                                     onTokensUpdated
@@ -1119,20 +1123,6 @@ class GeminiProvider(
                                                         streamCollector.emit(content)
                                                     }
                                                 }
-                                            }
-                                        }
-                                        is JSONObject -> {
-                                            // 处理JSON对象
-                                            jsonCount++
-                                            val content =
-                                                    extractContentFromJson(jsonContent, requestId, onTokensUpdated)
-                                            if (content.isNotEmpty()) {
-                                                contentCount++
-                                                logDebug("从JSON对象提取内容，长度: ${content.length}")
-                                                receivedContent.append(content)
-
-                                                // 只发送新提取的内容
-                                                streamCollector.emit(content)
                                             }
                                         }
                                     }
@@ -1178,7 +1168,7 @@ class GeminiProvider(
                             for (i in 0 until jsonContent.length()) {
                                 val jsonObject = jsonContent.optJSONObject(i) ?: continue
                                 jsonCount++
-                                val content = extractContentFromJson(jsonObject, requestId, onTokensUpdated)
+                                val content = extractContentFromJson(context, jsonObject, requestId, onTokensUpdated)
                                 if (content.isNotEmpty()) {
                                     contentCount++
                                     logDebug("从最终JSON数组[$i]提取内容，长度: ${content.length}")
@@ -1189,7 +1179,7 @@ class GeminiProvider(
                         }
                         is JSONObject -> {
                             jsonCount++
-                            val content = extractContentFromJson(jsonContent, requestId, onTokensUpdated)
+                            val content = extractContentFromJson(context, jsonContent, requestId, onTokensUpdated)
                             if (content.isNotEmpty()) {
                                 contentCount++
                                 logDebug("从最终JSON对象提取内容，长度: ${content.length}")
@@ -1225,6 +1215,7 @@ class GeminiProvider(
 
     /** 处理API非流式响应 */
     private suspend fun processNonStreamingResponse(
+            context: Context,
             response: Response,
             streamCollector: StreamCollector<String>,
             requestId: String,
@@ -1232,7 +1223,7 @@ class GeminiProvider(
             receivedContent: StringBuilder
     ) {
         AppLogger.d(TAG, "开始处理非流式响应")
-        val responseBody = response.body ?: throw IOException("响应为空")
+        val responseBody = response.body ?: throw IOException(context.getString(R.string.gemini_response_empty))
         
         try {
             val responseText = responseBody.string()
@@ -1242,7 +1233,7 @@ class GeminiProvider(
             val json = JSONObject(responseText)
             
             // 提取内容
-            val content = extractContentFromJson(json, requestId, onTokensUpdated)
+            val content = extractContentFromJson(context, json, requestId, onTokensUpdated)
             
             if (content.isNotEmpty()) {
                 receivedContent.append(content)
@@ -1272,6 +1263,7 @@ class GeminiProvider(
 
     /** 从Gemini响应JSON中提取内容 */
     private suspend fun extractContentFromJson(
+        context: Context,
         json: JSONObject,
         requestId: String,
         onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit
@@ -1283,7 +1275,7 @@ class GeminiProvider(
             // 检查是否有错误信息
             if (json.has("error")) {
                 val error = json.getJSONObject("error")
-                val errorMsg = error.optString("message", "未知错误")
+                val errorMsg = error.optString("message", context.getString(R.string.gemini_unknown_error))
                 logError("API返回错误: $errorMsg")
                 return "" // 有错误时返回空字符串
             }
@@ -1306,18 +1298,18 @@ class GeminiProvider(
                     val webSearchQueries = groundingMetadata.optJSONArray("webSearchQueries")
                     if (webSearchQueries != null && webSearchQueries.length() > 0) {
                         searchSourcesBuilder.append("\n<search>\n\n")
-                        searchSourcesBuilder.append("**🔍 Google 搜索来源：**\n\n")
-                        
+                        searchSourcesBuilder.append(context.getString(R.string.gemini_search_sources_title))
+
                         for (i in 0 until webSearchQueries.length()) {
                             val query = webSearchQueries.optString(i)
-                            searchSourcesBuilder.append("- 查询：`${query}`\n")
+                            searchSourcesBuilder.append(context.getString(R.string.gemini_search_query, query))
                             logDebug("搜索查询 [$i]: $query")
                         }
                         
                         // 提取搜索结果的URL来源
                         val groundingSupports = groundingMetadata.optJSONArray("groundingSupports")
                         if (groundingSupports != null && groundingSupports.length() > 0) {
-                            searchSourcesBuilder.append("\n**📄 参考来源：**\n\n")
+                            searchSourcesBuilder.append(context.getString(R.string.gemini_reference_sources_title))
                             
                             for (i in 0 until groundingSupports.length()) {
                                 val support = groundingSupports.getJSONObject(i)

@@ -725,7 +725,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
             try {
                 // 获取父对话
                 val parentChat = chatDao.getChatById(parentChatId)
-                    ?: throw IllegalArgumentException("父对话不存在: $parentChatId")
+                    ?: throw IllegalArgumentException(context.getString(R.string.chat_history_parent_not_exist, parentChatId))
 
                 // 获取父对话的消息
                 val parentMessages = messageDao.getMessagesForChat(parentChatId)
@@ -889,7 +889,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                         val usedNames = HashSet<String>()
                         ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFile))).use { zos ->
                             for (history in completeHistories) {
-                                val content = MarkdownExporter.exportSingle(history)
+                                val content = MarkdownExporter.exportSingle(context, history)
                                 // 处理文件名中的非法字符
                                 var safeTitle = history.title.replace(Regex("[\\\\/:*?\"<>|]"), "_")
                                 // 避免文件名过长
@@ -927,7 +927,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
 
                     ExportFormat.HTML -> {
                         val file = File(exportDir, "chat_backup_$timestamp.html")
-                        file.writeText(HtmlExporter.exportMultiple(completeHistories))
+                        file.writeText(HtmlExporter.exportMultiple(context, completeHistories))
                         file
                     }
 
@@ -1007,7 +1007,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
                     val content = inputStream.bufferedReader().use { it.readText() }
 
                     if (content.isBlank()) {
-                        throw Exception("导入的文件为空")
+                        throw Exception(context.getString(R.string.chat_history_imported_file_empty))
                     }
 
                     AppLogger.d(TAG, "使用指定格式导入: $format")
@@ -1082,12 +1082,12 @@ class ChatHistoryManager private constructor(private val context: Context) {
                 
                 ChatFormat.CHATBOX -> {
                     AppLogger.d(TAG, "使用 ChatBox 转换器")
-                    ChatBoxConverter().convert(content)
+                    ChatBoxConverter(context).convert(content)
                 }
                 
                 ChatFormat.MARKDOWN -> {
                     AppLogger.d(TAG, "使用 Markdown 转换器")
-                    MarkdownConverter().convert(content)
+                    MarkdownConverter(context).convert(content)
                 }
                 
                 ChatFormat.GENERIC_JSON -> {
@@ -1102,13 +1102,13 @@ class ChatHistoryManager private constructor(private val context: Context) {
                 }
                 
                 else -> {
-                    throw ConversionException("不支持的格式: $format")
+                    throw ConversionException(context.getString(R.string.chat_history_unsupported_format, format))
                 }
             }
         } catch (e: ConversionException) {
-            throw Exception("格式转换失败: ${e.message}", e)
+            throw Exception(context.getString(R.string.chat_history_convert_format_failed, e.message ?: ""), e)
         } catch (e: Exception) {
-            throw Exception("无法解析备份文件：${e.message}\n请确保文件格式正确", e)
+            throw Exception(context.getString(R.string.chat_history_parse_backup_failed, e.message ?: ""), e)
         }
     }
 

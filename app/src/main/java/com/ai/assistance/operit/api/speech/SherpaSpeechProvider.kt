@@ -6,6 +6,7 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import com.ai.assistance.operit.util.AppLogger
+import com.ai.assistance.operit.util.OperitPaths
 import com.k2fsa.sherpa.ncnn.*
 import com.ai.assistance.operit.api.speech.SpeechPrerollStore
 import java.io.File
@@ -158,7 +159,7 @@ class SherpaSpeechProvider(private val context: Context) : SpeechService {
         try {
             val modelDirName = "sherpa-ncnn-streaming-zipformer-bilingual-zh-en-2023-02-13"
             val assetModelDir = "models/$modelDirName"
-            localModelDir = copyAssetDirToCache(assetModelDir, context.filesDir)
+            localModelDir = copyAssetDirToCache(assetModelDir, OperitPaths.sherpaNcnnModelsDir(context))
         } catch (e: IOException) {
             AppLogger.e(TAG, "Failed to copy model assets.", e)
             _recognitionState.value = SpeechService.RecognitionState.ERROR

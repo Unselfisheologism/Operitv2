@@ -268,8 +268,8 @@ class StandardHttpTools(private val context: Context) {
             // 详细记录请求信息
             val logSB = StringBuilder("\n====== HTTP Request Details Start ======")
             logSB.append("\nURL: $url")
-            logSB.append("\n方法: $method")
-            logSB.append("\n请求头:")
+            logSB.append("\nMethod: $method")
+            logSB.append("\nRequest headers:")
             request.headers.forEach { header ->
                 logSB.append("\n  ${header.first}: ${header.second}")
             }
@@ -292,7 +292,7 @@ class StandardHttpTools(private val context: Context) {
                 }
             }
 
-            logSB.append("\n====== HTTP请求详情结束 ======")
+            logSB.append("\n====== HTTP Request Details End ======")
             AppLogger.d(TAG, logSB.toString())
 
             val response = client.newCall(request).execute()
@@ -308,7 +308,7 @@ class StandardHttpTools(private val context: Context) {
 
             // 提取响应的Cookie
             val responseCookieUrl =
-                    url.toHttpUrlOrNull() ?: throw IllegalArgumentException("无效的URL: $url")
+                    url.toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid URL: $url")
             val responseCookies = cookieJar.loadForRequest(responseCookieUrl)
             val cookiesMap = responseCookies.associate { it.name to it.value }
 
@@ -399,7 +399,7 @@ class StandardHttpTools(private val context: Context) {
 
             val requestCookieUrl =
                     urlString.toHttpUrlOrNull()
-                            ?: throw IllegalArgumentException("无效的URL: $urlString")
+                            ?: throw IllegalArgumentException("Invalid URL: $urlString")
 
             while (keys.hasNext()) {
                 val name = keys.next()
@@ -487,7 +487,7 @@ class StandardHttpTools(private val context: Context) {
                     ToolResult(
                             toolName = tool.name,
                             success = true,
-                            result = StringResultData("当前Cookie状态:\n$jsonResult")
+                            result = StringResultData("Current cookie status:\n$jsonResult")
                     )
                 }
                 "set" -> {
@@ -507,7 +507,7 @@ class StandardHttpTools(private val context: Context) {
                         ToolResult(
                                 toolName = tool.name,
                                 success = true,
-                                result = StringResultData("成功设置${cookies.size}个Cookie到域名 $domain")
+                                result = StringResultData("Successfully set ${cookies.size} cookies to domain $domain")
                         )
                     } else {
                         ToolResult(
@@ -525,7 +525,7 @@ class StandardHttpTools(private val context: Context) {
                         ToolResult(
                                 toolName = tool.name,
                                 success = true,
-                                result = StringResultData("已清除所有Cookie")
+                                result = StringResultData("Cleared all cookies")
                         )
                     } else {
                         // 清除指定域名的Cookie
@@ -533,7 +533,7 @@ class StandardHttpTools(private val context: Context) {
                         ToolResult(
                                 toolName = tool.name,
                                 success = true,
-                                result = StringResultData("已清除域名 $domain 的Cookie")
+                                result = StringResultData("Cleared cookies for domain $domain")
                         )
                     }
                 }
@@ -715,7 +715,7 @@ class StandardHttpTools(private val context: Context) {
 
             // 提取响应的Cookie
             val responseCookieUrl =
-                    url.toHttpUrlOrNull() ?: throw IllegalArgumentException("无效的URL: $url")
+                    url.toHttpUrlOrNull() ?: throw IllegalArgumentException("Invalid URL: $url")
             val responseCookies = cookieJar.loadForRequest(responseCookieUrl)
             val cookiesMap = responseCookies.associate { it.name to it.value }
 
@@ -762,7 +762,7 @@ class StandardHttpTools(private val context: Context) {
                     toolName = tool.name,
                     success = false,
                     result = StringResultData(""),
-                    error = "执行多部分表单请求时出错: ${e.message}"
+                    error = "Error executing multipart form request: ${e.message}"
             )
         }
     }

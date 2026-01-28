@@ -60,7 +60,7 @@ class ProblemLibraryTool private constructor(private val context: Context) {
         return Memory(
                 uuid = record.uuid,
                 title = record.summary.ifEmpty { record.query.take(50) },
-                content = "问题: ${record.query}\n\n解决方案: ${record.solution}",
+                content = context.getString(R.string.problem_library_question, record.query, record.solution),
                 contentType = "text/plain",
                 source = "problem_library_legacy", // Mark as legacy
                 importance = 0.5f, // Lower importance for legacy data
@@ -73,16 +73,19 @@ class ProblemLibraryTool private constructor(private val context: Context) {
     private fun convertToProblemRecord(memory: Memory): ProblemRecord {
         // 尝试从内容中提取问题和解决方案
         val contentParts = memory.content.split("\n\n")
+        val questionLabel = context.getString(R.string.problem_library_question_label)
+        val solutionLabel = context.getString(R.string.problem_library_solution_label)
+
         val query =
-                if (contentParts.isNotEmpty() && contentParts[0].startsWith("问题:")) {
-                    contentParts[0].substringAfter("问题:").trim()
+                if (contentParts.isNotEmpty() && contentParts[0].startsWith(questionLabel)) {
+                    contentParts[0].substringAfter(questionLabel).trim()
                 } else {
                     memory.title
                 }
 
         val solution =
-                if (contentParts.size > 1 && contentParts[1].startsWith("解决方案:")) {
-                    contentParts[1].substringAfter("解决方案:").trim()
+                if (contentParts.size > 1 && contentParts[1].startsWith(solutionLabel)) {
+                    contentParts[1].substringAfter(solutionLabel).trim()
                 } else {
                     memory.content
                 }

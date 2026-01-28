@@ -24,7 +24,7 @@ class PlanModeManager(
 
     companion object {
         private const val TAG = "PlanModeManager"
-        
+
         // 用于生成执行计划的系统提示词
         private const val PLAN_GENERATION_PROMPT = """
 你是一个任务规划专家。用户将向你描述一个复杂的任务或问题，你需要将其分解为多个可以并发或顺序执行的子任务。
@@ -42,7 +42,7 @@ class PlanModeManager(
       "type": "chat"
     },
     {
-      "id": "task_2", 
+      "id": "task_2",
       "name": "任务描述",
       "instruction": "具体的执行指令",
       "dependencies": ["task_1"],

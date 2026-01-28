@@ -1,9 +1,9 @@
 [OVERALL]
-Total strings found: 2408
-Excluded logs: 1819
-Excluded long prompts(>100 chars): 66
-Remaining UI strings: 523
-Files with Chinese strings: 185
+Total strings found: 1958
+Excluded logs: 1797
+Excluded long prompts(>100 chars): 64
+Remaining UI strings: 97
+Files with Chinese strings: 148
 
 [BY MODULE]
 
@@ -33,48 +33,6 @@ FILE: app\src\main\java\com\ai\assistance\operit\ui\floating\ui\pet\AvatarEmotio
   L24:45 (2 chars) "脸红"
   L24:51 (4 chars) "不好意思"
 
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\defaultTool\standard\StandardHttpTools.kt
-  remaining=11 total=19 excluded_logs=8 excluded_long=0
-  L271:26 (13 chars) "\n方法: $method"
-  L272:26 (6 chars) "\n请求头:"
-  L295:26 (26 chars) "\n====== HTTP请求详情结束 ======"
-  L311:77 (12 chars) "无效的URL: $url"
-  L402:63 (18 chars) "无效的URL: $urlString"
-  L490:55 (24 chars) "当前Cookie状态:\n$jsonResult"
-  L510:59 (37 chars) "成功设置${cookies.size}个Cookie到域名 $domain"
-  L528:59 (11 chars) "已清除所有Cookie"
-  L536:59 (21 chars) "已清除域名 $domain 的Cookie"
-  L718:77 (12 chars) "无效的URL: $url"
-  L765:29 (26 chars) "执行多部分表单请求时出错: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\mcp\MCPRepository.kt
-  remaining=11 total=79 excluded_logs=67 excluded_long=1
-  L291:56 (11 chars) "找不到对应的服务器信息"
-  L373:37 (19 chars) "安装时出错: ${e.message}"
-  L435:44 (17 chars) "无效的 GitHub 仓库 URL"
-  L445:44 (13 chars) "下载仓库 ZIP 文件失败"
-  L454:44 (8 chars) "解压仓库文件失败"
-  L459:44 (11 chars) "解压后没有找到仓库目录"
-  L470:40 (21 chars) "安装插件时出错: ${e.message}"
-  L509:45 (9 chars) "无法读取ZIP文件"
-  L517:44 (11 chars) "解压本地ZIP文件失败"
-  L530:40 (26 chars) "安装本地ZIP插件时出错: ${e.message}"
-  L990:17 (33 chars) "使用loadPluginsFromMCPLocalServer代替"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\repository\MemoryRepository.kt
-  remaining=11 total=12 excluded_logs=1 excluded_long=0
-  L59:41 (3 chars) "未分类"
-  L116:23 (37 chars) "这是一个文档节点，包含了文件 '${documentName}' 的内容。"
-  L450:31 (3 chars) "未分类"
-  L875:58 (3 chars) "未分类"
-  L889:27 (3 chars) "未分类"
-  L953:60 (3 chars) "未分类"
-  L982:25 (5 chars) "文件夹说明"
-  L983:27 (32 chars) "这是 $normalizedFolderPath 文件夹的说明。"
-  L1330:90 (3 chars) "未分类"
-  L1331:90 (3 chars) "未分类"
-  L1367:74 (3 chars) "未分类"
-
 FILE: app\src\main\java\com\ai\assistance\operit\ui\features\toolbox\screens\autoglm\AutoGlmViewModel.kt
   remaining=11 total=11 excluded_logs=0 excluded_long=0
   L172:37 (36 chars) "✅ 任务完成: ${finalLines.first().trim()}"
@@ -89,169 +47,17 @@ FILE: app\src\main\java\com\ai\assistance\operit\ui\features\toolbox\screens\aut
   L234:20 (7 chars) "💭 思考过程:"
   L246:20 (7 chars) "🎯 执行动作:"
 
-FILE: app\src\main\java\com\ai\assistance\operit\provider\MemoryDocumentsProvider.kt
-  remaining=10 total=10 excluded_logs=0 excluded_long=0
-  L192:60 (3 chars) "未分类"
-  L276:42 (3 chars) "未分类"
-  L277:86 (3 chars) "未分类"
-  L738:46 (3 chars) "未分类"
-  L745:72 (5 chars) "文件夹说明"
-  L789:71 (3 chars) "未分类"
-  L795:72 (5 chars) "文件夹说明"
-  L828:38 (3 chars) "未分类"
-  L861:48 (3 chars) "未分类"
-  L933:21 (3 chars) "未分类"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\llmprovider\GeminiProvider.kt
-  remaining=10 total=88 excluded_logs=78 excluded_long=0
-  L718:38 (8 chars) "建立连接中..."
-  L728:46 (12 chars) "连接成功，处理响应..."
-  L942:50 (9 chars) "请求体JSON: "
-  L982:29 (25 chars) "请求头: \n${request.headers}"
-  L1007:63 (4 chars) "响应为空"
-  L1235:63 (4 chars) "响应为空"
-  L1286:59 (4 chars) "未知错误"
-  L1309:53 (22 chars) "**🔍 Google 搜索来源：**\n\n"
-  L1313:57 (17 chars) "- 查询：`${query}`\n"
-  L1320:57 (17 chars) "\n**📄 参考来源：**\n\n"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\subpack\ApkEditor.kt
-  remaining=10 total=20 excluded_logs=10 excluded_long=0
-  L241:36 (9 chars) "APK重新打包失败"
-  L260:36 (44 chars) "未签名的APK文件不存在或为空: ${unsignedApk.absolutePath}"
-  L269:41 (33 chars) "签名信息不完整，请先调用withSignature方法设置签名信息"
-  L293:53 (6 chars) "未知签名错误"
-  L294:36 (22 chars) "APK签名失败: $errorMessage"
-  L328:41 (18 chars) "请先调用extract方法解压APK"
-  L335:40 (6 chars) "修改包名失败"
-  L343:40 (8 chars) "修改应用名称失败"
-  L351:40 (6 chars) "修改版本失败"
-  L359:40 (8 chars) "更换应用图标失败"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\defaultTool\standard\StandardDeviceInfoToolExecutor.kt
-  remaining=10 total=10 excluded_logs=0 excluded_long=0
-  L107:56 (3 chars) "无连接"
-  L113:30 (4 chars) "移动数据"
-  L116:30 (2 chars) "蓝牙"
-  L119:30 (3 chars) "以太网"
-  L120:33 (2 chars) "其他"
-  L125:28 (4 chars) "设备名称"
-  L126:28 (4 chars) "产品名称"
-  L127:28 (4 chars) "硬件名称"
-  L128:28 (4 chars) "构建指纹"
-  L129:28 (4 chars) "构建时间"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\converter\ChatBoxConverter.kt
-  remaining=10 total=10 excluded_logs=0 excluded_long=0
-  L48:59 (63 chars) "不支持的 ChatBox 格式：请导入 ChatBox 导出的 JSON（设置 > 常规设置 > 数据备份 > 导出勾选数据）"
-  L49:51 (15 chars) "不支持的 ChatBox 格式"
-  L52:39 (29 chars) "解析 ChatBox 格式失败: ${e.message}"
-  L71:47 (68 chars) "不是有效的 ChatBox 导出文件（请在 ChatBox 的 设置 > 常规设置 > 数据备份 中使用“导出勾选数据”导出 JSON）"
-  L138:25 (12 chars) "从 ChatBox 导入"
-  L262:43 (20 chars) "[消息生成失败: $errorText]"
-  L271:13 (32 chars) "$finalContent\n[该消息原本包含图片，但未被保存]"
-  L319:30 (2 chars) "用户"
-  L320:48 (2 chars) "助手"
-  L321:23 (2 chars) "系统"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\exporter\HtmlExporter.kt
-  remaining=10 total=10 excluded_logs=0 excluded_long=0
-  L33:30 (6 chars) "聊天记录导出"
-  L36:23 (17 chars) "  <h1>聊天记录导出</h1>"
-  L37:23 (86 chars) "  <p><strong>导出时间:</strong> ${java.time.LocalDateTime.now().format(dateFormatter)}</p>"
-  L38:23 (53 chars) "  <p><strong>对话数量:</strong> ${chatHistories.size}</p>"
-  L39:23 (75 chars) "  <p><strong>总消息数:</strong> ${chatHistories.sumOf { it.messages.size }}</p>"
-  L81:23 (86 chars) "      <span><strong>创建:</strong> ${chatHistory.createdAt.format(dateFormatter)}</span>"
-  L82:23 (86 chars) "      <span><strong>更新:</strong> ${chatHistory.updatedAt.format(dateFormatter)}</span>"
-  L84:27 (72 chars) "      <span><strong>分组:</strong> ${escapeHtml(chatHistory.group)}</span>"
-  L86:23 (69 chars) "      <span><strong>消息数:</strong> ${chatHistory.messages.size}</span>"
-  L126:23 (32 chars) "  <p>导出自 Operit AI Assistant</p>"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\mnn\MnnModelDownloadManager.kt
-  remaining=10 total=72 excluded_logs=62 excluded_long=0
-  L273:49 (5 chars) "无缓存数据"
-  L320:61 (5 chars) "响应体为空"
-  L380:37 (53 chars) "获取仓库文件列表失败: ${filesResult.exceptionOrNull()?.message}"
-  L473:33 (47 chars) "下载失败: HTTP ${response.code} ${response.message}"
-  L487:73 (5 chars) "响应体为空"
-  L546:73 (5 chars) "重命名失败"
-  L553:82 (4 chars) "未知错误"
-  L727:33 (41 chars) "下载文件失败: $fileName (HTTP ${response.code})"
-  L749:77 (5 chars) "下载已暂停"
-  L799:78 (4 chars) "未知错误"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\mcp\plugins\MCPBridge.kt
-  remaining=10 total=48 excluded_logs=38 excluded_long=0
-  L466:37 (69 chars) "发送桥接器命令[$cmdId]: $cmdType 服务: $serviceName 其他参数: ${params.toString()}"
-  L468:37 (48 chars) "发送桥接器命令[$cmdId]: $cmdType ${if (params != null) "
-  L518:60 (19 chars) "命令[$cmdId: $cmdType"
-  L519:85 (17 chars) " 服务: $serviceName"
-  L520:60 (20 chars) "]响应: ${if (success) "
-  L526:68 (18 chars) "获取到 $toolCount 个工具"
-  L531:96 (5 chars) "未命名工具"
-  L535:80 (20 chars) "... (共 $toolCount 个)"
-  L542:68 (11 chars) "结果: $result"
-  L546:79 (11 chars) " 错误: $error"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\EnhancedAIService.kt
-  remaining=9 total=52 excluded_logs=43 excluded_long=0
-  L420:71 (9 chars) "正在处理输入..."
-  L473:87 (9 chars) "正在处理消息..."
-  L500:87 (11 chars) "正在连接AI服务..."
-  L558:72 (11 chars) "正在接收AI响应..."
-  L626:70 (16 chars) "错误: ${e.message}"
-  L853:37 (40 chars) "警告：工具调用和等待用户响应不能同时存在。工具调用被处理了，但这是极具危险性的。"
-  L1149:60 (17 chars) "正在接收工具执行后的AI响应..."
-  L1219:56 (24 chars) "处理工具执行结果失败: ${e.message}"
-  L1443:17 (8 chars) "记忆与记忆库工具"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\llmprovider\OpenAIProvider.kt
-  remaining=9 total=55 excluded_logs=46 excluded_long=0
-  L547:67 (5 chars) "请求体: "
-  L593:71 (23 chars) "[音视频内容已省略，当前模型不支持音视频处理]"
-  L594:44 (21 chars) "[图片内容已省略，当前模型不支持图片处理]"
-  L1139:25 (40 chars) "【$errorType，正在进行第 $newRetryCount 次重试...】"
-  L1248:37 (25 chars) "请求头: \n${request.headers}"
-  L1547:55 (24 chars) "【发送消息】JSON解析失败时的原始data: "
-  L1804:21 (4 chars) "连接超时"
-  L1812:21 (6 chars) "无法解析主机"
-  L1820:21 (4 chars) "网络中断"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\workflow\WorkflowExecutor.kt
-  remaining=9 total=30 excluded_logs=21 excluded_long=0
-  L37:45 (2 chars) "跳过"
-  L73:111 (2 chars) "跳过"
-  L204:76 (38 chars) "条件比较类型不一致：left='$left', right='$right'"
-  L771:67 (5 chars) "条件不满足"
-  L772:71 (5 chars) "条件不满足"
-  L982:63 (5 chars) "非执行节点"
-  L983:67 (5 chars) "非执行节点"
-  L994:94 (31 chars) "节点 ${node.name} 没有配置 actionType"
-  L1028:110 (4 chars) "未知错误"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\defaultTool\standard\StandardTerminalCommandExecutor.kt
-  remaining=9 total=12 excluded_logs=3 excluded_long=0
-  L33:33 (18 chars) "缺少参数: session_name"
-  L74:29 (26 chars) "创建或获取终端会话时出错: ${e.message}"
-  L92:33 (16 chars) "缺少参数: session_id"
-  L113:33 (25 chars) "终端会话 '$sessionId' 不存在或已关闭"
-  L160:33 (11 chars) "终端命令执行失败或超时"
-  L169:33 (23 chars) "执行终端命令时出错: ${e.message}"
-  L185:33 (16 chars) "缺少参数: session_id"
-  L201:35 (24 chars) "终端会话 '$sessionId' 已成功关闭。"
-  L210:29 (37 chars) "关闭终端会话 '$sessionId' 时出错: ${e.message}"
-
 FILE: app\src\main\java\com\ai\assistance\operit\data\preferences\PromptBilingualData.kt
-  remaining=9 total=11 excluded_logs=0 excluded_long=2
+  remaining=9 total=12 excluded_logs=0 excluded_long=3
   L17:14 (54 chars) "你是Operit，一个全能AI助手，旨在解决用户提出的任何任务。你有各种工具可以调用，以高效完成复杂的请求。"
   L22:14 (45 chars) "保持有帮助的语气，并清楚地传达限制。使用问题库根据用户的风格、偏好和过去的信息个性化响应。"
   L27:14 (65 chars) "你是Operit语音助手。你的所有回答都将通过语音播出，所以你必须只说那些听起来自然的话。你的核心任务是进行流畅、自然的口语对话。"
-  L37:14 (65 chars) "你是Operit桌宠，一个可爱、活泼、充满活力的桌面伙伴。你的主要任务是陪伴用户，提供温暖和快乐，同时也可以帮助用户完成简单任务。"
-  L48:18 (5 chars) "默认提示词"
-  L52:18 (7 chars) "默认聊天提示词"
-  L56:18 (7 chars) "默认语音提示词"
-  L60:18 (7 chars) "默认桌宠提示词"
-  L71:35 (3 chars) "提示词"
+  L42:14 (65 chars) "你是Operit桌宠，一个可爱、活泼、充满活力的桌面伙伴。你的主要任务是陪伴用户，提供温暖和快乐，同时也可以帮助用户完成简单任务。"
+  L53:18 (5 chars) "默认提示词"
+  L57:18 (7 chars) "默认聊天提示词"
+  L61:18 (7 chars) "默认语音提示词"
+  L65:18 (7 chars) "默认桌宠提示词"
+  L76:35 (3 chars) "提示词"
 
 FILE: app\src\main\java\com\ai\assistance\operit\ui\features\token\preferences\UrlConfigManager.kt
   remaining=9 total=9 excluded_logs=0 excluded_long=0
@@ -264,105 +70,6 @@ FILE: app\src\main\java\com\ai\assistance\operit\ui\features\token\preferences\U
   L110:21 (2 chars) "帮助"
   L111:24 (2 chars) "探索"
   L112:23 (2 chars) "创建"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\speech\OpenAISttProvider.kt
-  remaining=8 total=8 excluded_logs=0 excluded_long=0
-  L103:39 (80 chars) "OpenAI STT URL 未设置，请填写完整接口地址（例如 https://api.openai.com/v1/audio/transcriptions）。"
-  L106:39 (41 chars) "OpenAI STT URL 必须以 http:// 或 https:// 开头。"
-  L109:39 (74 chars) "OpenAI STT URL 必须包含 /v1/audio/transcriptions（请填写完整到 audio/transcriptions）。"
-  L112:39 (31 chars) "OpenAI STT API Key 未设置，请在设置中填写。"
-  L115:39 (68 chars) "OpenAI STT model 未设置，请在设置中填写（例如 whisper-1 或 gpt-4o-mini-transcribe）。"
-  L293:71 (51 chars) "音频文件过大（>${MAX_FILE_BYTES / 1024 / 1024}MB），请缩短录音时长。"
-  L337:78 (51 chars) "音频文件过大（>${MAX_FILE_BYTES / 1024 / 1024}MB），请缩短录音时长。"
-  L576:31 (16 chars) "请求 OpenAI STT 失败"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\voice\OpenAIVoiceProvider.kt
-  remaining=8 total=8 excluded_logs=0 excluded_long=0
-  L91:36 (61 chars) "OpenAI TTS URL 未设置，请填写完整接口地址（例如 https://xxx/v1/audio/speech）。"
-  L94:36 (41 chars) "OpenAI TTS URL 必须以 http:// 或 https:// 开头。"
-  L97:36 (58 chars) "OpenAI TTS URL 必须包含 /v1/audio/speech（请填写完整到 audio/speech）。"
-  L100:36 (20 chars) "API Key 未设置，请在设置中填写。"
-  L103:36 (39 chars) "OpenAI TTS model 未设置，请在设置中填写（例如 tts-1）。"
-  L106:36 (39 chars) "OpenAI TTS voice 未设置，请在设置中填写（例如 alloy）。"
-  L115:32 (24 chars) "初始化 OpenAI TTS 服务时发生意外错误"
-  L168:40 (16 chars) "请求 OpenAI TTS 失败"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\enhance\ConversationService.kt
-  remaining=8 total=17 excluded_logs=9 excluded_long=0
-  L705:21 (2 chars) "中文"
-  L707:21 (2 chars) "中文"
-  L830:17 (74 chars) "<link type=\"image\" id=\"$imageId\">图片</link>\nPlease analyze this image."
-  L832:17 (59 chars) "<link type=\"image\" id=\"$imageId\">图片</link>\n$userIntent"
-  L877:17 (74 chars) "<link type=\"audio\" id=\"$mediaId\">音频</link>\nPlease analyze this audio."
-  L879:17 (59 chars) "<link type=\"audio\" id=\"$mediaId\">音频</link>\n$userIntent"
-  L920:17 (74 chars) "<link type=\"video\" id=\"$mediaId\">视频</link>\nPlease analyze this video."
-  L922:17 (59 chars) "<link type=\"video\" id=\"$mediaId\">视频</link>\n$userIntent"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\llmprovider\LlamaProvider.kt
-  remaining=8 total=10 excluded_logs=2 excluded_long=0
-  L94:57 (34 chars) "模型文件不存在: ${modelFile.absolutePath}"
-  L101:58 (43 chars) "创建 llama.cpp 会话失败（nativeCreateSession 返回 0）"
-  L149:18 (42 chars) "错误: ${LlamaSession.getUnavailableReason()}"
-  L155:18 (38 chars) "错误: 模型文件不存在: ${modelFile.absolutePath}"
-  L163:18 (40 chars) "错误: 创建 llama.cpp 会话失败（请检查模型文件与 JNI 编译输出）"
-  L180:18 (67 chars) "错误: 无法应用模型对话模板（llama_model_chat_template/llama_chat_apply_template）"
-  L258:33 (18 chars) "llama.cpp 推理过程出现错误"
-  L260:18 (14 chars) "\n\n[推理过程出现错误]"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\plan\TaskExecutor.kt
-  remaining=8 total=13 excluded_logs=4 excluded_long=1
-  L258:44 (20 chars) "任务执行失败: ${e.message}"
-  L273:35 (24 chars) "原始用户请求: $originalMessage"
-  L274:35 (18 chars) "当前任务: ${task.name}"
-  L278:39 (7 chars) "依赖任务结果:"
-  L283:51 (26 chars) "- 任务 $depId 结果: $depResult"
-  L296:16 (97 chars) "\n$contextInfo\n\n请根据以上上下文信息，执行以下具体任务:\n${task.instruction}\n\n请专注于完成这个特定的子任务，你的回答将作为整个计划的一部分。\n        "
-  L401:35 (24 chars) "原始用户请求: $originalMessage"
-  L408:35 (11 chars) "各关键子任务执行结果:"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\calculator\JsCalculator.kt
-  remaining=8 total=8 excluded_logs=0 excluded_long=0
-  L141:21 (20 chars) "条件 ? 值1 : 值2 - 三元运算符"
-  L142:21 (29 chars) "Math.sin(), Math.cos() - 数学函数"
-  L143:21 (17 chars) "\${a + b} - 模板字符串"
-  L144:21 (38 chars) "true, false, null, NaN - JavaScript关键字"
-  L145:21 (21 chars) "a = 5; a += 2 - 赋值运算符"
-  L146:21 (22 chars) "2 ** 3 or 2 ^ 3 - 指数运算"
-  L147:21 (21 chars) "\"string\"[0] - 字符串索引"
-  L148:21 (19 chars) "array.length - 长度属性"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\preferences\ModelConfigManager.kt
-  remaining=8 total=10 excluded_logs=2 excluded_long=0
-  L49:41 (4 chars) "默认配置"
-  L138:63 (12 chars) "配置 $configId"
-  L145:59 (12 chars) "配置 $configId"
-  L176:75 (12 chars) "配置 $configId"
-  L183:71 (12 chars) "配置 $configId"
-  L192:65 (12 chars) "配置 $configId"
-  L198:101 (12 chars) "配置 $configId"
-  L739:29 (39 chars) "导入失败：${e.localizedMessage ?: e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\preferences\PromptTagManager.kt
-  remaining=8 total=11 excluded_logs=0 excluded_long=3
-  L34:55 (27 chars) "使用问题库根据用户的风格、偏好和过去的信息个性化响应。"
-  L81:44 (5 chars) "未命名标签"
-  L252:24 (4 chars) "通用聊天"
-  L253:31 (13 chars) "适用于聊天功能的通用提示词"
-  L258:24 (4 chars) "通用语音"
-  L259:31 (13 chars) "适用于语音功能的通用提示词"
-  L267:24 (4 chars) "通用桌宠"
-  L268:31 (13 chars) "适用于桌宠功能的通用提示词"
-
-FILE: app\src\main\java\com\ai\assistance\operit\services\core\MessageProcessingDelegate.kt
-  remaining=8 total=28 excluded_logs=20 excluded_long=0
-  L244:85 (9 chars) "正在处理消息..."
-  L292:28 (2 chars) "用户"
-  L303:46 (23 chars) "工作区状态同步失败: ${e.message}"
-  L329:78 (8 chars) "AI服务未初始化"
-  L338:89 (9 chars) "正在处理消息..."
-  L509:66 (9 chars) "正在总结记忆..."
-  L524:56 (20 chars) "发送消息失败: ${e.message}"
-  L526:66 (20 chars) "发送消息失败: ${e.message}"
 
 FILE: app\src\main\java\com\ai\assistance\operit\ui\features\packages\utils\MCPPluginParser.kt
   remaining=8 total=8 excluded_logs=0 excluded_long=0
@@ -397,16 +104,6 @@ FILE: app\src\main\java\com\ai\assistance\operit\ui\features\toolbox\screens\log
   L26:12 (2 chars) "静默"
   L27:13 (2 chars) "未知"
 
-FILE: app\src\main\java\com\ai\assistance\operit\api\speech\DeepgramSttProvider.kt
-  remaining=7 total=7 excluded_logs=0 excluded_long=0
-  L102:39 (70 chars) "Deepgram STT URL 未设置，请填写完整接口地址（例如 https://api.deepgram.com/v1/listen）。"
-  L105:39 (43 chars) "Deepgram STT URL 必须以 http:// 或 https:// 开头。"
-  L108:39 (33 chars) "Deepgram STT API Key 未设置，请在设置中填写。"
-  L111:39 (42 chars) "Deepgram STT model 未设置，请在设置中填写（例如 nova-2）。"
-  L277:71 (51 chars) "音频文件过大（>${MAX_FILE_BYTES / 1024 / 1024}MB），请缩短录音时长。"
-  L321:78 (51 chars) "音频文件过大（>${MAX_FILE_BYTES / 1024 / 1024}MB），请缩短录音时长。"
-  L561:31 (18 chars) "请求 Deepgram STT 失败"
-
 FILE: app\src\main\java\com\ai\assistance\operit\api\chat\library\ProblemLibrary.kt
   remaining=7 total=52 excluded_logs=45 excluded_long=0
   L757:30 (54 chars) "(出生日期|出生年月日|Birth Date|Date of Birth)[:：\\s]+([\\d-]+)"
@@ -417,276 +114,17 @@ FILE: app\src\main\java\com\ai\assistance\operit\api\chat\library\ProblemLibrary
   L762:31 (30 chars) "(职业|Occupation)[:：\\s]+([^;]+)"
   L763:28 (83 chars) "(AI风格|期待的AI风格|偏好的AI风格|AI Style|Expected AI Style|Preferred AI Style)[:：\\s]+([^;]+)"
 
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\ToolRegistration.kt
-  remaining=7 total=7 excluded_logs=0 excluded_long=0
-  L756:33 (2 chars) "发送"
-  L757:33 (2 chars) "提交"
-  L758:33 (2 chars) "确认"
-  L759:33 (2 chars) "支付"
-  L760:33 (2 chars) "购买"
-  L761:33 (2 chars) "删除"
-  L762:33 (2 chars) "移除"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\packTool\PackageManager.kt
-  remaining=7 total=7 excluded_logs=0 excluded_long=0
-  L953:23 (23 chars) "正在使用MCP服务器: $serverName"
-  L954:23 (38 chars) "使用时间: ${java.time.LocalDateTime.now()}"
-  L955:23 (47 chars) "描述: ${toolPackage.description.resolve(context)}"
-  L957:23 (7 chars) "可用工具列表:"
-  L963:31 (5 chars) "  参数:"
-  L965:60 (4 chars) "(必需)"
-  L965:72 (4 chars) "(可选)"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\converter\GenericJsonConverter.kt
-  remaining=7 total=7 excluded_logs=0 excluded_long=0
-  L28:51 (12 chars) "不支持的 JSON 格式"
-  L31:39 (28 chars) "解析通用 JSON 格式失败: ${e.message}"
-  L68:33 (7 chars) "从通用格式导入"
-  L156:25 (7 chars) "从通用格式导入"
-  L201:30 (2 chars) "用户"
-  L202:48 (2 chars) "助手"
-  L203:23 (2 chars) "系统"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\exporter\MarkdownExporter.kt
-  remaining=7 total=7 excluded_logs=0 excluded_long=0
-  L49:23 (56 chars) "**创建时间:** ${chatHistory.createdAt.format(dateFormatter)}"
-  L50:23 (56 chars) "**更新时间:** ${chatHistory.updatedAt.format(dateFormatter)}"
-  L52:27 (28 chars) "**分组:** ${chatHistory.group}"
-  L72:23 (8 chars) "# 聊天记录导出"
-  L74:23 (64 chars) "**导出时间:** ${java.time.LocalDateTime.now().format(dateFormatter)}"
-  L75:23 (31 chars) "**对话数量:** ${chatHistories.size}"
-  L76:23 (53 chars) "**总消息数:** ${chatHistories.sumOf { it.messages.size }}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\preferences\WakeWordPreferences.kt
-  remaining=7 total=7 excluded_logs=0 excluded_long=0
-  L62:41 (2 chars) "小欧"
-  L68:48 (2 chars) "我在"
-  L71:49 (4 chars) "全局助手"
-  L83:32 (2 chars) "屏幕"
-  L89:32 (2 chars) "通知"
-  L95:32 (4 chars) "哪个地方"
-  L101:32 (5 chars) "时间|几点"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\voice\HttpVoiceProvider.kt
-  remaining=6 total=15 excluded_logs=9 excluded_long=0
-  L107:36 (28 chars) "HTTP TTS 服务配置错误: URL 模板不能为空。"
-  L119:21 (45 chars) "HTTP TTS 服务配置错误: POST 请求的正文模板必须包含 {text} 占位符。"
-  L121:21 (47 chars) "HTTP TTS 服务配置错误: GET 请求的 URL 模板必须包含 {text} 占位符。"
-  L127:36 (49 chars) "HTTP TTS 服务配置错误: URL 模板必须以 http:// 或 https:// 开头。"
-  L136:37 (20 chars) "初始化HTTP TTS服务时发生意外错误"
-  L441:32 (14 chars) "获取HTTP TTS音频失败"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\enhance\ConversationMarkupManager.kt
-  remaining=6 total=6 excluded_logs=0 excluded_long=0
-  L80:21 (61 chars) "检测到多个工具调用。系统将只执行第一个工具 `$toolName`，忽略其它工具调用。请避免在单个消息中同时调用多个工具。"
-  L107:25 (4 chars) "工具调用"
-  L109:25 (31 chars) "工具 `${uniqueNames.joinToString("
-  L109:62 (6 chars) ")}` 调用"
-  L112:21 (54 chars) "警告：检测到任务完成标记的同时存在$toolDescription，系统仍会执行这些工具，但这是高风险组合。"
-  L113:29 (31 chars) "请勿在发送任务完成状态的同时调用工具，以避免重复或矛盾的响应。"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\llmprovider\ModelListFetcher.kt
-  remaining=6 total=56 excluded_logs=50 excluded_long=0
-  L204:68 (5 chars) "无错误详情"
-  L217:83 (5 chars) "响应体为空"
-  L224:92 (5 chars) "无错误详情"
-  L232:49 (57 chars) "API请求失败: ${fallbackResponse.code}, 错误: $fallbackErrorBody"
-  L239:71 (38 chars) "API请求失败: $responseCode, 错误: $errorBody"
-  L246:71 (5 chars) "响应体为空"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\defaultTool\standard\StandardSystemOperationTools.kt
-  remaining=6 total=31 excluded_logs=25 excluded_long=0
-  L301:25 (14 chars) "必须提供apk_path参数"
-  L327:27 (15 chars) "已发送安装请求，需要用户确认。"
-  L375:27 (15 chars) "已发送卸载请求，需要用户确认。"
-  L510:27 (12 chars) "已请求停止应用后台进程。"
-  L613:33 (21 chars) "未授予位置权限，请在应用设置中开启位置权限"
-  L773:33 (19 chars) "无法获取位置信息，请确保已启用位置服务"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\action\AdminActionListener.kt
-  remaining=6 total=16 excluded_logs=10 excluded_long=0
-  L41:59 (12 chars) "设备管理员组件名称未设置"
-  L47:52 (13 chars) "应用的设备管理员权限未激活"
-  L71:72 (18 chars) "需要设备管理员权限以监听系统UI操作"
-  L93:79 (5 chars) "已在监听中"
-  L104:75 (14 chars) "设备管理员UI操作监听已启动"
-  L108:75 (18 chars) "启动失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\converter\MarkdownConverter.kt
-  remaining=6 total=6 excluded_logs=0 excluded_long=0
-  L30:39 (30 chars) "解析 Markdown 格式失败: ${e.message}"
-  L201:21 (13 chars) "从 Markdown 导入"
-  L249:49 (2 chars) "用户"
-  L250:75 (2 chars) "助手"
-  L251:51 (2 chars) "系统"
-  L252:50 (2 chars) "模型"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\repository\WorkflowRepository.kt
-  remaining=6 total=6 excluded_logs=0 excluded_long=0
-  L203:61 (11 chars) "工作流不存在: $id"
-  L207:61 (24 chars) "工作流已禁用: ${workflow.name}"
-  L230:32 (27 chars) "工作流 '${workflow.name}' 执行成功"
-  L259:61 (11 chars) "工作流不存在: $id"
-  L263:61 (24 chars) "工作流已禁用: ${workflow.name}"
-  L283:32 (27 chars) "工作流 '${workflow.name}' 执行成功"
-
-FILE: app\src\main\java\com\ai\assistance\operit\util\map\StatefulPathFinder.kt
-  remaining=6 total=6 excluded_logs=0 excluded_long=0
-  L34:47 (31 chars) "起始节点 '${startState.nodeId}' 不存在"
-  L37:47 (24 chars) "目标节点 '$targetNodeId' 不存在"
-  L44:64 (10 chars) "起始状态即为目标状态"
-  L88:17 (25 chars) "使用${if (enableBacktrack) "
-  L88:62 (7 chars) "}算法找到路径"
-  L94:17 (54 chars) "无法找到从 '${startState.nodeId}' 到 '$targetNodeId' 的有效状态路径"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\library\ProblemLibraryTool.kt
-  remaining=5 total=18 excluded_logs=13 excluded_long=0
-  L63:27 (47 chars) "问题: ${record.query}\n\n解决方案: ${record.solution}"
-  L77:77 (3 chars) "问题:"
-  L78:52 (3 chars) "问题:"
-  L84:73 (5 chars) "解决方案:"
-  L85:52 (5 chars) "解决方案:"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\ShizukuAuthorizer.kt
-  remaining=5 total=8 excluded_logs=3 excluded_long=0
-  L351:20 (15 chars) "要启动Shizuku服务：\n"
-  L352:21 (19 chars) "1. 确保已安装Shizuku应用\n"
-  L353:21 (22 chars) "2. 使用ADB命令启动Shizuku:\n"
-  L355:21 (6 chars) "或者\n\n"
-  L356:21 (25 chars) "2. 打开Shizuku应用并按照屏幕上的说明操作"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\ShizukuInstaller.kt
-  remaining=5 total=25 excluded_logs=20 excluded_long=0
-  L76:44 (2 chars) "更新"
-  L76:54 (2 chars) "安装"
-  L148:40 (2 chars) "未知"
-  L149:24 (2 chars) "未知"
-  L211:35 (2 chars) "未知"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\action\RootActionListener.kt
-  remaining=5 total=24 excluded_logs=19 excluded_long=0
-  L60:56 (11 chars) "设备上没有Root权限"
-  L64:59 (24 chars) "检查Root权限出错: ${e.message}"
-  L98:79 (5 chars) "已在监听中"
-  L109:75 (14 chars) "Root UI操作监听已启动"
-  L113:75 (18 chars) "启动失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\mcp\MCPLocalServer.kt
-  remaining=5 total=47 excluded_logs=42 excluded_long=0
-  L297:39 (19 chars) "通过配置文件自动识别的 MCP 服务器"
-  L431:65 (23 chars) "JSON 格式错误: ${e.message}"
-  L436:65 (21 chars) "配置中没有找到 mcpServers 字段"
-  L441:65 (17 chars) "配置中 mcpServers 为空"
-  L475:42 (20 chars) "合并配置失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\repository\ChatHistoryManager.kt
-  remaining=5 total=38 excluded_logs=33 excluded_long=0
-  L728:55 (21 chars) "父对话不存在: $parentChatId"
-  L1010:41 (7 chars) "导入的文件为空"
-  L1105:47 (15 chars) "不支持的格式: $format"
-  L1109:29 (20 chars) "格式转换失败: ${e.message}"
-  L1111:29 (32 chars) "无法解析备份文件：${e.message}\n请确保文件格式正确"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\skill\SkillRepository.kt
-  remaining=5 total=5 excluded_logs=0 excluded_long=0
-  L74:39 (17 chars) "无效的 GitHub 仓库 URL"
-  L82:39 (27 chars) "无法确定 $owner/$repoName 的默认分支"
-  L109:44 (13 chars) "下载仓库 ZIP 文件失败"
-  L121:39 (10 chars) "已导入 Skill:"
-  L140:17 (18 chars) "导入失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\util\map\PathFinder.kt
-  remaining=5 total=5 excluded_logs=0 excluded_long=0
-  L113:39 (23 chars) "起始节点 '$startNodeId' 不存在"
-  L116:39 (21 chars) "目标节点 '$endNodeId' 不存在"
-  L120:55 (11 chars) "起始节点和目标节点相同"
-  L189:38 (24 chars) "使用 $algorithmName 算法找到路径"
-  L191:32 (39 chars) "无法找到从 '$startNodeId' 到 '$endNodeId' 的路径"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\plan\PlanParser.kt
-  remaining=4 total=10 excluded_logs=6 excluded_long=0
-  L126:29 (9 chars) "任务 ID 不唯一"
-  L134:37 (30 chars) "任务 ${task.id} 依赖的任务 $depId 不存在"
-  L142:29 (6 chars) "存在循环依赖"
-  L145:24 (5 chars) "执行图有效"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\action\AccessibilityActionListener.kt
-  remaining=4 total=13 excluded_logs=9 excluded_long=0
-  L37:52 (8 chars) "无障碍服务未启用"
-  L77:79 (5 chars) "已在监听中"
-  L85:56 (12 chars) "无障碍UI操作监听已启动"
-  L90:56 (18 chars) "启动失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\action\ActionManager.kt
-  remaining=4 total=22 excluded_logs=18 excluded_long=0
-  L71:63 (32 chars) "权限不足: ${permissionStatus.reason}"
-  L77:59 (18 chars) "启动失败: ${e.message}"
-  L98:59 (18 chars) "启动失败: ${e.message}"
-  L243:84 (20 chars) "获取状态失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\repository\CustomEmojiRepository.kt
-  remaining=4 total=4 excluded_logs=0 excluded_long=0
-  L143:42 (9 chars) "无法确定文件扩展名"
-  L148:46 (20 chars) "不支持的图片格式: $extension"
-  L168:39 (7 chars) "无法读取源文件"
-  L202:46 (15 chars) "表情不存在: $emojiId"
-
-FILE: app\src\main\java\com\ai\assistance\operit\services\core\AttachmentDelegate.kt
-  remaining=4 total=4 excluded_logs=0 excluded_long=0
-  L367:29 (64 chars) "【位置】full_screen; image_px=${screenshotWidth}x${screenshotHeight}"
-  L369:29 (15 chars) "【位置】full_screen"
-  L386:36 (8 chars) "【屏幕内容】\n"
-  L519:35 (17 chars) "【当前时间】\n$timeText"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\demo\wizards\AccessibilityWizardCard.kt
-  remaining=4 total=4 excluded_logs=0 excluded_long=0
-  L322:46 (38 chars) "我已明确并知晓无障碍权限导致的其他应用封号、限制账号功能风险，并后果自己承担"
-  L367:17 (6 chars) "检测到新版本"
-  L373:17 (27 chars) "已安装: ${installedVersion ?: "
-  L373:49 (24 chars) "} -> 内置: $bundledVersion"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\token\model\UrlConfig.kt
-  remaining=4 total=4 excluded_logs=0 excluded_long=0
-  L22:19 (6 chars) "API 密钥"
-  L23:19 (2 chars) "用量"
-  L24:19 (2 chars) "充值"
-  L25:19 (4 chars) "个人资料"
-
-FILE: app\src\main\java\com\ai\assistance\operit\services\FloatingChatService.kt
-  remaining=3 total=24 excluded_logs=21 excluded_long=0
-  L380:24 (7 chars) "AI助手悬浮窗"
-  L396:38 (7 chars) "AI助手悬浮窗"
-  L397:37 (10 chars) "AI助手正在后台运行"
-
-FILE: app\src\main\java\com\ai\assistance\operit\util\OCRUtils.kt
-  remaining=3 total=3 excluded_logs=0 excluded_long=0
-  L189:33 (22 chars) "无法读取图像文件: ${e.message}"
-  L206:41 (14 chars) "无法从URI解码Bitmap"
-  L209:44 (11 chars) "无法打开URI的输入流"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\action\DebuggerActionListener.kt
-  remaining=3 total=16 excluded_logs=13 excluded_long=0
-  L86:79 (5 chars) "已在监听中"
-  L97:75 (12 chars) "调试器UI操作监听已启动"
-  L101:75 (18 chars) "启动失败: ${e.message}"
-
 FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\shell\DebuggerShellExecutor.kt
   remaining=3 total=31 excluded_logs=9 excluded_long=19
   L272:37 (97 chars) "\n\n                    // 等待进程结束并获取退出代码\n                    val exitCode = processClass.getMethod("
   L361:85 (94 chars) ")\n\n                    // 构建shell命令，使用-e确保出错时立即退出\n                    val shellArgs = arrayOf("
   L426:37 (97 chars) "\n\n                    // 等待进程结束并获取退出代码\n                    val exitCode = processClass.getMethod("
 
-FILE: app\src\main\java\com\ai\assistance\operit\data\updates\UpdateManager.kt
+FILE: app\src\main\java\com\ai\assistance\operit\data\converter\GenericJsonConverter.kt
   remaining=3 total=3 excluded_logs=0 excluded_long=0
-  L146:56 (20 chars) "更新检查失败: ${e.message}"
-  L271:73 (9 chars) "无法获取更新信息。"
-  L296:55 (20 chars) "更新检查失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\mcp\plugins\MCPBridgeClient.kt
-  remaining=3 total=15 excluded_logs=12 excluded_long=0
-  L396:52 (21 chars) "无法连接到 $serviceName 服务"
-  L423:48 (14 chars) "无法连接到桥接器或未收到响应"
-  L471:44 (23 chars) "调用工具时发生异常: ${e.message}"
+  L203:30 (2 chars) "用户"
+  L204:48 (2 chars) "助手"
+  L205:23 (2 chars) "系统"
 
 FILE: app\src\main\java\com\ai\assistance\operit\data\mcp\plugins\MCPCommandGenerator.kt
   remaining=3 total=5 excluded_logs=2 excluded_long=0
@@ -694,76 +132,15 @@ FILE: app\src\main\java\com\ai\assistance\operit\data\mcp\plugins\MCPCommandGene
   L142:42 (47 chars) "# TypeScript编译后可能需要执行: node dist/index.js 或类似命令"
   L152:34 (17 chars) "# 如果换源失败，将继续使用默认源"
 
-FILE: app\src\main\java\com\ai\assistance\operit\util\map\Path.kt
-  remaining=3 total=3 excluded_logs=0 excluded_long=0
-  L17:39 (6 chars) "路径不能为空"
-  L19:13 (54 chars) "边的数量应该比节点数量少1，nodes=${nodes.size}, edges=${edges.size}"
-  L119:51 (6 chars) "路径搜索成功"
-
-FILE: app\src\main\java\com\ai\assistance\operit\util\map\StatefulPath.kt
-  remaining=3 total=3 excluded_logs=0 excluded_long=0
-  L17:40 (8 chars) "状态路径不能为空"
-  L19:13 (56 chars) "边的数量应该比状态数量少1，states=${states.size}, edges=${edges.size}"
-  L183:31 (8 chars) "状态路径搜索成功"
-
 FILE: app\src\main\java\com\ai\assistance\operit\util\LocaleUtils.kt
   remaining=2 total=2 excluded_logs=0 excluded_long=0
   L31:63 (4 chars) "跟随系统"
   L32:43 (2 chars) "中文"
 
-FILE: app\src\main\java\com\ai\assistance\operit\api\voice\AccessibilityVoiceProvider.kt
-  remaining=2 total=13 excluded_logs=11 excluded_long=0
-  L75:58 (19 chars) "系统TTS语言不支持: $locale"
-  L120:54 (23 chars) "系统TTS初始化失败，状态码: $status"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\enhance\FileBindingService.kt
-  remaining=2 total=14 excluded_logs=12 excluded_long=0
-  L76:17 (50 chars) "如果你想重写整个已存在文件：请先 delete_file 再 write_file（不要直接覆盖）。"
-  L77:17 (64 chars) "如果你想修改文件：请用 apply_file 的 type=replace/delete 并提供 old/new（或 old）。"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\subpack\ApkReverseEngineer.kt
-  remaining=2 total=48 excluded_logs=46 excluded_long=0
-  L915:36 (25 chars) "在密钥库中找不到别名为'$keyAlias'的密钥"
-  L930:36 (22 chars) "无法获取别名为'$keyAlias'的证书链"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\subpack\ExeEditor.kt
-  remaining=2 total=2 excluded_logs=0 excluded_long=0
-  L137:41 (21 chars) "请先调用changeIcon方法设置新图标"
-  L150:36 (9 chars) "更换EXE图标失败"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\RootAuthorizer.kt
-  remaining=2 total=34 excluded_logs=32 excluded_long=0
-  L332:36 (19 chars) "Root执行器未初始化或无Root权限"
-  L340:32 (18 chars) "执行出错: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\action\StandardActionListener.kt
-  remaining=2 total=10 excluded_logs=8 excluded_long=0
-  L54:75 (11 chars) "标准UI操作监听已启动"
-  L58:75 (18 chars) "启动失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\core\tools\system\shell\RootShellExecutor.kt
-  remaining=2 total=33 excluded_logs=31 excluded_long=0
-  L285:21 (16 chars) "错误: ${e.message}"
-  L405:29 (16 chars) "错误: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\util\map\Graph.kt
-  remaining=2 total=2 excluded_logs=0 excluded_long=0
-  L30:39 (23 chars) "起始节点 '${edge.from}' 不存在"
-  L31:37 (21 chars) "目标节点 '${edge.to}' 不存在"
-
-FILE: app\src\main\java\com\ai\assistance\operit\util\map\StatefulGraph.kt
-  remaining=2 total=2 excluded_logs=0 excluded_long=0
-  L24:39 (23 chars) "起始节点 '${edge.from}' 不存在"
-  L25:37 (21 chars) "目标节点 '${edge.to}' 不存在"
-
 FILE: app\src\main\java\com\ai\assistance\operit\util\stream\StreamGroup.kt
   remaining=2 total=7 excluded_logs=5 excluded_long=0
-  L160:31 (6 chars) "标签必须设置"
-  L161:34 (7 chars) "数据流必须设置"
-
-FILE: app\src\main\java\com\ai\assistance\operit\api\chat\llmprovider\DeepseekProvider.kt
-  remaining=1 total=3 excluded_logs=2 excluded_long=0
-  L131:74 (19 chars) "最终DeepSeek推理模式请求体: "
+  L166:74 (6 chars) "标签必须设置"
+  L169:77 (7 chars) "数据流必须设置"
 
 FILE: app\src\main\java\com\ai\assistance\operit\api\chat\plan\PlanModeManager.kt
   remaining=1 total=10 excluded_logs=8 excluded_long=1
@@ -772,46 +149,6 @@ FILE: app\src\main\java\com\ai\assistance\operit\api\chat\plan\PlanModeManager.k
 FILE: app\src\main\java\com\ai\assistance\operit\data\converter\ChatFormatDetector.kt
   remaining=1 total=1 excluded_logs=0 excluded_long=0
   L142:35 (61 chars) "^##\\s*(User|Assistant|AI|System|Model|用户|助手|系统|模型)[:：]?\\s*$"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\converter\ChatGPTConverter.kt
-  remaining=1 total=1 excluded_logs=0 excluded_long=0
-  L65:25 (12 chars) "从 ChatGPT 导入"
-
-FILE: app\src\main\java\com\ai\assistance\operit\data\preferences\CharacterCardManager.kt
-  remaining=1 total=17 excluded_logs=16 excluded_long=0
-  L115:44 (5 chars) "默认角色卡"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\permissions\ToolPermissionSystem.kt
-  remaining=1 total=2 excluded_logs=1 excluded_long=0
-  L212:73 (15 chars) "${tool.name} 操作"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\chat\util\MessageImageGenerator.kt
-  remaining=1 total=10 excluded_logs=9 excluded_long=0
-  L311:44 (20 chars) "图片捕获失败: ${e.message}"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\chat\webview\workspace\WorkspaceConfig.kt
-  remaining=1 total=1 excluded_logs=0 excluded_long=0
-  L36:38 (5 chars) "浏览器预览"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\chat\webview\workspace\editor\PerformEdit.kt
-  remaining=1 total=1 excluded_logs=0 excluded_long=0
-  L27:25 (12 chars) "EditText不能为空"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\memory\screens\graph\GraphVisualizer.kt
-  remaining=1 total=1 excluded_logs=0 excluded_long=0
-  L595:32 (1 chars) "中"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\settings\screens\MnnModelDownloadScreen.kt
-  remaining=1 total=1 excluded_logs=0 excluded_long=0
-  L127:93 (4 chars) "加载失败"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\settings\screens\UserPreferencesGuideScreen.kt
-  remaining=1 total=1 excluded_logs=0 excluded_long=0
-  L167:42 (11 chars) "yyyy年MM月dd日"
-
-FILE: app\src\main\java\com\ai\assistance\operit\ui\features\toolbox\screens\StreamMarkdownDemo.kt
-  remaining=1 total=7 excluded_logs=5 excluded_long=1
-  L100:9 (62 chars) "好的，如果您有任何问题或需要帮助时，随时可以联系我。\n\n\n<status type="complete"></status>"
 
 FILE: app\src\main\java\com\ai\assistance\operit\ui\features\workflow\viewmodel\WorkflowViewModel.kt
   remaining=1 total=1 excluded_logs=0 excluded_long=0

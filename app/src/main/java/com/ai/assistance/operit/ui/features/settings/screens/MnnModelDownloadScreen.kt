@@ -124,7 +124,7 @@ fun MnnModelDownloadScreen(
                                     if (result.isSuccess) {
                                         modelList = result.getOrNull() ?: emptyList()
                                     } else {
-                                        errorMessage = result.exceptionOrNull()?.message ?: "加载失败"
+                                        errorMessage = result.exceptionOrNull()?.message ?: loadFailedMessage
                                     }
                                     isLoading = false
                                 }

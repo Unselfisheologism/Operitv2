@@ -241,7 +241,7 @@ class MessageProcessingDelegate(
         _userMessage.value = TextFieldValue("")
         chatRuntime.isLoading.value = true
         updateGlobalLoadingState()
-        setChatInputProcessingState(chatId, EnhancedInputProcessingState.Processing("正在处理消息..."))
+        setChatInputProcessingState(chatId, EnhancedInputProcessingState.Processing(context.getString(R.string.message_processing)))
 
         coroutineScope.launch(Dispatchers.IO) {
             // 检查这是否是聊天中的第一条用户消息（忽略AI的开场白）
@@ -289,7 +289,7 @@ class MessageProcessingDelegate(
             val userMessage = ChatMessage(
                 sender = "user",
                 content = finalMessageContent,
-                roleName = "用户" // 用户消息的角色名固定为"用户"
+                roleName = context.getString(R.string.message_role_user) // 用户消息的角色名固定为"用户"
             )
 
             // 在发送消息前，同步工作区状态
@@ -300,7 +300,7 @@ class MessageProcessingDelegate(
                 } catch (e: Exception) {
                     AppLogger.e(TAG, "Workspace sync failed", e)
                     // 报告一个非致命错误，不会中断消息流程
-                    _nonFatalErrorEvent.emit("工作区状态同步失败: ${e.message}")
+                    _nonFatalErrorEvent.emit(context.getString(R.string.message_workspace_sync_failed, e.message))
                 }
             }
 
@@ -326,7 +326,7 @@ class MessageProcessingDelegate(
                     (EnhancedAIService.getChatInstance(context, activeChatId)
                         ?: getEnhancedAiService())
                         ?: run {
-                            withContext(Dispatchers.Main) { showErrorMessage("AI服务未初始化") }
+                            withContext(Dispatchers.Main) { showErrorMessage(context.getString(R.string.message_ai_service_not_initialized)) }
                             chatRuntime.isLoading.value = false
                             updateGlobalLoadingState()
                             setChatInputProcessingState(activeChatId, EnhancedInputProcessingState.Idle)
@@ -335,7 +335,7 @@ class MessageProcessingDelegate(
                 serviceForTurnComplete = service
 
                 // 清除上一次可能残留的 Error 状态，避免 StateFlow 重放导致新一轮发送立即再次触发弹窗
-                service.setInputProcessingState(EnhancedInputProcessingState.Processing("正在处理消息..."))
+                service.setInputProcessingState(EnhancedInputProcessingState.Processing(context.getString(R.string.message_processing)))
 
                 // 监听此 chat 对应的 EnhancedAIService 状态，映射到 per-chat state
                 chatRuntime.stateCollectionJob?.cancel()
@@ -506,7 +506,7 @@ class MessageProcessingDelegate(
                     setSuppressIdleCompletedStateForChat(chatId, true)
                     setChatInputProcessingState(
                         chatId,
-                        EnhancedInputProcessingState.Summarizing("正在总结记忆...")
+                        EnhancedInputProcessingState.Summarizing(context.getString(R.string.message_summarizing))
                     )
                 }
 
@@ -521,9 +521,9 @@ class MessageProcessingDelegate(
                 AppLogger.e(TAG, "发送消息时出错", e)
                 setChatInputProcessingState(
                     chatId,
-                    EnhancedInputProcessingState.Error("发送消息失败: ${e.message}")
+                    EnhancedInputProcessingState.Error(context.getString(R.string.message_send_failed, e.message))
                 )
-                withContext(Dispatchers.Main) { showErrorMessage("发送消息失败: ${e.message}") }
+                withContext(Dispatchers.Main) { showErrorMessage(context.getString(R.string.message_send_failed, e.message)) }
             } finally {
                 finalizeMessageAndNotify(
                     chatId = chatId,

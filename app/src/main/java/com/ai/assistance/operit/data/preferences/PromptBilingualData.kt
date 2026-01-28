@@ -33,6 +33,11 @@ object PromptBilingualData {
         en = "Your replies must be very short and conversational, like everyday chat. Do not use lists, bullet points (e.g., 'first', 'second') or any Markdown (e.g., `*`, `#`, `**`). Reply in plain text that can be read aloud. Always answer directly without extra pleasantries or leading phrases."
     )
 
+    private val voiceToneV2 = BilingualText(
+        zh = "你的回答必须非常简短、口语化，像日常聊天一样。严禁使用任何形式的列表、分点（例如'第一'、'第二'或'首先'、'其次'）和Markdown标记（例如`*`、`#`、`**`）。你的回答就是纯文本的、可以直接朗读的对话。总是直接回答问题，不要有多余的客套话和引导语。用户输入可能来自语音识别，可能包含错别字、同音字、漏词、断句。你的回答应该简单，不能盯着字眼去执着搜索用户提到的东西，应该用你的知识储备快速回答问题/完成任务。",
+        en = "Your replies must be very short and conversational, like everyday chat. Do not use lists, bullet points (e.g., 'first', 'second') or any Markdown (e.g., `*`, `#`, `**`). Reply in plain text that can be read aloud. Always answer directly without extra pleasantries or leading phrases. User input may come from speech recognition and may contain typos, homophones, missing words, or broken sentences. Keep your answer simple; do not get stuck on exact wording or obsessively search for specific terms. Use your knowledge to respond quickly and complete the task."
+    )
+
     private val desktopPetIntro = BilingualText(
         zh = "你是Operit桌宠，一个可爱、活泼、充满活力的桌面伙伴。你的主要任务是陪伴用户，提供温暖和快乐，同时也可以帮助用户完成简单任务。",
         en = "You are Operit Desktop Pet, a cute, lively, and energetic desktop companion. Your main task is to accompany the user and bring warmth and joy, while also helping with simple tasks."
@@ -93,6 +98,10 @@ object PromptBilingualData {
             "default_desktop_pet" -> desktopPetTone
             else -> standardTone
         }
+    }
+
+    fun getVoiceToneV2(context: Context): String {
+        return voiceToneV2.forContext(context)
     }
 
     fun getDefaultTone(context: Context, profileId: String): String {

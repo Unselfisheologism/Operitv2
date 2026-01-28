@@ -702,9 +702,9 @@ class ConversationService(
         
         // 根据当前语言确定目标语言
         val targetLanguage = when (currentLanguage) {
-            "zh" -> "中文"
+            "zh" -> context.getString(R.string.conversation_language_chinese)
             "en" -> "English"
-            else -> "中文" // 默认翻译为中文
+            else -> context.getString(R.string.conversation_language_chinese) // 默认翻译为中文
         }
         
         val translationPrompt = """
@@ -826,10 +826,11 @@ ${FunctionalPrompts.translationUserPrompt(targetLanguage, text)}
             }
 
             // 构建提示词，包含用户意图和图片链接
+            val imageLink = context.getString(R.string.conversation_media_image_link, imageId)
             val prompt = if (userIntent.isNullOrBlank()) {
-                "<link type=\"image\" id=\"$imageId\">图片</link>\nPlease analyze this image."
+                "$imageLink\n${context.getString(R.string.conversation_analyze_image_prompt)}"
             } else {
-                "<link type=\"image\" id=\"$imageId\">图片</link>\n$userIntent"
+                "$imageLink\n$userIntent"
             }
             
             // 获取模型参数
@@ -873,10 +874,11 @@ ${FunctionalPrompts.translationUserPrompt(targetLanguage, text)}
                 return "Failed to load audio: $audioPath"
             }
 
+            val audioLink = context.getString(R.string.conversation_media_audio_link, mediaId)
             val prompt = if (userIntent.isNullOrBlank()) {
-                "<link type=\"audio\" id=\"$mediaId\">音频</link>\nPlease analyze this audio."
+                "$audioLink\n${context.getString(R.string.conversation_analyze_audio_prompt)}"
             } else {
-                "<link type=\"audio\" id=\"$mediaId\">音频</link>\n$userIntent"
+                "$audioLink\n$userIntent"
             }
 
             val modelParameters = multiServiceManager.getModelParametersForFunction(FunctionType.AUDIO_RECOGNITION)
@@ -916,10 +918,11 @@ ${FunctionalPrompts.translationUserPrompt(targetLanguage, text)}
                 return "Failed to load video: $videoPath"
             }
 
+            val videoLink = context.getString(R.string.conversation_media_video_link, mediaId)
             val prompt = if (userIntent.isNullOrBlank()) {
-                "<link type=\"video\" id=\"$mediaId\">视频</link>\nPlease analyze this video."
+                "$videoLink\n${context.getString(R.string.conversation_analyze_video_prompt)}"
             } else {
-                "<link type=\"video\" id=\"$mediaId\">视频</link>\n$userIntent"
+                "$videoLink\n$userIntent"
             }
 
             val modelParameters = multiServiceManager.getModelParametersForFunction(FunctionType.VIDEO_RECOGNITION)

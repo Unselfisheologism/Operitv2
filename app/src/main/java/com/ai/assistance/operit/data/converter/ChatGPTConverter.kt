@@ -62,7 +62,7 @@ class ChatGPTConverter : ChatFormatConverter {
                 messages = messages,
                 createdAt = createdAt,
                 updatedAt = updatedAt,
-                group = "从 ChatGPT 导入"
+                group = "Imported from ChatGPT"
             )
         } catch (e: Exception) {
             // 跳过无法转换的对话

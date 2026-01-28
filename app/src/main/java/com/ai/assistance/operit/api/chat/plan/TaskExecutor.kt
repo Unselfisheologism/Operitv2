@@ -252,10 +252,10 @@ class TaskExecutor(
                 val errorMessage = e.message ?: "Unknown error"
                 val escapedError = errorMessage.replace("\"", "&quot;")
                 onMessage("""<update id="${task.id}" status="FAILED" tool_count="${toolCount.get()}" error="$escapedError"/>""" + "\n")
-                
+
                 // 即使失败也要存储结果，避免阻塞其他任务
                 taskMutex.withLock {
-                    taskResults[task.id] = "任务执行失败: ${e.message}"
+                    taskResults[task.id] = context.getString(R.string.task_error_execution_failed, e.message ?: "")
                 }
             }
         } finally {
@@ -269,23 +269,23 @@ class TaskExecutor(
      */
     private suspend fun buildTaskContext(task: TaskNode, originalMessage: String): String {
         val contextBuilder = StringBuilder()
-        
-        contextBuilder.appendLine("原始用户请求: $originalMessage")
-        contextBuilder.appendLine("当前任务: ${task.name}")
-        
+
+        contextBuilder.appendLine(context.getString(R.string.task_context_original_request, originalMessage))
+        contextBuilder.appendLine(context.getString(R.string.task_context_current_task, task.name))
+
         // 如果有依赖任务，添加其结果作为上下文
         if (task.dependencies.isNotEmpty()) {
-            contextBuilder.appendLine("依赖任务结果:")
+            contextBuilder.appendLine(context.getString(R.string.task_context_dependency_results))
             taskMutex.withLock {
                 task.dependencies.forEach { depId ->
                     val depResult = taskResults[depId]
                     if (depResult != null) {
-                        contextBuilder.appendLine("- 任务 $depId 结果: $depResult")
+                        contextBuilder.appendLine(context.getString(R.string.task_context_task_result, depId, depResult))
                     }
                 }
             }
         }
-        
+
         return contextBuilder.toString()
     }
     
@@ -293,14 +293,7 @@ class TaskExecutor(
      * 构建任务的完整指令
      */
     private fun buildFullInstruction(task: TaskNode, contextInfo: String): String {
-        return """
-$contextInfo
-
-请根据以上上下文信息，执行以下具体任务:
-${task.instruction}
-
-请专注于完成这个特定的子任务，你的回答将作为整个计划的一部分。
-        """.trim()
+        return context.getString(R.string.task_instruction_with_context, contextInfo, task.instruction).trim()
     }
 
     private fun extractFinalNonToolAssistantContent(raw: String): String {
@@ -397,19 +390,19 @@ $graph.finalSummaryInstruction
      */
     private suspend fun buildSummaryContext(originalMessage: String, graph: ExecutionGraph): String {
         val contextBuilder = StringBuilder()
-        
-        contextBuilder.appendLine("原始用户请求: $originalMessage")
-        
+
+        contextBuilder.appendLine(context.getString(R.string.task_context_original_request, originalMessage))
+
         // 叶子任务是指没有被其他任何任务依赖的任务
         val allDependencyIds = graph.tasks.flatMap { it.dependencies }.toSet()
         val allTaskIds = graph.tasks.map { it.id }.toSet()
         val leafTaskIds = allTaskIds - allDependencyIds
-        
-        contextBuilder.appendLine("各关键子任务执行结果:")
-        
+
+        contextBuilder.appendLine(context.getString(R.string.task_summary_key_results))
+
         // 如果找到了叶子任务，就只用它们的结果。否则，使用所有任务的结果作为后备。
         val taskIdsToSummarize = if (leafTaskIds.isNotEmpty()) leafTaskIds else allTaskIds
-        
+
         taskMutex.withLock {
             taskIdsToSummarize.forEach { taskId ->
                 taskResults[taskId]?.let { result ->
@@ -419,7 +412,7 @@ $graph.finalSummaryInstruction
                 }
             }
         }
-        
+
         return contextBuilder.toString()
     }
     

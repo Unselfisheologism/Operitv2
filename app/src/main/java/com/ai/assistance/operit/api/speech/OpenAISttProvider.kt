@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import com.ai.assistance.operit.R
 import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.api.speech.SpeechPrerollStore
 import java.io.File
@@ -100,19 +101,19 @@ class OpenAISttProvider(
         return try {
             withContext(Dispatchers.IO) {
                 if (endpointUrl.isBlank()) {
-                    throw IOException("OpenAI STT URL 未设置，请填写完整接口地址（例如 https://api.openai.com/v1/audio/transcriptions）。")
+                    throw IOException(context.getString(R.string.openai_stt_error_url_not_set))
                 }
                 if (!endpointUrl.startsWith("http://") && !endpointUrl.startsWith("https://")) {
-                    throw IOException("OpenAI STT URL 必须以 http:// 或 https:// 开头。")
+                    throw IOException(context.getString(R.string.openai_stt_error_url_invalid_scheme))
                 }
                 if (!endpointUrl.contains("/audio/transcriptions")) {
-                    throw IOException("OpenAI STT URL 必须包含 /v1/audio/transcriptions（请填写完整到 audio/transcriptions）。")
+                    throw IOException(context.getString(R.string.openai_stt_error_url_invalid_path))
                 }
                 if (apiKey.isBlank()) {
-                    throw IOException("OpenAI STT API Key 未设置，请在设置中填写。")
+                    throw IOException(context.getString(R.string.openai_stt_error_api_key_not_set))
                 }
                 if (model.isBlank()) {
-                    throw IOException("OpenAI STT model 未设置，请在设置中填写（例如 whisper-1 或 gpt-4o-mini-transcribe）。")
+                    throw IOException(context.getString(R.string.openai_stt_error_model_not_set))
                 }
 
                 _isInitialized.value = true
@@ -290,7 +291,8 @@ class OpenAISttProvider(
                                                 }
 
                                                 if (pcmBytesWritten > MAX_FILE_BYTES) {
-                                                    throw IOException("音频文件过大（>${MAX_FILE_BYTES / 1024 / 1024}MB），请缩短录音时长。")
+                                                    val fileSizeMB = MAX_FILE_BYTES / 1024 / 1024
+                                                    throw IOException(context.getString(R.string.openai_stt_error_file_too_large, fileSizeMB))
                                                 }
 
                                                 vadFramePos = 0
@@ -332,9 +334,10 @@ class OpenAISttProvider(
                 }
 
             if (file.length() > MAX_FILE_BYTES) {
+                val fileSizeMB = MAX_FILE_BYTES / 1024 / 1024
                 file.delete()
                 _recognitionState.value = SpeechService.RecognitionState.ERROR
-                _recognitionError.value = SpeechService.RecognitionError(-1, "音频文件过大（>${MAX_FILE_BYTES / 1024 / 1024}MB），请缩短录音时长。")
+                _recognitionError.value = SpeechService.RecognitionError(-1, context.getString(R.string.openai_stt_error_file_too_large, fileSizeMB))
                 return false
             }
 
@@ -573,7 +576,7 @@ class OpenAISttProvider(
         val response = try {
             httpClient.newCall(request).execute()
         } catch (e: IOException) {
-            throw IOException("请求 OpenAI STT 失败", e)
+            throw IOException(context.getString(R.string.openai_stt_error_request_failed), e)
         }
 
         response.use { resp ->

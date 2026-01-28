@@ -112,7 +112,7 @@ class CharacterCardManager private constructor(private val context: Context) {
         
         return CharacterCard(
             id = id,
-            name = preferences[nameKey] ?: "默认角色卡",
+            name = preferences[nameKey] ?: context.getString(R.string.default_character_card),
             description = preferences[descriptionKey] ?: "",
             characterSetting = preferences[characterSettingKey] ?: "",
             openingStatement = preferences[openingStatementKey] ?: "", // 新增

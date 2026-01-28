@@ -42,6 +42,7 @@ class QwenAIProvider(
      * 重写创建请求体的方法，以支持Qwen的`enable_thinking`参数。
      */
     override fun createRequestBody(
+        context: Context,
         message: String,
         chatHistory: List<Pair<String, String>>,
         modelParameters: List<ModelParameter<*>>,
@@ -51,7 +52,7 @@ class QwenAIProvider(
         preserveThinkInHistory: Boolean
     ): RequestBody {
         // 首先，调用父类的实现来获取一个标准的OpenAI格式的请求体JSON对象
-        val baseRequestBodyJson = super.createRequestBodyInternal(message, chatHistory, modelParameters, stream, availableTools, preserveThinkInHistory)
+        val baseRequestBodyJson = super.createRequestBodyInternal(context, message, chatHistory, modelParameters, stream, availableTools, preserveThinkInHistory)
         val jsonObject = JSONObject(baseRequestBodyJson)
 
         // 如果启用了思考模式，则为Qwen模型添加特定的`enable_thinking`参数

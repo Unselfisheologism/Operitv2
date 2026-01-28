@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
 import android.os.Build
+import com.ai.assistance.operit.R
 import com.ai.assistance.operit.util.AppLogger
 import android.view.View
 import android.view.ViewGroup
@@ -308,7 +309,7 @@ object MessageImageGenerator {
                     AppLogger.d(TAG, "捕获成功，图片尺寸: ${capturedBitmap.width}x${capturedBitmap.height}")
                 } catch (e: Throwable) {
                     AppLogger.e(TAG, "捕获失败", e)
-                    throw RuntimeException("图片捕获失败: ${e.message}", e)
+                    throw RuntimeException(context.getString(R.string.message_image_capture_failed, e.message ?: ""), e)
                 } finally {
                     AppLogger.d(TAG, "从窗口移除 ScrollView")
                     // 确保无论成功还是失败，都将视图移除

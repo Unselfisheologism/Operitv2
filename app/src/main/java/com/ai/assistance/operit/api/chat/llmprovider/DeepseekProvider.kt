@@ -47,6 +47,7 @@ class DeepseekProvider(
      * 当启用推理模式时，需要特殊处理消息格式。
      */
     override fun createRequestBody(
+        context: Context,
         message: String,
         chatHistory: List<Pair<String, String>>,
         modelParameters: List<ModelParameter<*>>,
@@ -57,7 +58,7 @@ class DeepseekProvider(
     ): RequestBody {
         // 如果未启用推理模式，直接使用父类的实现
         if (!enableReasoning) {
-            return super.createRequestBody(message, chatHistory, modelParameters, enableThinking, stream, availableTools, preserveThinkInHistory)
+            return super.createRequestBody(context, message, chatHistory, modelParameters, enableThinking, stream, availableTools, preserveThinkInHistory)
         }
 
         // 启用推理模式时，需要特殊处理
@@ -114,7 +115,7 @@ class DeepseekProvider(
         }
 
         // 使用特殊的消息构建方法（支持reasoning_content）
-        val messagesArray = buildMessagesWithReasoning(message, chatHistory, effectiveEnableToolCall)
+        val messagesArray = buildMessagesWithReasoning(context, message, chatHistory, effectiveEnableToolCall)
         jsonObject.put("messages", messagesArray)
 
         // ⚠️ 重要：调用 TokenCacheManager 计算输入 token 数量
@@ -128,7 +129,7 @@ class DeepseekProvider(
             logJson.put("tools", "[${toolsArray.length()} tools omitted for brevity]")
         }
         val sanitizedLogJson = sanitizeImageDataForLogging(logJson)
-        logLargeString("DeepseekProvider", sanitizedLogJson.toString(4), "最终DeepSeek推理模式请求体: ")
+        logLargeString("DeepseekProvider", sanitizedLogJson.toString(4), "Final DeepSeek reasoning mode request body: ")
 
         return jsonObject.toString().toRequestBody(JSON)
     }
@@ -138,6 +139,7 @@ class DeepseekProvider(
      * 对于assistant角色的消息，提取<think>标签内容作为reasoning_content
      */
     private fun buildMessagesWithReasoning(
+        context: Context,
         message: String,
         chatHistory: List<Pair<String, String>>,
         useToolCall: Boolean
@@ -199,7 +201,7 @@ class DeepseekProvider(
                         }
 
                         if (effectiveContent != null) {
-                            historyMessage.put("content", buildContentField(effectiveContent))
+                            historyMessage.put("content", buildContentField(context, effectiveContent))
                         } else {
                             historyMessage.put("content", null)
                         }
@@ -222,7 +224,7 @@ class DeepseekProvider(
                         // DeepSeek推理模式要求所有assistant消息都必须有reasoning_content字段
                         historyMessage.put("reasoning_content", reasoningContent)
 
-                        historyMessage.put("content", buildContentField(content.ifBlank { "[Empty]" }))
+                        historyMessage.put("content", buildContentField(context, content.ifBlank { "[Empty]" }))
                         messagesArray.put(historyMessage)
                     }
                 } else {
@@ -270,20 +272,20 @@ class DeepseekProvider(
                         if (textContent.isNotEmpty()) {
                             val userMessage = JSONObject()
                             userMessage.put("role", "user")
-                            userMessage.put("content", buildContentField(textContent))
+                            userMessage.put("content", buildContentField(context, textContent))
                             messagesArray.put(userMessage)
                         } else if (!hasHandledToolCalls) {
                             // 如果没有处理任何tool_call，保留原始内容
                             val historyMessage = JSONObject()
                             historyMessage.put("role", role)
-                            historyMessage.put("content", buildContentField(originalContent))
+                            historyMessage.put("content", buildContentField(context, originalContent))
                             messagesArray.put(historyMessage)
                         } else {
                         }
                     } else {
                         val historyMessage = JSONObject()
                         historyMessage.put("role", role)
-                        historyMessage.put("content", buildContentField(originalContent))
+                        historyMessage.put("content", buildContentField(context, originalContent))
                         messagesArray.put(historyMessage)
                     }
                 }

@@ -194,7 +194,9 @@
     <string name="workflow_execution_result_title">Execution Result</string>
     <string name="workflow_edit_dialog_title">Edit Workflow</string>
     <string name="workflow_enabled_label">Enable workflow</string>
+    <string name="workflow_disabled">Disabled</string>
 
+    <string name="problem_library_question">Question:</string>
     <string name="url_tab_chat">Chat</string>
     <string name="url_tab_projects">Projects</string>
     <string name="url_tab_artifacts">Artifacts</string>
@@ -4482,13 +4484,25 @@
     
     <string name="backup_raw_snapshot_title">File Snapshot Backup (Experimental)</string>
     <string name="backup_raw_snapshot_subtitle">Archive/restore app data by file &amp; directory</string>
-    <string name="backup_raw_snapshot_desc">This will archive app-internal data directories: files/shared_prefs/datastore/databases. Restoring overwrites current data and requires an app restart. Some encrypted data may not work after device migration or reinstall.</string>
-    <string name="backup_raw_snapshot_include_terminal_label">Include terminal data</string>
-    <string name="backup_raw_snapshot_include_terminal_desc">The terminal Linux environment (usr/tmp/bin) can be very large; it is excluded by default</string>
+    <string name="backup_raw_snapshot_desc">This will archive app-internal data directories: files/shared_prefs/datastore/databases (the terminal Linux environment can be very large, so it is excluded by default). Restoring overwrites current data and requires an app restart. Some encrypted data may not work after device migration or reinstall.</string>
     <string name="backup_raw_snapshot_backup_now">Backup now</string>
     <string name="backup_raw_snapshot_restore_from_file">Restore from file</string>
     <string name="backup_raw_snapshot_backing_up">Creating file snapshot backup...</string>
     <string name="backup_raw_snapshot_restoring">Restoring file snapshot backup...</string>
+    <string name="backup_raw_snapshot_progress_preparing">Preparing…</string>
+    <string name="backup_raw_snapshot_progress_scanning_files">Scanning files…</string>
+    <string name="backup_raw_snapshot_progress_scanning_files_with_count">Scanning files: %1$d</string>
+    <string name="backup_raw_snapshot_progress_zipping_files">Packaging files...</string>
+    <string name="backup_raw_snapshot_progress_zipping_shared_prefs">Packaging shared_prefs...</string>
+    <string name="backup_raw_snapshot_progress_zipping_datastore">Packaging datastore...</string>
+    <string name="backup_raw_snapshot_progress_zipping_databases">Packaging databases...</string>
+    <string name="backup_raw_snapshot_progress_finalizing">Finalizing...</string>
+    <string name="backup_raw_snapshot_progress_reading_zip">Reading backup file...</string>
+    <string name="backup_raw_snapshot_progress_extracting">Extracting...</string>
+    <string name="backup_raw_snapshot_progress_replacing_files">Writing files...</string>
+    <string name="backup_raw_snapshot_progress_replacing_shared_prefs">Writing shared_prefs...</string>
+    <string name="backup_raw_snapshot_progress_replacing_datastore">Writing datastore...</string>
+    <string name="backup_raw_snapshot_progress_replacing_databases">Writing databases...</string>
     <string name="backup_raw_snapshot_restore_confirm_title">Confirm file snapshot restore</string>
     <string name="backup_raw_snapshot_restore_confirm_message">This will overwrite current app data with the following backup:\n%1$s\n\nThis action cannot be undone. It is recommended to perform a backup before restoring.</string>
     <string name="backup_raw_snapshot_restore_confirm_action">Confirm restore</string>
@@ -4942,7 +4956,6 @@
     <string name="workflow_start_creation">Start Creating Workflow</string>
     <string name="workflow_automation_desc">Automate your task processes</string>
     <string name="workflow_new">New Workflow</string>
-    <string name="workflow_disabled">Disabled</string>
     <string name="workflow_select_template_type">Select Template Type</string>
     <string name="workflow_template_intent_chat_broadcast_title">Intent Chat Broadcast Template</string>
     <string name="workflow_template_intent_chat_broadcast_desc">Intent trigger -> Floating chat -> Close -> Broadcast AI result</string>
@@ -5046,6 +5059,34 @@
     <string name="memory_error_update_link">Failed to update link: %1$s</string>
     <string name="memory_error_delete_link">Failed to delete link: %1$s</string>
     <string name="memory_error_link_memories">Failed to link memories: %1$s</string>
+
+    <!-- Memory Repository -->
+    <string name="memory_repository_document_node_content">This is a document node containing the content of file \'%1$s\'.</string>
+    <string name="memory_repository_folder_description_title">Folder Description</string>
+    <string name="memory_repository_folder_description_content">This is the description of the %1$s folder.</string>
+
+    <!-- Gemini Provider -->
+    <string name="gemini_connecting">Connecting...</string>
+    <string name="gemini_connected_success">Connected, processing response...</string>
+    <string name="gemini_request_body_json">Request body JSON: </string>
+    <string name="gemini_request_headers">Request headers: \n%1$s</string>
+    <string name="gemini_response_empty">Response is empty</string>
+    <string name="gemini_unknown_error">Unknown error</string>
+    <string name="gemini_search_sources_title">**🔍 Google Search Sources:**\n\n</string>
+    <string name="gemini_search_query">- Query: `%1$s`\n</string>
+    <string name="gemini_reference_sources_title">\n**📄 Reference Sources:**\n\n</string>
+
+    <!-- APK Editor -->
+    <string name="apk_editor_repack_failed">APK repackaging failed</string>
+    <string name="apk_editor_unsigned_apk_not_found">Unsigned APK file not found or empty: %1$s</string>
+    <string name="apk_editor_signature_incomplete">Signature information incomplete, please call withSignature method first</string>
+    <string name="apk_editor_unknown_sign_error">Unknown signing error</string>
+    <string name="apk_editor_sign_failed">APK signing failed: %1$s</string>
+    <string name="apk_editor_extract_first">Please call extract method to unpack APK first</string>
+    <string name="apk_editor_change_package_failed">Failed to change package name</string>
+    <string name="apk_editor_change_app_name_failed">Failed to change app name</string>
+    <string name="apk_editor_change_version_failed">Failed to change version</string>
+    <string name="apk_editor_change_icon_failed">Failed to change app icon</string>
 
     <!-- Common Module -->
     <string name="common_phone_agent">Phone Agent</string>
@@ -5575,6 +5616,19 @@
     <string name="mcp_deployment_command_failed">Command execution failed: %1$s</string>
     <string name="mcp_deployment_success">Plugin deployed successfully: %1$s\nDeployment path: %2$s\nServer name: %3$s\nDeployment time: %4$s</string>
 
+    <!-- MCP Repository -->
+    <string name="mcp_repository_server_not_found">Cannot find corresponding server information</string>
+    <string name="mcp_repository_install_error">Error during installation: %1$s</string>
+    <string name="mcp_repository_invalid_github_url">Invalid GitHub repository URL</string>
+    <string name="mcp_repository_download_zip_failed">Failed to download repository ZIP file</string>
+    <string name="mcp_repository_extract_repo_failed">Failed to extract repository files</string>
+    <string name="mcp_repository_no_repo_dir">No repository directory found after extraction</string>
+    <string name="mcp_repository_plugin_install_error">Error installing plugin: %1$s</string>
+    <string name="mcp_repository_cannot_read_zip">Cannot read ZIP file</string>
+    <string name="mcp_repository_extract_local_zip_failed">Failed to extract local ZIP file</string>
+    <string name="mcp_repository_install_local_zip_error">Error installing local ZIP plugin: %1$s</string>
+    <string name="mcp_repository_use_load_plugins">Use loadPluginsFromMCPLocalServer instead</string>
+
     <!-- Web Visit Tool UI -->
     <string name="webvisit_title">Web Browsing</string>
     <string name="webvisit_url_label">Visiting URL:</string>
@@ -5677,6 +5731,29 @@
     <string name="workflow_non_execution_node">Non-execution node</string>
     <string name="workflow_node_no_action_type">Node %1$s has no actionType configured</string>
     <string name="workflow_unknown_error">Unknown error</string>
+    <string name="workflow_in_list_type_mismatch">IN list type mismatch: contains numbers and non-numbers right=\'%1$s\'</string>
+    <string name="workflow_log_start_execution">Starting workflow execution: %1$s (%2$s)</string>
+    <string name="workflow_log_no_trigger_node">Workflow has no trigger node</string>
+    <string name="workflow_log_trigger_node_not_exist">Specified trigger node does not exist: %1$s</string>
+    <string name="workflow_log_scheduled_trigger">Scheduled trigger: executing specified trigger node %1$s</string>
+    <string name="workflow_log_manual_trigger">Manual trigger: executing all manual trigger type nodes</string>
+    <string name="workflow_log_will_execute_trigger_nodes">Will execute %1$d trigger nodes: %2$s</string>
+    <string name="workflow_log_mark_trigger_node">Marking trigger node: %1$s (%2$s)</string>
+    <string name="workflow_log_circular_dependency">Workflow has circular dependencies, cannot execute</string>
+    <string name="workflow_log_execution_complete">Workflow execution completed: %1$s</string>
+    <string name="workflow_log_node_already_executed">Node already executed, skipping: %1$s</string>
+    <string name="workflow_log_node_not_exist">Node does not exist: %1$s</string>
+    <string name="workflow_log_condition_not_met_skip">Node condition not met, skipping: %1$s (%2$s)</string>
+    <string name="workflow_log_execute_node">Executing node: %1$s (%2$s)</string>
+    <string name="workflow_log_node_failed">Node execution failed: %1$s</string>
+    <string name="workflow_log_skip_non_execute_node">Skipping non-execution node: %1$s</string>
+    <string name="workflow_log_call_tool">Calling tool: %1$s, parameters: %2$d</string>
+    <string name="workflow_log_node_success">Node executed successfully: %1$s, result: %2$s</string>
+    <string name="workflow_log_node_error">Node execution failed: %1$s, error: %2$s</string>
+    <string name="workflow_log_node_exception">Node execution exception: %1$s</string>
+    <string name="workflow_error_referenced_node_failed">Referenced node %1$s execution failed</string>
+    <string name="workflow_error_referenced_node_not_completed">Referenced node %1$s has not completed execution</string>
+    <string name="workflow_error_fixed_value_must_be_int">Fixed value must be an integer: \'%1$s\'</string>
 
     <!-- Skill Manager -->
     <string name="skill_error_cannot_read_file">Cannot read file: %1$s</string>
@@ -5787,7 +5864,6 @@
     <string name="plan_complexity_implementation_plan">Implementation plan</string>
 
     <!-- Problem Library -->
-    <string name="problem_library_question">Question:</string>
     <string name="problem_library_solution">Solution:</string>
     <string name="problem_library_history">History:</string>
     <string name="problem_library_tool_result_pruned">&lt;tool_result %1$s&gt;[...Tool result omitted...]&lt;/tool_result&gt;</string>
@@ -5903,18 +5979,13 @@
     <string name="apk_general_error">Error: %1$s</string>
 
     <!-- Gemini Provider -->
-    <string name="gemini_connecting">Connecting to Gemini service...</string>
     <string name="gemini_establishing">Establishing connection...</string>
     <string name="gemini_connected">Connected successfully, processing response...</string>
     <string name="gemini_network_timeout_retry">[Network timeout, retrying for the %1$d time...]</string>
     <string name="gemini_network_unstable_retry">[Network unstable, retrying for the %1$d time...]</string>
     <string name="gemini_network_interrupted_retry">[Network interrupted, retrying for the %1$d time...]</string>
-    <string name="gemini_request_body_json">Request body JSON: </string>
-    <string name="gemini_request_headers">Request headers: \n%1$s</string>
     <string name="gemini_empty_response">Response is empty</string>
-    <string name="gemini_unknown_error">Unknown error</string>
     <string name="gemini_google_search_source">**🔍 Google Search Sources:**\n\n</string>
-    <string name="gemini_search_query">- Query: `%1$s`\n</string>
     <string name="gemini_reference_sources">\n**📄 Reference Sources:**\n\n</string>
     <string name="gemini_default">Default</string>
     <string name="mcp_no_available_tools">No available tools</string>
@@ -5983,5 +6054,416 @@
     <string name="export_user">User</string>
     <string name="export_assistant">Assistant</string>
     <string name="export_model">(Model: %1$s)</string>
+
+    <!-- ChatBoxConverter -->
+    <string name="chatbox_unsupported_format">Unsupported ChatBox format</string>
+    <string name="chatbox_unsupported_format_detail">Please import JSON exported by ChatBox (Settings > General Settings > Data Backup > Export Selected Data)</string>
+    <string name="chatbox_parse_error">Failed to parse ChatBox format: %1$s</string>
+    <string name="chatbox_invalid_export_file">Invalid ChatBox export file</string>
+    <string name="chatbox_invalid_export_hint">Please use "Export Selected Data" in ChatBox Settings > General Settings > Data Backup to export JSON</string>
+    <string name="chatbox_import_group">Imported from ChatBox</string>
+    <string name="chatbox_message_generation_failed">Message generation failed: %1$s</string>
+    <string name="chatbox_image_not_saved">This message originally contained images but was not saved</string>
+    <string name="chatbox_role_user">User</string>
+    <string name="chatbox_role_assistant">Assistant</string>
+    <string name="chatbox_role_system">System</string>
+    <string name="role_assistant">Assistant</string>
+    <string name="role_system">System</string>
+    <string name="role_model">Model</string>
+
+    <!-- HtmlExporter -->
+    <string name="html_export_title">Chat History Export</string>
+    <string name="html_export_time">Export Time</string>
+    <string name="html_export_conversation_count">Conversation Count</string>
+    <string name="html_export_total_messages">Total Messages</string>
+    <string name="html_export_created">Created</string>
+    <string name="html_export_updated">Updated</string>
+    <string name="html_export_group">Group</string>
+    <string name="html_export_message_count">Message Count</string>
+    <string name="html_export_footer">Exported from Operit AI Assistant</string>
+
+    <!-- MnnModelDownloadManager -->
+    <string name="mnn_no_cache_data">No cache data</string>
+    <string name="mnn_response_empty">Response body is empty</string>
+    <string name="mnn_fetch_repo_files_failed">Failed to fetch repository file list: %1$s</string>
+    <string name="mnn_download_failed_http">Download failed: HTTP %1$d %2$s</string>
+    <string name="mnn_rename_failed">Rename failed</string>
+    <string name="mnn_unknown_error">Unknown error</string>
+    <string name="mnn_download_file_failed">Failed to download file: %1$s (HTTP %2$d)</string>
+    <string name="mnn_download_paused">Download paused</string>
+
+    <!-- MCPBridge -->
+    <string name="mcp_send_command">Send bridge command</string>
+    <string name="mcp_service_label">Service</string>
+    <string name="mcp_other_params">Other parameters</string>
+    <string name="mcp_command_response">Response</string>
+    <string name="mcp_success">Success</string>
+    <string name="mcp_failed">Failed</string>
+    <string name="mcp_tools_count">Got %1$d tools</string>
+    <string name="mcp_unnamed_tool">Unnamed tool</string>
+    <string name="mcp_tools_total">Total %1$d</string>
+    <string name="mcp_result">Result</string>
+    <string name="mcp_error">Error</string>
+
+    <!-- EnhancedAIService -->
+    <string name="enhanced_processing_input">Processing input...</string>
+    <string name="enhanced_processing_message">Processing message...</string>
+    <string name="enhanced_connecting_service">Connecting to AI service...</string>
+    <string name="enhanced_receiving_response">Receiving AI response...</string>
+    <string name="enhanced_error_with_message">Error: %1$s</string>
+    <string name="enhanced_tool_warning">Warning: Tool calls and waiting for user response cannot exist at the same time. Tool calls were processed, but this is extremely dangerous.</string>
+    <string name="enhanced_receiving_tool_result">Receiving AI response after tool execution...</string>
+    <string name="enhanced_process_tool_result_failed">Failed to process tool execution result: %1$s</string>
+    <string name="enhanced_memory_tools_category">Memory and Memory Library Tools</string>
+
+    <!-- OpenAIProvider -->
+    <string name="openai_retry_with_count">%1$s, retrying for the %2$d time...</string>
+    <string name="openai_error_timeout">Connection timeout</string>
+    <string name="openai_error_cannot_resolve_host">Cannot resolve host</string>
+    <string name="openai_error_network_interrupted">Network interrupted</string>
+    <string name="openai_audio_video_omitted">Audio/video content omitted, current model does not support audio/video processing</string>
+    <string name="openai_image_omitted">Image content omitted, current model does not support image processing</string>
+
+    <!-- WorkflowExecutor -->
+    <string name="workflow_non_execute_node">Non-execution node</string>
+    <string name="workflow_node_no_action">Node does not have actionType configured</string>
+
+    <!-- StandardTerminalCommandExecutor -->
+    <string name="terminal_error_missing_session_name">Missing parameter: session_name</string>
+    <string name="terminal_error_create_session">Error creating or getting terminal session: %1$s</string>
+    <string name="terminal_error_missing_session_id">Missing parameter: session_id</string>
+    <string name="terminal_error_session_not_exist">Terminal session \'%1$s\' does not exist or is closed</string>
+    <string name="terminal_error_command_failed">Terminal command execution failed or timed out</string>
+    <string name="terminal_error_execute_command">Error executing terminal command: %1$s</string>
+    <string name="terminal_session_closed">Terminal session \'%1$s\' closed successfully.</string>
+    <string name="terminal_error_close_session">Error closing terminal session \'%1$s\': %2$s</string>
+
+    <!-- OpenAISttProvider -->
+    <string name="openai_stt_error_url_not_set">OpenAI STT URL not set, please enter the complete interface address (e.g., https://api.openai.com/v1/audio/transcriptions).</string>
+    <string name="openai_stt_error_url_invalid_scheme">OpenAI STT URL must start with http:// or https://.</string>
+    <string name="openai_stt_error_url_invalid_path">OpenAI STT URL must contain /v1/audio/transcriptions (please fill in complete to audio/transcriptions).</string>
+    <string name="openai_stt_error_api_key_not_set">OpenAI STT API Key not set, please fill in settings.</string>
+    <string name="openai_stt_error_model_not_set">OpenAI STT model not set, please fill in settings (e.g., whisper-1 or gpt-4o-mini-transcribe).</string>
+    <string name="openai_stt_error_file_too_large">Audio file too large (>%1$dMB), please shorten recording duration.</string>
+    <string name="openai_stt_error_request_failed">OpenAI STT request failed</string>
+
+    <!-- OpenAIVoiceProvider -->
+    <string name="openai_tts_error_url_not_set">OpenAI TTS URL not set, please enter the complete interface address (e.g., https://xxx/v1/audio/speech).</string>
+    <string name="openai_tts_error_url_invalid_scheme">OpenAI TTS URL must start with http:// or https://.</string>
+    <string name="openai_tts_error_url_invalid_path">OpenAI TTS URL must contain /v1/audio/speech (please fill in complete to audio/speech).</string>
+    <string name="openai_tts_error_api_key_not_set">API Key not set, please fill in settings.</string>
+    <string name="openai_tts_error_model_not_set">OpenAI TTS model not set, please fill in settings (e.g., tts-1).</string>
+    <string name="openai_tts_error_voice_not_set">OpenAI TTS voice not set, please fill in settings (e.g., alloy).</string>
+    <string name="openai_tts_error_init_failed">Unexpected error while initializing OpenAI TTS service</string>
+    <string name="openai_tts_error_request_failed">OpenAI TTS request failed</string>
+
+    <!-- ConversationService -->
+    <string name="conversation_language_chinese">Chinese</string>
+    <string name="conversation_media_image_link">&lt;link type=&quot;image&quot; id=&quot;%1$s&quot;&gt;Image&lt;/link&gt;</string>
+    <string name="conversation_media_audio_link">&lt;link type=&quot;audio&quot; id=&quot;%1$s&quot;&gt;Audio&lt;/link&gt;</string>
+    <string name="conversation_media_video_link">&lt;link type=&quot;video&quot; id=&quot;%1$s&quot;&gt;Video&lt;/link&gt;</string>
+    <string name="conversation_analyze_image_prompt">Please analyze this image.</string>
+    <string name="conversation_analyze_audio_prompt">Please analyze this audio.</string>
+    <string name="conversation_analyze_video_prompt">Please analyze this video.</string>
+
+    <!-- LlamaProvider -->
+    <string name="llama_error_model_file_not_exist">Model file does not exist: %1$s</string>
+    <string name="llama_error_create_session_failed">Failed to create llama.cpp session (nativeCreateSession returned 0)</string>
+    <string name="llama_error_prefix">Error</string>
+    <string name="llama_error_session_create_failed">Error: Failed to create llama.cpp session (please check model file and JNI compilation output)</string>
+    <string name="llama_error_chat_template_failed">Error: Cannot apply model chat template (llama_model_chat_template/llama_chat_apply_template)</string>
+    <string name="llama_error_inference_failed">llama.cpp inference process error</string>
+    <string name="llama_error_inference_tag">[Inference error occurred]</string>
+
+    <!-- TaskExecutor -->
+    <string name="task_error_execution_failed">Task execution failed: %1$s</string>
+    <string name="task_context_original_request">Original user request: %1$s</string>
+    <string name="task_context_current_task">Current task: %1$s</string>
+    <string name="task_context_dependency_results">Dependent task results:</string>
+    <string name="task_context_task_result">- Task %1$s result: %2$s</string>
+    <string name="task_instruction_with_context">\n%1$s\n\nPlease execute the following specific task based on the above context:\n%2$s\n\nPlease focus on completing this specific subtask, your answer will be part of the entire plan.</string>
+    <string name="task_summary_key_results">Key subtask execution results:</string>
+
+    <!-- ToolPermissionSystem -->
+    <string name="tool_permission_operation">%1$s Operation</string>
+
+    <!-- MessageImageGenerator -->
+    <string name="message_image_capture_failed">Image capture failed: %1$s</string>
+
+    <!-- WorkspaceConfig -->
+    <string name="workspace_browser_preview">Browser Preview</string>
+
+    <!-- PerformEdit -->
+    <string name="perform_edit_edittext_empty">EditText cannot be empty</string>
+
+    <!-- GraphVisualizer -->
+    <string name="graph_char_for_measurement">中</string>
+
+    <!-- MnnModelDownloadScreen -->
+    <!-- No strings needed here -->
+
+    <!-- UserPreferencesGuideScreen -->
+    <string name="date_format_pattern">MMMM dd, yyyy</string>
+
+    <!-- StreamMarkdownDemo -->
+    <string name="demo_complete_message">OK, if you have any questions or need help, feel free to contact me at any time.\n\n\n&lt;status type=&quot;complete&quot;&gt;&lt;/status&gt;</string>
+
+    <!-- UpdateManager -->
+    <string name="update_check_failed">Update check failed: %1$s</string>
+    <string name="update_cannot_fetch_info">Cannot fetch update information.</string>
+
+    <!-- AccessibilityVoiceProvider -->
+    <string name="accessibility_tts_locale_not_supported">System TTS language not supported: %1$s</string>
+    <string name="accessibility_tts_init_failed">System TTS initialization failed, status code: %1$d</string>
+
+    <!-- ApkReverseEngineer -->
+    <string name="apk_key_not_found_in_keystore">Key with alias \'%1$s\' not found in keystore</string>
+    <string name="apk_cannot_get_cert_chain">Cannot get certificate chain for alias \'%1$s\'</string>
+
+    <!-- ExeEditor -->
+    <string name="exe_editor_change_icon_first">Please call changeIcon method first to set new icon</string>
+    <string name="exe_editor_change_icon_failed">Failed to change EXE icon</string>
+
+    <!-- RootAuthorizer -->
+    <string name="root_authorizer_not_initialized">Root executor not initialized or no Root permission</string>
+    <string name="root_authorizer_execute_error">Execution error: %1$s</string>
+
+    <!-- StandardActionListener -->
+    <string name="standard_action_listener_started">Standard UI operation listener started</string>
+    <string name="standard_action_listener_start_failed">Start failed: %1$s</string>
+
+    <!-- RootShellExecutor -->
+    <string name="root_shell_error">Error: %1$s</string>
+
+    <!-- Graph -->
+    <string name="graph_from_node_not_exist">Source node \'%1$s\' does not exist</string>
+    <string name="graph_to_node_not_exist">Target node \'%1$s\' does not exist</string>
+
+    <!-- StatefulGraph -->
+    <string name="stateful_graph_from_node_not_exist">Source node \'%1$s\' does not exist</string>
+    <string name="stateful_graph_to_node_not_exist">Target node \'%1$s\' does not exist</string>
+
+    <!-- StreamGroup -->
+    <string name="stream_group_tag_must_be_set">Tag must be set</string>
+    <string name="stream_group_stream_must_be_set">Stream must be set</string>
+
+    <!-- MCPBridgeClient -->
+    <string name="mcp_bridge_cannot_connect_service">Cannot connect to %1$s service</string>
+    <string name="mcp_bridge_cannot_connect_or_no_response">Cannot connect to bridge or no response received</string>
+    <string name="mcp_bridge_tool_call_exception">Exception when calling tool: %1$s</string>
+
+    <!-- ModelListFetcher -->
+    <string name="model_fetch_no_error_details">No error details</string>
+    <string name="model_fetch_response_empty">Response body is empty</string>
+    <string name="model_fetch_api_failed">API request failed: %1$d, error: %2$s</string>
+
+    <!-- StandardSystemOperationTools -->
+    <string name="sys_op_must_provide_apk_path">apk_path parameter must be provided</string>
+    <string name="sys_op_install_request_sent">Install request sent, user confirmation required.</string>
+    <string name="sys_op_uninstall_request_sent">Uninstall request sent, user confirmation required.</string>
+    <string name="sys_op_stop_app_requested">Requested to stop app background process.</string>
+    <string name="sys_op_location_permission_not_granted">Location permission not granted, please enable location permission in app settings</string>
+    <string name="sys_op_cannot_get_location">Cannot get location information, please ensure location service is enabled</string>
+
+    <!-- AdminActionListener -->
+    <string name="admin_device_admin_component_name_not_set">Device admin component name not set</string>
+    <string name="admin_device_admin_permission_not_activated">App device admin permission not activated</string>
+    <string name="admin_need_device_admin_permission">Device admin permission required to listen to system UI operations</string>
+    <string name="admin_already_listening">Already listening</string>
+    <string name="admin_ui_listener_started">Device admin UI operation listener started</string>
+    <string name="admin_start_failed">Start failed: %1$s</string>
+
+    <!-- MarkdownConverter -->
+    <string name="markdown_parse_failed">Failed to parse Markdown format: %1$s</string>
+    <string name="markdown_import_from">Import from Markdown</string>
+
+    <!-- WorkflowRepository -->
+    <string name="workflow_not_exist">Workflow does not exist: %1$s</string>
+    <string name="workflow_disabled_message">Workflow is disabled: %1$s</string>
+    <string name="workflow_execute_success">Workflow \'%1$s\' executed successfully</string>
+
+    <!-- StatefulPathFinder -->
+    <string name="pathfinder_start_node_not_exist">Start node \'%1$s\' does not exist</string>
+    <string name="pathfinder_target_node_not_exist">Target node \'%1$s\' does not exist</string>
+    <string name="pathfinder_start_equals_target">Start state is target state</string>
+    <string name="pathfinder_found_path">Found path using %1$s algorithm</string>
+    <string name="pathfinder_cannot_find_path">Cannot find valid state path from \'%1$s\' to \'%2$s\'</string>
+
+    <!-- ProblemLibraryTool -->
+    <string name="problem_library_question_format">Question: %1$s\n\nSolution: %2$s</string>
+    <string name="problem_library_question_label">Question:</string>
+    <string name="problem_library_solution_label">Solution:</string>
+
+    <!-- ShizukuAuthorizer -->
+    <string name="shizuku_start_service_intro">To start Shizuku service:\n</string>
+    <string name="shizuku_step1_ensure_installed">1. Ensure Shizuku app is installed\n</string>
+    <string name="shizuku_step2_adb_command">2. Use ADB command to start Shizuku:\n</string>
+    <string name="shizuku_or">Or\n\n</string>
+    <string name="shizuku_step2_follow_instructions">2. Open Shizuku app and follow on-screen instructions</string>
+
+    <!-- ShizukuInstaller -->
+    <string name="shizuku_install_update">Update</string>
+    <string name="shizuku_install_install">Install</string>
+    <string name="shizuku_install_unknown">Unknown</string>
+
+    <!-- RootActionListener -->
+    <string name="root_no_root_permission">No root permission on device</string>
+    <string name="root_check_permission_error">Error checking root permission: %1$s</string>
+    <string name="root_ui_listener_started">Root UI operation listener started</string>
+
+    <!-- MCPLocalServer -->
+    <string name="mcp_local_auto_detected_server">MCP server auto-detected from configuration file</string>
+    <string name="mcp_local_json_format_error">JSON format error: %1$s</string>
+    <string name="mcp_local_no_mcp_servers_field">mcpServers field not found in configuration</string>
+    <string name="mcp_local_mcp_servers_empty">mcpServers is empty in configuration</string>
+    <string name="mcp_local_merge_config_failed">Failed to merge configuration: %1$s</string>
+
+    <!-- ChatHistoryManager -->
+    <string name="chat_history_parent_not_exist">Parent conversation does not exist: %1$s</string>
+    <string name="chat_history_imported_file_empty">Imported file is empty</string>
+    <string name="chat_history_unsupported_format">Unsupported format: %1$s</string>
+    <string name="chat_history_convert_format_failed">Format conversion failed: %1$s</string>
+    <string name="chat_history_parse_backup_failed">Failed to parse backup file: %1$s\nPlease ensure file format is correct</string>
+
+    <!-- SkillRepository -->
+    <string name="skill_invalid_github_url">Invalid GitHub repository URL</string>
+    <string name="skill_cannot_determine_default_branch">Cannot determine default branch for %1$s</string>
+    <string name="skill_download_zip_failed">Failed to download repository ZIP file</string>
+    <string name="skill_import_failed">Import failed: %1$s</string>
+
+    <!-- PathFinder -->
+    <string name="path_simple_start_node_not_exist">Start node \'%1$s\' does not exist</string>
+    <string name="path_simple_end_node_not_exist">End node \'%1$s\' does not exist</string>
+    <string name="path_simple_start_equals_end">Start node and end node are the same</string>
+    <string name="path_simple_found_path">Found path using %1$s algorithm</string>
+    <string name="path_simple_cannot_find_path">Cannot find path from \'%1$s\' to \'%2$s\'</string>
+
+    <!-- PlanParser -->
+    <string name="plan_task_id_not_unique">Task ID is not unique</string>
+    <string name="plan_task_dependency_not_exist">Task %1$s depends on non-existent task %2$s</string>
+    <string name="plan_circular_dependency">Circular dependency exists</string>
+    <string name="plan_execution_graph_valid">Execution graph is valid</string>
+
+    <!-- AccessibilityActionListener -->
+    <string name="a11y_service_not_enabled">Accessibility service not enabled</string>
+    <string name="a11y_ui_listener_started">Accessibility UI operation listener started</string>
+
+    <!-- ActionManager -->
+    <string name="action_insufficient_permission">Insufficient permission: %1$s</string>
+    <string name="action_get_status_failed">Failed to get status: %1$s</string>
+
+    <!-- CustomEmojiRepository -->
+    <string name="emoji_cannot_determine_extension">Cannot determine file extension</string>
+    <string name="emoji_unsupported_image_format">Unsupported image format: %1$s</string>
+    <string name="emoji_cannot_read_source">Cannot read source file</string>
+    <string name="emoji_not_exist">Emoji does not exist: %1$s</string>
+
+    <!-- AttachmentDelegate -->
+    <string name="attachment_location_full_screen">[Location] full_screen; image_px=%1$dx%2$d</string>
+    <string name="attachment_location_full_screen_simple">[Location] full_screen</string>
+    <string name="attachment_screen_content_formatted">[Screen Content]\n</string>
+    <string name="attachment_current_time">[Current Time]\n%1$s</string>
+
+    <!-- AccessibilityWizardCard -->
+    <string name="a11y_wizard_risk_acknowledgment">I understand and acknowledge the risks of other apps banning or restricting account functions due to accessibility permissions, and I accept the consequences</string>
+    <string name="a11y_wizard_new_version_detected">New version detected</string>
+    <string name="a11y_wizard_installed_version">Installed: %1$s</string>
+
+    <!-- UrlConfig -->
+    <string name="url_config_api_key">API Key</string>
+    <string name="url_config_usage">Usage</string>
+    <string name="url_config_top_up">Top Up</string>
+    <string name="url_config_profile">Profile</string>
+
+    <!-- FloatingChatService -->
+    <string name="floating_chat_window_title">AI Assistant Floating Window</string>
+    <string name="floating_chat_running_in_background">AI Assistant is running in background</string>
+
+    <!-- OCRUtils -->
+    <string name="ocr_cannot_read_image">Cannot read image file: %1$s</string>
+    <string name="ocr_cannot_decode_bitmap_from_uri">Cannot decode Bitmap from URI</string>
+    <string name="ocr_cannot_open_uri_stream">Cannot open input stream for URI</string>
+
+    <!-- DebuggerActionListener -->
+    <string name="debugger_ui_listener_started">Debugger UI operation listener started</string>
+
+    <!-- ModelConfigManager -->
+    <string name="model_config_default_name">Default Config</string>
+    <string name="model_config_config_id">Config %1$s</string>
+    <string name="model_config_import_failed">Import failed: %1$s</string>
+    <string name="default_character_card">Default Character Card</string>
+
+    <!-- PromptTagManager -->
+    <string name="prompt_tag_system_chat_prompt">Use problem library to personalize responses based on user style, preferences, and past information.</string>
+    <string name="prompt_tag_unnamed">Unnamed Tag</string>
+    <string name="prompt_tag_general_chat">General Chat</string>
+    <string name="prompt_tag_general_chat_desc">General prompt for chat functionality</string>
+    <string name="prompt_tag_general_voice">General Voice</string>
+    <string name="prompt_tag_general_voice_desc">General prompt for voice functionality</string>
+    <string name="prompt_tag_general_desktop_pet">General Desktop Pet</string>
+    <string name="prompt_tag_general_desktop_pet_desc">General prompt for desktop pet functionality</string>
+
+    <!-- MessageProcessingDelegate -->
+    <string name="message_processing">Processing message...</string>
+    <string name="message_role_user">User</string>
+    <string name="message_workspace_sync_failed">Workspace state sync failed: %1$s</string>
+    <string name="message_ai_service_not_initialized">AI service not initialized</string>
+    <string name="message_summarizing">Summarizing memories...</string>
+    <string name="message_send_failed">Failed to send message: %1$s</string>
+
+    <!-- DeepgramSttProvider -->
+    <string name="deepgram_stt_url_not_set">Deepgram STT URL not set, please fill in complete interface address (e.g., https://api.deepgram.com/v1/listen).</string>
+    <string name="deepgram_stt_url_invalid_scheme">Deepgram STT URL must start with http:// or https://.</string>
+    <string name="deepgram_stt_api_key_not_set">Deepgram STT API Key not set, please fill in settings.</string>
+    <string name="deepgram_stt_model_not_set">Deepgram STT model not set, please fill in settings (e.g., nova-2).</string>
+    <string name="deepgram_stt_file_too_large">Audio file too large (>%1$dMB), please shorten recording duration.</string>
+    <string name="deepgram_stt_request_failed">Deepgram STT request failed</string>
+
+    <!-- ToolRegistration -->
+    <string name="tool_action_send">Send</string>
+    <string name="tool_action_submit">Submit</string>
+    <string name="tool_action_confirm">Confirm</string>
+    <string name="tool_action_pay">Pay</string>
+    <string name="tool_action_purchase">Purchase</string>
+    <string name="tool_action_delete">Delete</string>
+    <string name="tool_action_remove">Remove</string>
+
+    <!-- GenericJsonConverter -->
+    <string name="generic_json_unsupported_format">Unsupported JSON format</string>
+    <string name="generic_json_parse_failed">Failed to parse generic JSON format: %1$s</string>
+    <string name="generic_json_import_from">Import from generic format</string>
+
+    <!-- MarkdownExporter -->
+    <string name="markdown_export_created_time">**Created:** %1$s</string>
+    <string name="markdown_export_updated_time">**Updated:** %1$s</string>
+    <string name="markdown_export_group">**Group:** %1$s</string>
+    <string name="markdown_export_title"># Chat History Export</string>
+    <string name="markdown_export_export_time">**Export Time:** %1$s</string>
+    <string name="markdown_export_conversation_count">**Conversation Count:** %1$d</string>
+    <string name="markdown_export_total_messages">**Total Messages:** %1$d</string>
+
+    <!-- WakeWordPreferences -->
+    <string name="wake_word_default">Xiao Ou</string>
+    <string name="wake_word_response">I\'m here</string>
+    <string name="wake_word_global_assistant">Global Assistant</string>
+    <string name="wake_word_screen">Screen</string>
+    <string name="wake_word_notification">Notification</string>
+    <string name="wake_word_which_location">Which location</string>
+    <string name="wake_word_time_query">Time|What time</string>
+
+    <!-- HttpVoiceProvider -->
+    <string name="http_tts_url_template_not_set">HTTP TTS service configuration error: URL template cannot be empty.</string>
+    <string name="http_tts_post_body_missing_placeholder">HTTP TTS service configuration error: POST request body template must contain {text} placeholder.</string>
+    <string name="http_tts_get_url_missing_placeholder">HTTP TTS service configuration error: GET request URL template must contain {text} placeholder.</string>
+    <string name="http_tts_url_invalid_scheme">HTTP TTS service configuration error: URL template must start with http:// or https://.</string>
+    <string name="http_tts_init_failed">Unexpected error while initializing HTTP TTS service</string>
+    <string name="http_tts_fetch_failed">Failed to fetch HTTP TTS audio</string>
+
+    <!-- ConversationMarkupManager -->
+    <string name="conversation_markup_multiple_tools_warning">Multiple tool calls detected. The system will only execute the first tool `%1$s` and ignore other tool calls. Please avoid calling multiple tools in a single message.</string>
+    <string name="conversation_markup_tool_calls">Tool Calls</string>
+    <string name="conversation_markup_tools_call">Tools `%1$s` Call</string>
+    <string name="conversation_markup_completion_with_tools_warning">Warning: Task completion marker detected while %1$s exists. The system will still execute these tools, but this is a high-risk combination.</string>
+    <string name="conversation_markup_completion_with_tools_hint">Please do not call tools while sending task completion status to avoid duplicate or conflicting responses.</string>
 
 </resources>

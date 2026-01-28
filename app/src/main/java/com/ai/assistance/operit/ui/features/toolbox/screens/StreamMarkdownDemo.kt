@@ -96,12 +96,7 @@ fun StreamMarkdownDemoScreen(onBackClick: () -> Unit = {}) {
     }
 
     // 模拟的Markdown内容
-    val fullMarkdownContent = remember {
-        """好的，如果您有任何问题或需要帮助时，随时可以联系我。
-
-
-<status type="complete"></status>""".trimIndent()
-    }
+    val fullMarkdownContent = stringResource(R.string.demo_complete_message)
 
     // 设置总字符数
     LaunchedEffect(fullMarkdownContent) { totalChars = fullMarkdownContent.length }

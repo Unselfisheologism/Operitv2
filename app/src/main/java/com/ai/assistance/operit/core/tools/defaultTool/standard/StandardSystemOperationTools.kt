@@ -34,6 +34,7 @@ import android.net.Uri
 import android.provider.Settings
 import java.io.File
 import com.ai.assistance.operit.services.notification.OperitNotificationStore
+import com.ai.assistance.operit.R
 
 /** 提供系统级操作的工具类 包括系统设置修改、应用安装和卸载等 这些操作需要用户明确授权 */
 open class StandardSystemOperationTools(private val context: Context) {
@@ -298,7 +299,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 toolName = tool.name,
                 success = false,
                 result = StringResultData(""),
-                error = "必须提供apk_path参数"
+                error = context.getString(R.string.sys_op_must_provide_apk_path)
             )
         }
 
@@ -324,7 +325,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 operationType = "install_request",
                 packageName = apkPath,
                 success = true,
-                details = "已发送安装请求，需要用户确认。"
+                details = context.getString(R.string.sys_op_install_request_sent)
             )
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: Exception) {
@@ -372,7 +373,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 operationType = "uninstall_request",
                 packageName = packageName,
                 success = true,
-                details = "已发送卸载请求，需要用户确认。"
+                details = context.getString(R.string.sys_op_uninstall_request_sent)
             )
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: Exception) {
@@ -507,7 +508,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                 operationType = "stop",
                 packageName = packageName,
                 success = true,
-                details = "已请求停止应用后台进程。"
+                details = context.getString(R.string.sys_op_stop_app_requested)
             )
             ToolResult(toolName = tool.name, success = true, result = resultData, error = "")
         } catch (e: SecurityException) {
@@ -610,7 +611,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                         toolName = tool.name,
                         success = false,
                         result = StringResultData(""),
-                        error = "未授予位置权限，请在应用设置中开启位置权限"
+                        error = context.getString(R.string.sys_op_location_permission_not_granted)
                 )
             }
 
@@ -770,7 +771,7 @@ open class StandardSystemOperationTools(private val context: Context) {
                         toolName = tool.name,
                         success = false,
                         result = StringResultData(""),
-                        error = "无法获取位置信息，请确保已启用位置服务"
+                        error = context.getString(R.string.sys_op_cannot_get_location)
                 )
             }
 

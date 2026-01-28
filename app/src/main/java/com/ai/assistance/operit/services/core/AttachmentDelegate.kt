@@ -364,9 +364,9 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     val screenshotHeight = imageOptions.outHeight
                     val positionInfo =
                         if (screenshotWidth > 0 && screenshotHeight > 0) {
-                            "【位置】full_screen; image_px=${screenshotWidth}x${screenshotHeight}"
+                            context.getString(R.string.attachment_location_full_screen, screenshotWidth, screenshotHeight)
                         } else {
-                            "【位置】full_screen"
+                            context.getString(R.string.attachment_location_full_screen_simple)
                         }
 
                     val ocrText = OCRUtils.recognizeText(
@@ -383,7 +383,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     val captureId = "screen_ocr_${System.currentTimeMillis()}"
                     val content =
                         buildString {
-                            append("【屏幕内容】\n")
+                            append(context.getString(R.string.attachment_screen_content))
                             append(positionInfo)
                             append("\n\n")
                             append(ocrText)
@@ -516,7 +516,7 @@ class AttachmentDelegate(private val context: Context, private val toolHandler: 
                     val timeText =
                         SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
 
-                    val content = "【当前时间】\n$timeText"
+                    val content = context.getString(R.string.attachment_current_time, timeText)
                     val attachmentInfo =
                         AttachmentInfo(
                             filePath = captureId,

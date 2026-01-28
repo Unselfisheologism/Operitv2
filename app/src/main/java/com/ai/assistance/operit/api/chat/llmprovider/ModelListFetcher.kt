@@ -201,7 +201,7 @@ object ModelListFetcher {
                     val response = client.newCall(request).execute()
 
                     if (!response.isSuccessful) {
-                        val errorBody = response.body?.string() ?: "无错误详情"
+                        val errorBody = response.body?.string() ?: context.getString(R.string.model_fetch_no_error_details)
                         val responseCode = response.code
                         response.close()
                         if ((apiProviderType == ApiProviderType.OPENAI || apiProviderType == ApiProviderType.OPENAI_GENERIC) &&
@@ -214,14 +214,14 @@ object ModelListFetcher {
                                 val fallbackBody = fallbackResponse.body?.string()
                                 if (fallbackBody.isNullOrEmpty()) {
                                     fallbackResponse.close()
-                                    return@withContext Result.failure(IOException("响应体为空"))
+                                    return@withContext Result.failure(IOException(context.getString(R.string.model_fetch_response_empty)))
                                 }
                                 fallbackResponse.close()
                                 val modelOptions = parseOpenAIModelResponse(context, fallbackBody)
                                 AppLogger.d(TAG, "成功解析模型列表，共获取 ${modelOptions.size} 个模型")
                                 return@withContext Result.success(modelOptions)
                             } else {
-                                val fallbackErrorBody = fallbackResponse.body?.string() ?: "无错误详情"
+                                val fallbackErrorBody = fallbackResponse.body?.string() ?: context.getString(R.string.model_fetch_no_error_details)
                                 AppLogger.e(
                                         TAG,
                                         "API请求失败: 状态码=${fallbackResponse.code}, 错误=$fallbackErrorBody"
@@ -229,21 +229,21 @@ object ModelListFetcher {
                                 fallbackResponse.close()
                                 return@withContext Result.failure(
                                         IOException(
-                                                "API请求失败: ${fallbackResponse.code}, 错误: $fallbackErrorBody"
+                                                context.getString(R.string.model_fetch_api_failed, fallbackResponse.code, fallbackErrorBody)
                                         )
                                 )
                             }
                         }
 
                         AppLogger.e(TAG, "API请求失败: 状态码=$responseCode, 错误=$errorBody")
-                        return@withContext Result.failure(IOException("API请求失败: $responseCode, 错误: $errorBody"))
+                        return@withContext Result.failure(IOException(context.getString(R.string.model_fetch_api_failed, responseCode, errorBody)))
                     }
 
                     val responseBody = response.body?.string()
                     response.close()
                     if (responseBody == null) {
                         AppLogger.e(TAG, "响应体为空")
-                        return@withContext Result.failure(IOException("响应体为空"))
+                        return@withContext Result.failure(IOException(context.getString(R.string.model_fetch_response_empty)))
                     }
 
                     AppLogger.d(

@@ -912,7 +912,7 @@ class ApkReverseEngineer(private val context: Context) {
             // 获取私钥
             val key = keyStore.getKey(keyAlias, keyPassword.toCharArray())
             if (key == null) {
-                val errorMessage = "在密钥库中找不到别名为'$keyAlias'的密钥"
+                val errorMessage = context.getString(R.string.apk_key_not_found_in_keystore, keyAlias)
                 AppLogger.e(TAG, errorMessage)
                 return Pair(false, errorMessage)
             }
@@ -927,7 +927,7 @@ class ApkReverseEngineer(private val context: Context) {
             // 获取证书链
             val certificateChain = keyStore.getCertificateChain(keyAlias)
             if (certificateChain == null || certificateChain.isEmpty()) {
-                val errorMessage = "无法获取别名为'$keyAlias'的证书链"
+                val errorMessage = context.getString(R.string.apk_cannot_get_cert_chain, keyAlias)
                 AppLogger.e(TAG, errorMessage)
                 return Pair(false, errorMessage)
             }

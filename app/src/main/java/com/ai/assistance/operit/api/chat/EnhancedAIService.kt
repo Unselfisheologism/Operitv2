@@ -28,6 +28,7 @@ import com.ai.assistance.operit.util.stream.StreamCollector
 import com.ai.assistance.operit.util.stream.plugins.StreamXmlPlugin
 import com.ai.assistance.operit.util.stream.splitBy
 import com.ai.assistance.operit.util.stream.stream
+import com.ai.assistance.operit.R
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -417,7 +418,7 @@ class EnhancedAIService private constructor(private val context: Context) {
 
     /** Process user input with a delay for UI feedback */
     suspend fun processUserInput(input: String): String {
-        _inputProcessingState.value = InputProcessingState.Processing("正在处理输入...")
+        _inputProcessingState.value = InputProcessingState.Processing(context.getString(R.string.enhanced_processing_input))
         return InputProcessor.processUserInput(input)
     }
 
@@ -470,7 +471,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                     // Update state to show we're processing
                     if (!isSubTask) {
                     withContext(Dispatchers.Main) {
-                        _inputProcessingState.value = InputProcessingState.Processing("正在处理消息...")
+                        _inputProcessingState.value = InputProcessingState.Processing(context.getString(R.string.enhanced_processing_message))
                         }
                     }
 
@@ -497,7 +498,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                     // Update UI state to connecting
                     if (!isSubTask) {
                     withContext(Dispatchers.Main) {
-                        _inputProcessingState.value = InputProcessingState.Connecting("正在连接AI服务...")
+                        _inputProcessingState.value = InputProcessingState.Connecting(context.getString(R.string.enhanced_connecting_service))
                         }
                     }
 
@@ -555,7 +556,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                             if (!isSubTask) {
                             withContext(Dispatchers.Main) {
                                 _inputProcessingState.value =
-                                        InputProcessingState.Receiving("正在接收AI响应...")
+                                        InputProcessingState.Receiving(context.getString(R.string.enhanced_receiving_response))
                                 }
                             }
                             isFirstChunk = false
@@ -623,7 +624,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                     AppLogger.e(TAG, "发送消息时发生错误: ${e.message}", e)
                     withContext(Dispatchers.Main) {
                         _inputProcessingState.value =
-                                InputProcessingState.Error(message = "错误: ${e.message}")
+                                InputProcessingState.Error(message = context.getString(R.string.enhanced_error_with_message, e.message ?: ""))
                     }
                 }
 
@@ -835,6 +836,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                 if (hasTaskCompletion) {
                     val warning =
                             ConversationMarkupManager.createToolsSkippedByCompletionWarning(
+                                    this@EnhancedAIService.context,
                                     extractedToolInvocations.map { it.tool.name }
                             )
                     context.roundManager.appendContent(warning)
@@ -850,7 +852,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                 if (ConversationMarkupManager.containsWaitForUserNeed(enhancedContent)) {
                     val userNeedContent =
                             ConversationMarkupManager.createWarningStatus(
-                                    "警告：工具调用和等待用户响应不能同时存在。工具调用被处理了，但这是极具危险性的。",
+                                    this@EnhancedAIService.context.getString(R.string.enhanced_tool_warning),
                             )
                     context.roundManager.appendContent(userNeedContent)
                     collector.emit(userNeedContent)
@@ -1146,7 +1148,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                 if (!isSubTask) {
                 withContext(Dispatchers.Main) {
                     _inputProcessingState.value =
-                            InputProcessingState.Receiving("正在接收工具执行后的AI响应...")
+                            InputProcessingState.Receiving(this@EnhancedAIService.context.getString(R.string.enhanced_receiving_tool_result))
                     }
                 }
 
@@ -1216,7 +1218,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                 AppLogger.e(TAG, "处理工具执行结果时出错", e)
                 withContext(Dispatchers.Main) {
                     _inputProcessingState.value =
-                            InputProcessingState.Error("处理工具执行结果失败: ${e.message}")
+                            InputProcessingState.Error(this@EnhancedAIService.context.getString(R.string.enhanced_process_tool_result_failed, e.message ?: ""))
                 }
             }
         }
@@ -1437,11 +1439,7 @@ class EnhancedAIService private constructor(private val context: Context) {
             }
 
             // 按类别拆分记忆工具和非记忆工具，以与 SystemPromptConfig 中的语义保持一致
-            val memoryCategoryName = if (isEnglish) {
-                "Memory and Memory Library Tools"
-            } else {
-                "记忆与记忆库工具"
-            }
+            val memoryCategoryName = context.getString(R.string.enhanced_memory_tools_category)
 
             val memoryTools = categories
                 .firstOrNull { it.categoryName == memoryCategoryName }
