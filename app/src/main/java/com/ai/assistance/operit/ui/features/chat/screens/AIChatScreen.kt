@@ -604,7 +604,8 @@ val actualViewModel: ChatViewModel = viewModel ?: viewModel { ChatViewModel(cont
                         // 添加导航到Token配置页面的回调
                         onNavigateToTokenConfig = onNavigateToTokenConfig,
                         // 添加导航到Settings页面的回调
-                        onNavigateToSettings = onNavigateToSettings
+                        onNavigateToSettings = onNavigateToSettings,
+                        onNavigateToModelConfig = onNavigateToModelConfig
                 )
             } else {
                 // The main content area is now a Box to allow overlaying.

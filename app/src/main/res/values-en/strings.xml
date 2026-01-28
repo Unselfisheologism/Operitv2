@@ -6443,7 +6443,7 @@
     <string name="markdown_export_total_messages">**Total Messages:** %1$d</string>
 
     <!-- WakeWordPreferences -->
-    <string name="wake_word_default">Xiao Ou</string>
+    <string name="wake_word_default">O</string>
     <string name="wake_word_response">I\'m here</string>
     <string name="wake_word_global_assistant">Global Assistant</string>
     <string name="wake_word_screen">Screen</string>

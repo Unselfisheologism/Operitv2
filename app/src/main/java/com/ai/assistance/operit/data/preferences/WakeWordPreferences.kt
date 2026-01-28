@@ -64,7 +64,7 @@ class WakeWordPreferences(private val context: Context) {
         const val DEFAULT_WAKE_PHRASE_REGEX_ENABLED = false
         const val DEFAULT_ALWAYS_LISTENING_ENABLED = false
         const val DEFAULT_WAKE_RECOGNITION_MODE = "stt"
-        const val DEFAULT_VOICE_CALL_INACTIVITY_TIMEOUT_SECONDS = 15
+        const val DEFAULT_VOICE_CALL_INACTIVITY_TIMEOUT_SECONDS = 5
         const val DEFAULT_WAKE_GREETING_ENABLED = true
 
         const val DEFAULT_WAKE_CREATE_NEW_CHAT_ON_WAKE_ENABLED = false
