@@ -171,6 +171,7 @@ class ChatServiceCore(
 
         // 初始化消息协调委托
         messageCoordinationDelegate = MessageCoordinationDelegate(
+            context = context,
             coroutineScope = coroutineScope,
             chatHistoryDelegate = chatHistoryDelegate,
             messageProcessingDelegate = messageProcessingDelegate,

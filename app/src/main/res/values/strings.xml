@@ -4442,6 +4442,24 @@
     <string name="backup_room_db_last_error">上次错误：%1$s</string>
     <string name="backup_files_location_hint">提示：备份文件保存在 Download/Operit 文件夹</string>
 
+    <string name="backup_raw_snapshot_title">文件快照备份（实验）</string>
+    <string name="backup_raw_snapshot_subtitle">以文件/目录为单位的整体压缩备份与恢复</string>
+    <string name="backup_raw_snapshot_desc">将打包应用内部数据目录中的 files/shared_prefs/datastore/databases。恢复会覆盖当前数据，并且需要重启应用生效。部分加密数据在换机/重装后可能无法使用。</string>
+    <string name="backup_raw_snapshot_include_terminal_label">包含终端数据</string>
+    <string name="backup_raw_snapshot_include_terminal_desc">终端的 Linux 环境（usr/tmp/bin）可能非常大，不建议默认包含</string>
+    <string name="backup_raw_snapshot_backup_now">立即备份</string>
+    <string name="backup_raw_snapshot_restore_from_file">从文件恢复</string>
+    <string name="backup_raw_snapshot_backing_up">正在生成文件快照备份...</string>
+    <string name="backup_raw_snapshot_restoring">正在恢复文件快照备份...</string>
+    <string name="backup_raw_snapshot_restore_confirm_title">确认恢复文件快照</string>
+    <string name="backup_raw_snapshot_restore_confirm_message">将使用以下备份文件覆盖当前应用数据：\n%1$s\n\n此操作不可撤销。建议先执行一次备份再恢复。</string>
+    <string name="backup_raw_snapshot_restore_confirm_action">确认恢复</string>
+    <string name="backup_raw_snapshot_restore_cancel_action">取消</string>
+    <string name="backup_raw_snapshot_restart_title">需要重启应用</string>
+    <string name="backup_raw_snapshot_restart_message">文件快照已恢复。为避免旧的缓存/连接导致异常，建议立即重启应用。</string>
+    <string name="backup_raw_snapshot_restart_now">立即重启</string>
+    <string name="backup_raw_snapshot_restart_later">稍后</string>
+
     <string name="backup_chat_history">聊天记录</string>
     <string name="backup_chat_history_subtitle">跨格式备份、导出与恢复</string>
     <string name="backup_chat_current_count">当前共有 %1$d 条聊天记录。</string>
@@ -5184,7 +5202,6 @@
     <string name="folder_navigator_folder">文件夹</string>
     <string name="folder_navigator_all">全部</string>
     <string name="file_manager_main_directory">主目录</string>
-    <string name="file_manager_new_tab">新标签</string>
     <string name="file_manager_search_failed">搜索失败</string>
     <string name="file_manager_search_error">搜索错误: %1$s</string>
     <string name="workflow_node">节点</string>
@@ -5229,6 +5246,29 @@
     <string name="version_update">版本更新</string>
     <string name="mcp_no_zip_selected">未选择ZIP文件</string>
     <string name="mcp_uninstall_failed">卸载失败</string>
+    <string name="chatgpt_parse_error">解析 ChatGPT 格式失败: %1$s</string>
+    <string name="chatgpt_import_from">从 ChatGPT 导入</string>
+    <string name="uiautomation_execute">执行</string>
+    <string name="uiautomation_complete">完成</string>
+    <string name="message_list_empty">消息列表不能为空</string>
+    <string name="image_capture_failed">图片捕获失败: %1$s</string>
+    <string name="stream_markdown_demo">好的，如果您有任何问题或需要帮助时，随时可以联系我。\n\n\n<status type="complete"></status></string>
+    <string name="stream_markdown_rendering">流式渲染</string>
+    <string name="graph_start_node_not_exist">起始节点 \'%1$s\' 不存在</string>
+    <string name="graph_end_node_not_exist">目标节点 \'%1$s\' 不存在</string>
+    <string name="stream_tag_required">标签必须设置</string>
+    <string name="stream_data_required">数据流必须设置</string>
+    <string name="deepseek_request_body">最终DeepSeek推理模式请求体: </string>
+    <string name="admin_shell_permission">需要设备管理员权限以执行系统操作</string>
+    <string name="virtual_display_not_ready">Shower 虚拟屏尚未就绪</string>
+    <string name="xml_content">XML内容</string>
+    <string name="browser_preview">浏览器预览</string>
+    <string name="edittext_empty">EditText不能为空</string>
+    <string name="merge_config">合并配置</string>
+    <string name="character">角</string>
+    <string name="config_bound_to_character_card">配置已绑定到角色卡</string>
+    <string name="import_key_suffix">导入密钥 %1$s</string>
+    <string name="custom_parameters">自定义参数</string>
     <string name="filediff_tool_result">工具执行结果</string>
     <string name="ffmpeg_use_template">使用此模板</string>
     <string name="filelist_go_back">返回上级目录</string>
@@ -5678,5 +5718,256 @@
     <string name="global_display_image_format">图片格式</string>
     <string name="global_display_image_quality">画质（仅对 JPG 生效）</string>
     <string name="global_display_resolution_scale">分辨率缩放（发送前缩小截图）</string>
+
+    <!-- ANR Monitor -->
+    <string name="anr_main_thread_not_responding">主线程未响应: %1$dms</string>
+    <string name="anr_thread_dump_header">=== 线程转储 (%1$s) ===</string>
+    <string name="anr_main_thread_with_state">Main Thread \'%1$s\' (状态: %2$s):\n%3$s</string>
+    <string name="anr_cannot_get_main_thread_stack">无法获取主线程堆栈: %1$s</string>
+    <string name="anr_cannot_get_main_thread_ref">无法获取主线程引用</string>
+    <string name="anr_main_thread_section">【主线程】\n%1$s\n\n</string>
+    <string name="anr_analysis_section">【分析】\n%1$s\n\n</string>
+    <string name="anr_recent_call_info">【最近调用信息】\n</string>
+    <string name="anr_package_calls">【%1$s (%2$d次调用)】\n</string>
+    <string name="anr_cannot_extract_package_info">未能提取到%1$s 包信息</string>
+    <string name="anr_report_header">===== ANR监控报告 =====\n</string>
+    <string name="anr_report_time">时间: %1$s\n</string>
+    <string name="anr_report_anr_count">ANR次数: %1$d\n</string>
+    <string name="anr_report_warning_count">警告次数: %1$d\n</string>
+    <string name="anr_report_max_block">最长阻塞时间: %1$dms\n\n</string>
+    <string name="anr_system_info_header">===== 系统信息 =====\n</string>
+    <string name="anr_android_version">Android版本: %1$d\n</string>
+    <string name="anr_device">设备: %1$s %2$s\n</string>
+    <string name="anr_memory_info">内存情况: \n</string>
+    <string name="anr_max_memory">  最大内存: %1$dMB\n</string>
+    <string name="anr_allocated_memory">  已分配内存: %1$dMB\n</string>
+    <string name="anr_free_memory">  空闲内存: %1$dMB\n\n</string>
+    <string name="anr_stack_trace_history_header">===== 堆栈跟踪历史 =====\n</string>
+    <string name="anr_time">时间: %1$s\n</string>
+    <string name="anr_caller_info_header">===== 调用者信息 =====\n</string>
+
+    <!-- Plan Mode Manager -->
+    <string name="plan_generate_detailed_plan">请为这个请求生成详细的执行计划</string>
+    <string name="plan_complexity_analyze">分析</string>
+    <string name="plan_complexity_compare">比较</string>
+    <string name="plan_complexity_research">研究</string>
+    <string name="plan_complexity_investigate">调查</string>
+    <string name="plan_complexity_summarize">总结</string>
+    <string name="plan_complexity_evaluate">评估</string>
+    <string name="plan_complexity_plan">计划</string>
+    <string name="plan_complexity_design">设计</string>
+    <string name="plan_complexity_develop">开发</string>
+    <string name="plan_complexity_detailed">详细</string>
+    <string name="plan_complexity_comprehensive">全面</string>
+    <string name="plan_complexity_in_depth">深入</string>
+    <string name="plan_complexity_systematic">系统</string>
+    <string name="plan_complexity_comprehensive_synthetic">综合</string>
+    <string name="plan_complexity_multi_angle">多角度</string>
+    <string name="plan_complexity_steps">步骤</string>
+    <string name="plan_complexity_solution">方案</string>
+    <string name="plan_complexity_several">分几个</string>
+    <string name="plan_complexity_multiple_aspects">多个方面</string>
+    <string name="plan_complexity_detailed_explain">详细解释</string>
+    <string name="plan_complexity_specific_analysis">具体分析</string>
+    <string name="plan_complexity_how_to_implement">如何实现</string>
+    <string name="plan_complexity_implementation_plan">实施方案</string>
+
+    <!-- Problem Library -->
+    <string name="problem_library_question">问题:</string>
+    <string name="problem_library_solution">解决方案:</string>
+    <string name="problem_library_history">历史记录:</string>
+    <string name="problem_library_tool_result_pruned">&lt;tool_result %1$s&gt;[...工具结果已省略...]&lt;/tool_result&gt;</string>
+
+    <!-- User Profile Preferences -->
+    <string name="profile_birth_year">出生年份</string>
+    <string name="profile_gender">性别</string>
+    <string name="profile_personality">性格特点</string>
+    <string name="profile_identity">身份认同</string>
+    <string name="profile_occupation">职业</string>
+    <string name="profile_ai_style">期待的AI风格</string>
+    <string name="profile_gender_value">性别: %1$s</string>
+    <string name="profile_birth_date">出生日期: %1$s</string>
+    <string name="profile_age">年龄: %1$d岁</string>
+    <string name="profile_personality_value">性格特点: %1$s</string>
+    <string name="profile_identity_value">身份认同: %1$s</string>
+    <string name="profile_occupation_value">职业: %1$s</string>
+    <string name="profile_ai_style_value">期待的AI风格: %1$s</string>
+    <string name="profile_regex_birth_date">(出生日期|出生年月日)[:：\s]+([\d-]+)</string>
+    <string name="profile_regex_birth_year">(出生年份|年龄)[:：\s]+(\d+)</string>
+    <string name="profile_regex_gender">性别[:：\s]+([\u4e00-\u9fa5]+)</string>
+    <string name="profile_regex_personality">性格(特点)?[:：\s]+([\u4e00-\u9fa5、，,]+)</string>
+    <string name="profile_regex_identity">身份(认同)?[:：\s]+([\u4e00-\u9fa5、，,]+)</string>
+    <string name="profile_regex_occupation">职业[:：\s]+([\u4e00-\u9fa5、，,]+)</string>
+    <string name="profile_regex_ai_style">(AI风格|期待的AI风格|偏好的AI风格)[:：\s]+([\u4e00-\u9fa5、，,]+)</string>
+
+    <!-- AIMessageManager -->
+    <string name="ai_message_user">用户</string>
+    <string name="ai_message_replying_to_previous">用户正在回复你之前的这条消息：</string>
+    <string name="ai_message_executing_deep_search">正在执行深度搜索...</string>
+    <string name="ai_message_media_omitted">[音视频已省略]</string>
+    <string name="ai_message_image_omitted">[图片已省略]</string>
+    <string name="ai_message_workspace_omitted">[工作区已省略]</string>
+    <string name="ai_message_attachment_omitted">[附件已省略]</string>
+    <string name="ai_message_reply_omitted">[回复引用已省略]</string>
+    <string name="ai_message_tool_result_omitted">[工具结果已省略: %1$s]</string>
+    <string name="ai_message_tool_result_omitted_short">[工具结果已省略]</string>
+    <string name="ai_message_omitted_segment">[...省略%1$s段...]</string>
+    <string name="ai_message_tool_start">[工具: %1$s]</string>
+    <string name="ai_message_success">成功</string>
+    <string name="ai_message_failure">失败</string>
+    <string name="ai_message_result_omitted">[结果: %1$s 已省略]</string>
+    <string name="ai_message_result_omitted_with_status">[结果: %1$s %2$s 已省略]</string>
+    <string name="ai_message_dialogue_review">\n\n对话回顾：\n</string>
+    <string name="ai_message_continue_task_if_complete">$summaryWithQuotes\n\n请你继续，如果任务完成，输出总结</string>
+    <string name="ai_message_user_label">用户</string>
+
+    <!-- MNN Provider -->
+    <string name="mnn_model_dir_not_exist">模型目录不存在: %1$s\n请确保模型已下载</string>
+    <string name="mnn_config_not_exist">配置文件不存在: %1$s\n请确保模型完整下载</string>
+    <string name="mnn_cannot_create_session">无法创建MNN LLM会话，请检查模型文件和配置</string>
+    <string name="mnn_user_prompt">用户: %1$s\n</string>
+    <string name="mnn_assistant_prompt">助手: %1$s\n</string>
+    <string name="mnn_system_prompt">系统: %1$s\n</string>
+    <string name="mnn_message_format">用户: %1$s\n</string>
+    <string name="mnn_assistant">助手: </string>
+    <string name="mnn_error_with_message">错误: %1$s</string>
+    <string name="mnn_session_not_initialized">错误: LLM会话未初始化</string>
+    <string name="mnn_reasoning_error">\n\n[推理过程出现错误]</string>
+    <string name="mnn_generic_error">错误: %1$s</string>
+    <string name="mnn_model_not_configured">未配置模型名称</string>
+    <string name="mnn_model_dir_missing">模型目录不存在: %1$s\n请先下载模型</string>
+    <string name="mnn_file_status">文件状态:</string>
+    <string name="mnn_init_failed">模型初始化失败</string>
+    <string name="mnn_connection_success">MNN LLM模型连接成功！\n\n模型: %1$s\n目录: %2$s\n总大小: %3$s\n\n%4$s</string>
+
+    <!-- APK Reverse Engineer -->
+    <string name="apk_unnamed_function">(未命名功能)</string>
+    <string name="apk_unknown_error">未知错误</string>
+    <string name="apk_extract_failed">APK解压失败: %1$s</string>
+    <string name="apk_unsigned_not_exist">未签名的APK文件不存在: %1$s</string>
+    <string name="apk_keystore_not_exist">密钥库文件不存在: %1$s</string>
+    <string name="apk_keystore_load_failed_both">使用PKCS12和JKS格式均无法加载密钥库进行签名。\nPKCS12错误: %1$s\nJKS错误: %2$s</string>
+    <string name="apk_sign_failed">APK签名失败: %1$s</string>
+    <string name="apk_get_keystore_instance_failed">获取%1$s密钥库实例失败</string>
+    <string name="apk_load_keystore_failed">加载%1$s密钥库失败: %2$s</string>
+    <string name="apk_keystore_no_aliases">%1$s密钥库中没有任何密钥别名</string>
+    <string name="apk_load_keystore_format_failed">以%1$s格式加载密钥库失败: %2$s</string>
+    <string name="apk_key_not_private_key">找到的密钥不是私钥类型: %1$s</string>
+    <string name="apk_cert_not_x509">证书不是X509Certificate类型: %1$s</string>
+    <string name="apk_signer_execution_failed">ApkSigner执行失败: %1$s</string>
+    <string name="apk_sign_with_keystore_failed">使用KeyStore签名APK失败: %1$s</string>
+
+    <!-- Gemini Provider -->
+    <string name="gemini_connecting">连接到Gemini服务...</string>
+    <string name="gemini_establishing">建立连接中...</string>
+    <string name="gemini_connected">连接成功，处理响应...</string>
+    <string name="gemini_network_timeout_retry">【网络超时，正在进行第 %1$d 次重试...】</string>
+    <string name="gemini_network_unstable_retry">【网络不稳定，正在进行第 %1$d 次重试...】</string>
+    <string name="gemini_network_interrupted_retry">【网络中断，正在进行第 %1$d 次重试...】</string>
+    <string name="gemini_request_body_json">请求体JSON: </string>
+    <string name="gemini_request_headers">请求头: \n%1$s</string>
+    <string name="gemini_empty_response">响应为空</string>
+    <string name="gemini_unknown_error">未知错误</string>
+    <string name="gemini_google_search_source">**🔍 Google 搜索来源：**\n\n</string>
+    <string name="gemini_search_query">- 查询：`%1$s`\n</string>
+    <string name="gemini_reference_sources">\n**📄 参考来源：**\n\n</string>
+    <string name="gemini_default">默认</string>
+    <string name="mcp_no_available_tools">暂无可用工具</string>
+    <string name="run">运行</string>
+    <string name="ai_message_app_list_changed">[应用列表已变更，正在刷新缓存...]</string>
+    <string name="ai_message_auto_send_label">[自动发送]</string>
+    <string name="ai_message_cache_cleared">[缓存已清除]</string>
+    <string name="ai_message_file_preview">[文件预览]</string>
+    <string name="ai_message_plan_mode_entered">[已进入计划模式]</string>
+    <string name="ai_message_plan_mode_exited">[已退出计划模式]</string>
+    <string name="ai_message_plan_mode_indicator">[计划模式]</string>
+    <string name="ai_message_prefetch_failed">[预取消息列表失败]</string>
+    <string name="ai_message_preview_omitted">[预览已省略]</string>
+    <string name="ai_message_reference">引用</string>
+    <string name="ai_message_screenshot">截图</string>
+    <string name="ai_message_running">运行中...</string>
+    <string name="ai_message_run_error">运行错误</string>
+    <string name="ai_message_search_mode_label">[搜索模式]</string>
+    <string name="ai_message_thinking">思考中...</string>
+    <string name="ai_message_voice_note">[语音消息]</string>
+    <string name="apk_alignment_info">正在对齐APK...\nAPK: %1$s</string>
+    <string name="apk_apk_signer_path">APK签名器路径: %1$s</string>
+    <string name="apk_apksigner_not_found">未找到apksigner，请确保Android SDK build-tools配置正确</string>
+    <string name="apk_delete_failed">删除对齐后的APK失败: %1$s</string>
+    <string name="apk_general_error">错误: %1$s</string>
+    <string name="apk_interrupted">已中断</string>
+    <string name="apk_io_error">IO错误: %1$s</string>
+    <string name="apk_keystore_path_info">密钥库路径: %1$s</string>
+    <string name="apk_signer_not_exist">签名器文件不存在: %1$s</string>
+    <string name="apk_signing_aborted">签名已中止</string>
+    <string name="apk_signing_info">正在签名APK...\nAPK: %1$s\n密钥库: %2$s\n密钥别名: %3$s\n签名器: %4$s</string>
+    <string name="apk_use_builtin_keystore">使用内置调试密钥库</string>
+    <string name="apk_zip_align_failed">ZIP对齐失败: %1$s</string>
+    <string name="apk_zip_align_path">ZIP对齐路径: %1$s</string>
+    <string name="apk_zipalign_not_found">未找到zipalign，请确保Android SDK build-tools配置正确</string>
+    <string name="admin_shell_requires_permission">需要root权限或adb权限</string>
+    <string name="default_option">默认</string>
+    <string name="character_card_single_char">单字符</string>
+    <string name="waifu_config_bound_to_card">绑定到角色卡</string>
+    <string name="advanced_import_key">导入密钥</string>
+    <string name="model_custom_params">自定义参数</string>
+    <string name="file_manager_home">主页</string>
+    <string name="file_manager_new_tab">新标签页</string>
+    <string name="mcp_merge_config">合并配置</string>
+    <string name="mcp_manage_env_variables">管理环境变量</string>
+    <string name="mcp_error_no_zip_selected">未选择ZIP文件</string>
+    <string name="update_unknown_error">未知错误</string>
+    <string name="update_version_title">版本 %1$s</string>
+    <string name="avatar_reset">重置</string>
+
+    <!-- WorkflowExecutor (新增) -->
+    <string name="workflow_node_execution_exception">节点执行异常: %1$s</string>
+
+    <!-- MessageCoordinationDelegate (新增) -->
+    <string name="chat_cannot_create_new">无法创建新对话，请重试</string>
+    <string name="chat_ai_service_unavailable_memory">AI服务不可用，无法更新记忆</string>
+    <string name="chat_history_empty_no_update">聊天历史为空，无需更新记忆</string>
+    <string name="chat_memory_manually_updated">记忆已手动更新</string>
+    <string name="chat_manual_update_memory_failed">手动更新记忆失败: %1$s</string>
+    <string name="chat_summarizing_please_wait">正在总结中，请稍候</string>
+    <string name="chat_conversation_summary_generated">对话总结已生成</string>
+    <string name="chat_compressing_history">正在压缩历史记录...</string>
+    <string name="chat_ai_service_unavailable_summarize">AI服务不可用，无法进行总结</string>
+    <string name="chat_summarize_failed_no_valid_summary">总结失败: 未能生成有效总结</string>
+    <string name="chat_summarize_generation_failed">总结生成失败: %1$s</string>
+
+    <!-- AIForegroundService (新增) -->
+    <string name="service_operit_running">Operit 正在运行</string>
+    <string name="service_chat_complete_reminder">对话完成提醒</string>
+    <string name="service_keep_background">保持 Operit 在后台运行。</string>
+    <string name="service_notify_when_complete">对话完成后提醒你。</string>
+    <string name="service_running_wake_pause">Operit 正在运行（唤醒暂停）</string>
+    <string name="service_running_wake_listening">Operit 正在运行（唤醒监听中）</string>
+    <string name="service_voice_floating_window">语音悬浮窗</string>
+    <string name="service_turn_off_wake">关闭唤醒</string>
+    <string name="service_turn_on_wake">开启唤醒</string>
+    <string name="service_exit">退出</string>
+    <string name="service_stop">停止</string>
+
+    <!-- ProblemLibraryTool (新增) -->
+    <string name="problem_library_no_legacy_found">未找到相关 Legacy 记录</string>
+    <string name="problem_library_query_error">查询 Legacy 问题库时出错: %1$s</string>
+    <string name="problem_library_found_records">找到 %1$d 条相关 Legacy 记录:</string>
+    <string name="problem_library_summary">摘要: %1$s</string>
+    <string name="problem_library_query">问题: %1$s</string>
+    <string name="problem_library_using_tool">使用工具: %1$s</string>
+    <string name="problem_library_time">时间: %1$s</string>
+
+    <!-- TextExporter (新增) -->
+    <string name="export_created_time">创建时间: %1$s</string>
+    <string name="export_updated_time">更新时间: %1$s</string>
+    <string name="export_group">分组: %1$s</string>
+    <string name="export_message_count">消息数: %1$d</string>
+    <string name="export_export_time">导出时间: %1$s</string>
+    <string name="export_conversation_count">对话数量: %1$d</string>
+    <string name="export_total_message_count">总消息数: %1$d</string>
+    <string name="export_user">用户</string>
+    <string name="export_assistant">助手</string>
+    <string name="export_model">（模型: %1$s）</string>
 
 </resources>

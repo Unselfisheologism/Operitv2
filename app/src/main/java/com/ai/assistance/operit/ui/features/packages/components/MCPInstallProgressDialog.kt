@@ -41,8 +41,8 @@ fun MCPInstallProgressDialog(
         installProgress: InstallProgress?,
         onDismissRequest: () -> Unit,
         result: InstallResult? = null,
-        serverName: String = "MCP 服务器",
-        operationType: String = "安装"
+        serverName: String = "",
+        operationType: String = ""
 ) {
     if (installProgress == null && result == null) return
 

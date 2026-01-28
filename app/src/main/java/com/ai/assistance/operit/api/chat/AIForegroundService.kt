@@ -80,9 +80,7 @@ class AIForegroundService : Service() {
         private const val NOTIFICATION_ID = 1
         private const val REPLY_NOTIFICATION_ID = 2001
         private const val CHANNEL_ID = "AI_SERVICE_CHANNEL"
-        private const val CHANNEL_NAME = "Operit 正在运行"
         private const val REPLY_CHANNEL_ID = "AI_REPLY_CHANNEL"
-        private const val REPLY_CHANNEL_NAME = "对话完成提醒"
 
         private const val ACTION_CANCEL_CURRENT_OPERATION = "com.ai.assistance.operit.action.CANCEL_CURRENT_OPERATION"
         private const val REQUEST_CODE_CANCEL_CURRENT_OPERATION = 9002
@@ -558,6 +556,7 @@ class AIForegroundService : Service() {
                             wakeStopInProgress = false
                             wakeHandoffPending = false
                             pendingWakeTriggeredAtMs = 0L
+                            SpeechPrerollStore.clearPendingWakePhrase()
                         }
                     }
                 }
@@ -618,25 +617,27 @@ class AIForegroundService : Service() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelName = getString(R.string.service_operit_running)
+            val replyChannelName = getString(R.string.service_chat_complete_reminder)
             val serviceChannel =
                     NotificationChannel(
-                                    CHANNEL_ID,
-                                    CHANNEL_NAME,
-                                    NotificationManager.IMPORTANCE_LOW // 低重要性，避免打扰用户
-                            )
-                            .apply {
-                                description = "保持 Operit 在后台运行。"
-                            }
+                            CHANNEL_ID,
+                            channelName,
+                            NotificationManager.IMPORTANCE_LOW // 低重要性，避免打扰用户
+                    )
+                    .apply {
+                        description = getString(R.string.service_keep_background)
+                    }
 
             val replyChannel =
                     NotificationChannel(
-                                    REPLY_CHANNEL_ID,
-                                    REPLY_CHANNEL_NAME,
-                                    NotificationManager.IMPORTANCE_HIGH
-                            )
-                            .apply {
-                                description = "对话完成后提醒你。"
-                            }
+                            REPLY_CHANNEL_ID,
+                            replyChannelName,
+                            NotificationManager.IMPORTANCE_HIGH
+                    )
+                    .apply {
+                        description = getString(R.string.service_notify_when_complete)
+                    }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(serviceChannel)
             manager.createNotificationChannel(replyChannel)
@@ -1130,22 +1131,23 @@ class AIForegroundService : Service() {
         // 在实际项目中，应替换为应用的自定义图标。
         val wakeListeningEnabledSnapshot = wakeListeningEnabled
         val wakeListeningSuspendedSnapshot = wakeListeningSuspendedForIme || wakeListeningSuspendedForExternalRecording || wakeListeningSuspendedForFloatingFullscreen
-        val contentText = if (isAiBusy) {
-            "AI is processing..."
-        } else {
-            if (wakeListeningEnabledSnapshot) {
-                if (wakeListeningSuspendedSnapshot) {
-                    "Operit 正在运行（唤醒暂停）"
-                } else {
-                    "Operit 正在运行（唤醒监听中）"
-                }
+        val title =
+            if (isAiBusy) {
+                characterName ?: getString(R.string.service_operit_running)
             } else {
-                "Operit 正在运行"
+                if (wakeListeningEnabledSnapshot) {
+                    if (wakeListeningSuspendedSnapshot) {
+                        getString(R.string.service_running_wake_pause)
+                    } else {
+                        getString(R.string.service_running_wake_listening)
+                    }
+                } else {
+                    getString(R.string.service_operit_running)
+                }
             }
-        }
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Operit")
-            .setContentText(contentText)
+            .setContentTitle(title)
+            .setContentText(getString(R.string.service_operit_running))
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true) // 使通知不可被用户清除
@@ -1186,7 +1188,7 @@ class AIForegroundService : Service() {
         }
         builder.addAction(
             android.R.drawable.ic_btn_speak_now,
-            "语音悬浮窗",
+            getString(R.string.service_voice_floating_window),
             floatingPendingIntent
         )
 
@@ -1205,7 +1207,11 @@ class AIForegroundService : Service() {
         )
         builder.addAction(
             android.R.drawable.ic_lock_silent_mode_off,
-            if (wakeListeningEnabledSnapshot) "关闭唤醒" else "开启唤醒",
+            if (wakeListeningEnabledSnapshot) {
+                getString(R.string.service_turn_off_wake)
+            } else {
+                getString(R.string.service_turn_on_wake)
+            },
             toggleWakePendingIntent
         )
 
@@ -1225,7 +1231,7 @@ class AIForegroundService : Service() {
 
         builder.addAction(
             android.R.drawable.ic_menu_close_clear_cancel,
-            "退出",
+            getString(R.string.service_exit),
             exitPendingIntent
         )
 
@@ -1246,7 +1252,7 @@ class AIForegroundService : Service() {
 
             builder.addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                "停止",
+                getString(R.string.service_stop),
                 pendingIntent
             )
         }

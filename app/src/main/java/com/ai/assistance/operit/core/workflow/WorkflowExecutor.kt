@@ -1,6 +1,7 @@
 package com.ai.assistance.operit.core.workflow
 
 import android.content.Context
+import com.ai.assistance.operit.R
 import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.data.model.AITool
@@ -882,7 +883,7 @@ class WorkflowExecutor(private val context: Context) {
                 onNodeStateChange(node.id, NodeExecutionState.Success(result))
                 true
             } catch (e: Exception) {
-                val errorMsg = "节点执行异常: ${e.message}"
+                val errorMsg = context.getString(R.string.workflow_node_execution_exception, e.message ?: "")
                 nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
                 onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
                 false
@@ -910,7 +911,7 @@ class WorkflowExecutor(private val context: Context) {
                 onNodeStateChange(node.id, NodeExecutionState.Success(result))
                 true
             } catch (e: Exception) {
-                val errorMsg = "节点执行异常: ${e.message}"
+                val errorMsg = context.getString(R.string.workflow_node_execution_exception, e.message ?: "")
                 nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
                 onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
                 false
@@ -969,7 +970,7 @@ class WorkflowExecutor(private val context: Context) {
                 onNodeStateChange(node.id, NodeExecutionState.Success(extracted))
                 true
             } catch (e: Exception) {
-                val errorMsg = "节点执行异常: ${e.message}"
+                val errorMsg = context.getString(R.string.workflow_node_execution_exception, e.message ?: "")
                 nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
                 onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
                 false
@@ -990,7 +991,7 @@ class WorkflowExecutor(private val context: Context) {
         try {
             // 检查是否有 actionType
             if (node.actionType.isBlank()) {
-                val errorMsg = "节点 ${node.name} 没有配置 actionType"
+                val errorMsg = context.getString(R.string.workflow_node_execution_exception, "节点 ${node.name} 没有配置 actionType")
                 AppLogger.w(TAG, errorMsg)
                 nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
                 onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
@@ -1024,7 +1025,7 @@ class WorkflowExecutor(private val context: Context) {
                 onNodeStateChange(node.id, NodeExecutionState.Success(resultMessage))
                 return true
             } else {
-                val errorMsg = result.error ?: "未知错误"
+                val errorMsg = result.error ?: context.getString(R.string.workflow_node_execution_exception, "未知错误")
                 AppLogger.e(TAG, "节点执行失败: ${node.name}, 错误: $errorMsg")
                 nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
                 onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
@@ -1032,7 +1033,7 @@ class WorkflowExecutor(private val context: Context) {
             }
             
         } catch (e: Exception) {
-            val errorMsg = "节点执行异常: ${e.message}"
+            val errorMsg = context.getString(R.string.workflow_node_execution_exception, e.message ?: "")
             AppLogger.e(TAG, "节点执行异常: ${node.name}", e)
             nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
             onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
@@ -1040,4 +1041,3 @@ class WorkflowExecutor(private val context: Context) {
         }
     }
 }
-

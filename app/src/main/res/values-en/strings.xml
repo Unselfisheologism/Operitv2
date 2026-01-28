@@ -2687,7 +2687,6 @@
     <string name="folder_navigator_folder">Folder</string>
     <string name="folder_navigator_all">All</string>
     <string name="file_manager_main_directory">Main Directory</string>
-    <string name="file_manager_new_tab">New Tab</string>
     <string name="file_manager_search_failed">Search failed</string>
     <string name="file_manager_search_error">Search error: %1$s</string>
     <string name="workflow_node">Node</string>
@@ -2732,6 +2731,29 @@
     <string name="version_update">Version Update</string>
     <string name="mcp_no_zip_selected">No ZIP file selected</string>
     <string name="mcp_uninstall_failed">Uninstall failed</string>
+    <string name="chatgpt_parse_error">Failed to parse ChatGPT format: %1$s</string>
+    <string name="chatgpt_import_from">Import from ChatGPT</string>
+    <string name="uiautomation_execute">Execute</string>
+    <string name="uiautomation_complete">Complete</string>
+    <string name="message_list_empty">Message list cannot be empty</string>
+    <string name="image_capture_failed">Image capture failed: %1$s</string>
+    <string name="stream_markdown_demo">OK, if you have any questions or need help, feel free to contact me anytime.\n\n\n<status type="complete"></status></string>
+    <string name="stream_markdown_rendering">Streaming</string>
+    <string name="graph_start_node_not_exist">Start node \'%1$s\' does not exist</string>
+    <string name="graph_end_node_not_exist">End node \'%1$s\' does not exist</string>
+    <string name="stream_tag_required">Tag must be set</string>
+    <string name="stream_data_required">Data stream must be set</string>
+    <string name="deepseek_request_body">Final DeepSeek reasoning mode request body: </string>
+    <string name="admin_shell_permission">Device administrator permission required to execute system operations</string>
+    <string name="virtual_display_not_ready">Shower virtual display not ready</string>
+    <string name="xml_content">XML Content</string>
+    <string name="browser_preview">Browser Preview</string>
+    <string name="edittext_empty">EditText cannot be empty</string>
+    <string name="merge_config">Merge Config</string>
+    <string name="character">Char</string>
+    <string name="config_bound_to_character_card">Config bound to character card</string>
+    <string name="import_key_suffix">Import key %1$s</string>
+    <string name="custom_parameters">Custom Parameters</string>
     <string name="filediff_tool_result">Tool execution result</string>
     <string name="ffmpeg_use_template">Use this template</string>
     <string name="filelist_go_back">Go back to parent directory</string>
@@ -4458,9 +4480,28 @@
     <string name="backup_room_db_last_success">Last successful backup: %1$s</string>
     <string name="backup_room_db_last_error">Last error: %1$s</string>
     
+    <string name="backup_raw_snapshot_title">File Snapshot Backup (Experimental)</string>
+    <string name="backup_raw_snapshot_subtitle">Archive/restore app data by file &amp; directory</string>
+    <string name="backup_raw_snapshot_desc">This will archive app-internal data directories: files/shared_prefs/datastore/databases. Restoring overwrites current data and requires an app restart. Some encrypted data may not work after device migration or reinstall.</string>
+    <string name="backup_raw_snapshot_include_terminal_label">Include terminal data</string>
+    <string name="backup_raw_snapshot_include_terminal_desc">The terminal Linux environment (usr/tmp/bin) can be very large; it is excluded by default</string>
+    <string name="backup_raw_snapshot_backup_now">Backup now</string>
+    <string name="backup_raw_snapshot_restore_from_file">Restore from file</string>
+    <string name="backup_raw_snapshot_backing_up">Creating file snapshot backup...</string>
+    <string name="backup_raw_snapshot_restoring">Restoring file snapshot backup...</string>
+    <string name="backup_raw_snapshot_restore_confirm_title">Confirm file snapshot restore</string>
+    <string name="backup_raw_snapshot_restore_confirm_message">This will overwrite current app data with the following backup:\n%1$s\n\nThis action cannot be undone. It is recommended to perform a backup before restoring.</string>
+    <string name="backup_raw_snapshot_restore_confirm_action">Confirm restore</string>
+    <string name="backup_raw_snapshot_restore_cancel_action">Cancel</string>
+    <string name="backup_raw_snapshot_restart_title">App restart required</string>
+    <string name="backup_raw_snapshot_restart_message">File snapshot restored. To avoid issues caused by old caches/connections, please restart the app now.</string>
+    <string name="backup_raw_snapshot_restart_now">Restart now</string>
+    <string name="backup_raw_snapshot_restart_later">Later</string>
+
     <string name="backup_chat_history">Chat History</string>
     <string name="backup_chat_history_subtitle">Cross-format backup, export and recovery</string>
     <string name="backup_chat_current_count">Currently %1$d chat record(s).</string>
+    
     <string name="backup_export">Export</string>
     <string name="backup_import">Import</string>
     <string name="backup_delete_all">Delete All</string>
@@ -5691,5 +5732,256 @@
     <string name="global_display_image_format">Image Format</string>
     <string name="global_display_image_quality">Quality (JPG only)</string>
     <string name="global_display_resolution_scale">Resolution Scale (downscale before sending)</string>
+
+    <!-- ANR Monitor -->
+    <string name="anr_main_thread_not_responding">Main thread not responding: %1$dms</string>
+    <string name="anr_thread_dump_header">=== Thread Dump (%1$s) ===</string>
+    <string name="anr_main_thread_with_state">Main Thread \'%1$s\' (State: %2$s):\n%3$s</string>
+    <string name="anr_cannot_get_main_thread_stack">Cannot get main thread stack: %1$s</string>
+    <string name="anr_cannot_get_main_thread_ref">Cannot get main thread reference</string>
+    <string name="anr_main_thread_section">[Main Thread]\n%1$s\n\n</string>
+    <string name="anr_analysis_section">[Analysis]\n%1$s\n\n</string>
+    <string name="anr_recent_call_info">[Recent Call Information]\n</string>
+    <string name="anr_package_calls">[%1$s (%2$d calls)]\n</string>
+    <string name="anr_cannot_extract_package_info">Failed to extract %1$s package information</string>
+    <string name="anr_report_header">===== ANR Monitor Report =====\n</string>
+    <string name="anr_report_time">Time: %1$s\n</string>
+    <string name="anr_report_anr_count">ANR Count: %1$d\n</string>
+    <string name="anr_report_warning_count">Warning Count: %1$d\n</string>
+    <string name="anr_report_max_block">Max Block Time: %1$dms\n\n</string>
+    <string name="anr_system_info_header">===== System Information =====\n</string>
+    <string name="anr_android_version">Android Version: %1$d\n</string>
+    <string name="anr_device">Device: %1$s %2$s\n</string>
+    <string name="anr_memory_info">Memory Status: \n</string>
+    <string name="anr_max_memory">  Max Memory: %1$dMB\n</string>
+    <string name="anr_allocated_memory">  Allocated Memory: %1$dMB\n</string>
+    <string name="anr_free_memory">  Free Memory: %1$dMB\n\n</string>
+    <string name="anr_stack_trace_history_header">===== Stack Trace History =====\n</string>
+    <string name="anr_time">Time: %1$s\n</string>
+    <string name="anr_caller_info_header">===== Caller Information =====\n</string>
+
+    <!-- Plan Mode Manager -->
+    <string name="plan_generate_detailed_plan">Please generate a detailed execution plan for this request</string>
+    <string name="plan_complexity_analyze">Analyze</string>
+    <string name="plan_complexity_compare">Compare</string>
+    <string name="plan_complexity_research">Research</string>
+    <string name="plan_complexity_investigate">Investigate</string>
+    <string name="plan_complexity_summarize">Summarize</string>
+    <string name="plan_complexity_evaluate">Evaluate</string>
+    <string name="plan_complexity_plan">Plan</string>
+    <string name="plan_complexity_design">Design</string>
+    <string name="plan_complexity_develop">Develop</string>
+    <string name="plan_complexity_detailed">Detailed</string>
+    <string name="plan_complexity_comprehensive">Comprehensive</string>
+    <string name="plan_complexity_in_depth">In-depth</string>
+    <string name="plan_complexity_systematic">Systematic</string>
+    <string name="plan_complexity_comprehensive_synthetic">Comprehensive</string>
+    <string name="plan_complexity_multi_angle">Multi-angle</string>
+    <string name="plan_complexity_steps">Steps</string>
+    <string name="plan_complexity_solution">Solution</string>
+    <string name="plan_complexity_several">Several</string>
+    <string name="plan_complexity_multiple_aspects">Multiple aspects</string>
+    <string name="plan_complexity_detailed_explain">Explain in detail</string>
+    <string name="plan_complexity_specific_analysis">Specific analysis</string>
+    <string name="plan_complexity_how_to_implement">How to implement</string>
+    <string name="plan_complexity_implementation_plan">Implementation plan</string>
+
+    <!-- Problem Library -->
+    <string name="problem_library_question">Question:</string>
+    <string name="problem_library_solution">Solution:</string>
+    <string name="problem_library_history">History:</string>
+    <string name="problem_library_tool_result_pruned">&lt;tool_result %1$s&gt;[...Tool result omitted...]&lt;/tool_result&gt;</string>
+
+    <!-- User Profile Preferences -->
+    <string name="profile_birth_year">Birth year</string>
+    <string name="profile_gender">Gender</string>
+    <string name="profile_personality">Personality</string>
+    <string name="profile_identity">Identity</string>
+    <string name="profile_occupation">Occupation</string>
+    <string name="profile_ai_style">Expected AI Style</string>
+    <string name="profile_gender_value">Gender: %1$s</string>
+    <string name="profile_birth_date">Birth Date: %1$s</string>
+    <string name="profile_age">Age: %1$d</string>
+    <string name="profile_personality_value">Personality: %1$s</string>
+    <string name="profile_identity_value">Identity: %1$s</string>
+    <string name="profile_occupation_value">Occupation: %1$s</string>
+    <string name="profile_ai_style_value">Expected AI Style: %1$s</string>
+    <string name="profile_regex_birth_date">(Birth Date|Date of Birth)[:：\s]+([\d-]+)</string>
+    <string name="profile_regex_birth_year">(Birth year|Age)[:：\s]+(\d+)</string>
+    <string name="profile_regex_gender">Gender[:：\s]+([^;]+)</string>
+    <string name="profile_regex_personality">Personality( traits)?[:：\s]+([^;]+)</string>
+    <string name="profile_regex_identity">Identity( recognition)?[:：\s]+([^;]+)</string>
+    <string name="profile_regex_occupation">Occupation[:：\s]+([^;]+)</string>
+    <string name="profile_regex_ai_style">(AI Style|Expected AI Style|Preferred AI Style)[:：\s]+([^;]+)</string>
+
+    <!-- AI Message Manager -->
+    <string name="ai_message_user">User</string>
+    <string name="ai_message_replying_to_previous">The user is replying to your previous message:</string>
+    <string name="ai_message_executing_deep_search">Executing deep search...</string>
+    <string name="ai_message_plan_mode_indicator">[Plan Mode]</string>
+    <string name="ai_message_thinking">Thinking...</string>
+    <string name="ai_message_voice_note">[Voice note]</string>
+    <string name="ai_message_image_omitted">[Image omitted]</string>
+    <string name="ai_message_media_omitted">[Audio/video omitted]</string>
+    <string name="ai_message_file_preview">[File preview]</string>
+    <string name="ai_message_preview_omitted">[Preview omitted]</string>
+    <string name="ai_message_reference">Reference</string>
+    <string name="ai_message_screenshot">Screenshot</string>
+    <string name="ai_message_running">Running...</string>
+    <string name="ai_message_run_error">Run error</string>
+    <string name="ai_message_app_list_changed">[App list changed, refreshing cache...]</string>
+    <string name="ai_message_plan_mode_entered">[Plan mode entered]</string>
+    <string name="ai_message_plan_mode_exited">[Plan mode exited]</string>
+    <string name="ai_message_cache_cleared">[Cache cleared]</string>
+    <string name="ai_message_prefetch_failed">[Failed to prefetch message list]</string>
+    <string name="ai_message_search_mode_label">[Search Mode]</string>
+    <string name="ai_message_auto_send_label">[Auto send]</string>
+    <string name="ai_message_workspace_omitted">[Workspace omitted]</string>
+    <string name="ai_message_attachment_omitted">[Attachment omitted]</string>
+    <string name="ai_message_reply_omitted">[Reply reference omitted]</string>
+    <string name="ai_message_tool_result_omitted">[Tool result omitted: %1$s]</string>
+    <string name="ai_message_tool_result_omitted_short">[Tool result omitted]</string>
+    <string name="ai_message_omitted_segment">[...%1$s segments omitted...]</string>
+    <string name="ai_message_tool_start">[Tool: %1$s]</string>
+    <string name="ai_message_success">Success</string>
+    <string name="ai_message_failure">Failure</string>
+    <string name="ai_message_result_omitted">[Result: %1$s omitted]</string>
+    <string name="ai_message_result_omitted_with_status">[Result: %1$s %2$s omitted]</string>
+    <string name="ai_message_dialogue_review">\n\nDialogue review:\n</string>
+    <string name="ai_message_continue_task_if_complete">%1$s\n\nPlease continue, if the task is complete, output a summary</string>
+    <string name="ai_message_user_label">User</string>
+
+    <!-- MNN Provider -->
+    <string name="mnn_model_dir_not_exist">Model directory does not exist: %1$s\nPlease ensure the model is downloaded</string>
+    <string name="mnn_config_not_exist">Configuration file does not exist: %1$s\nPlease ensure the model is fully downloaded</string>
+    <string name="mnn_cannot_create_session">Unable to create MNN LLM session, please check model files and configuration</string>
+    <string name="mnn_user_prompt">User: %1$s\n</string>
+    <string name="mnn_assistant_prompt">Assistant: %1$s\n</string>
+    <string name="mnn_system_prompt">System: %1$s\n</string>
+    <string name="mnn_message_format">User: %1$s\n</string>
+    <string name="mnn_assistant">Assistant: </string>
+    <string name="mnn_error_with_message">Error: %1$s</string>
+    <string name="mnn_session_not_initialized">Error: LLM session not initialized</string>
+    <string name="mnn_reasoning_error">\n\n[Reasoning process error]</string>
+    <string name="mnn_generic_error">Error: %1$s</string>
+    <string name="mnn_model_not_configured">Model name not configured</string>
+    <string name="mnn_model_dir_missing">Model directory does not exist: %1$s\nPlease download the model first</string>
+    <string name="mnn_file_status">File status:</string>
+    <string name="mnn_init_failed">Model initialization failed</string>
+    <string name="mnn_connection_success">MNN LLM model connected successfully!\n\nModel: %1$s\nDirectory: %2$s\nTotal size: %3$s\n\n%4$s</string>
+
+    <!-- APK Reverse Engineer -->
+    <string name="apk_unnamed_function">(Unnamed function)</string>
+    <string name="apk_unknown_error">Unknown error</string>
+    <string name="apk_extract_failed">Failed to unzip APK: %1$s</string>
+    <string name="apk_unsigned_not_exist">Unsigned APK file does not exist: %1$s</string>
+    <string name="apk_keystore_not_exist">Keystore file does not exist: %1$s</string>
+    <string name="apk_keystore_load_failed_both">Unable to load keystore for signing using both PKCS12 and JKS formats.\nPKCS12 error: %1$s\nJKS error: %2$s</string>
+    <string name="apk_sign_failed">APK signing failed: %1$s</string>
+    <string name="apk_get_keystore_instance_failed">Failed to get %1$s keystore instance</string>
+    <string name="apk_load_keystore_failed">Failed to load %1$s keystore: %2$s</string>
+    <string name="apk_keystore_no_aliases">No key aliases in %1$s keystore</string>
+    <string name="apk_load_keystore_format_failed">Failed to load keystore in %1$s format: %2$s</string>
+    <string name="apk_key_not_private_key">Found key is not of private key type: %1$s</string>
+    <string name="apk_cert_not_x509">Certificate is not of X509Certificate type: %1$s</string>
+    <string name="apk_signer_execution_failed">ApkSigner execution failed: %1$s</string>
+    <string name="apk_sign_with_keystore_failed">Failed to sign APK with KeyStore: %1$s</string>
+    <string name="apk_signer_not_exist">Signer file does not exist: %1$s</string>
+    <string name="apk_zip_align_failed">ZIP alignment failed: %1$s</string>
+    <string name="apk_apksigner_not_found">apksigner not found, please ensure Android SDK build-tools is configured correctly</string>
+    <string name="apk_zipalign_not_found">zipalign not found, please ensure Android SDK build-tools is configured correctly</string>
+    <string name="apk_signing_aborted">Signing aborted</string>
+    <string name="apk_use_builtin_keystore">Using built-in debug keystore</string>
+    <string name="apk_keystore_path_info">Keystore path: %1$s</string>
+    <string name="apk_signing_info">Signing APK...\nAPK: %1$s\nKeystore: %2$s\nKey alias: %3$s\nSigner: %4$s</string>
+    <string name="apk_alignment_info">Aligning APK...\nAPK: %1$s</string>
+    <string name="apk_apk_signer_path">APK signer path: %1$s</string>
+    <string name="apk_zip_align_path">ZIP align path: %1$s</string>
+    <string name="apk_delete_failed">Failed to delete aligned APK: %1$s</string>
+    <string name="apk_io_error">IO error: %1$s</string>
+    <string name="apk_interrupted">Interrupted</string>
+    <string name="apk_general_error">Error: %1$s</string>
+
+    <!-- Gemini Provider -->
+    <string name="gemini_connecting">Connecting to Gemini service...</string>
+    <string name="gemini_establishing">Establishing connection...</string>
+    <string name="gemini_connected">Connected successfully, processing response...</string>
+    <string name="gemini_network_timeout_retry">[Network timeout, retrying for the %1$d time...]</string>
+    <string name="gemini_network_unstable_retry">[Network unstable, retrying for the %1$d time...]</string>
+    <string name="gemini_network_interrupted_retry">[Network interrupted, retrying for the %1$d time...]</string>
+    <string name="gemini_request_body_json">Request body JSON: </string>
+    <string name="gemini_request_headers">Request headers: \n%1$s</string>
+    <string name="gemini_empty_response">Response is empty</string>
+    <string name="gemini_unknown_error">Unknown error</string>
+    <string name="gemini_google_search_source">**🔍 Google Search Sources:**\n\n</string>
+    <string name="gemini_search_query">- Query: `%1$s`\n</string>
+    <string name="gemini_reference_sources">\n**📄 Reference Sources:**\n\n</string>
+    <string name="gemini_default">Default</string>
+    <string name="mcp_no_available_tools">No available tools</string>
+    <string name="run">Run</string>
+    <string name="admin_shell_requires_permission">Requires root or ADB permission</string>
+    <string name="default_option">Default</string>
+    <string name="character_card_single_char">Single character</string>
+    <string name="waifu_config_bound_to_card">Bound to character card</string>
+    <string name="advanced_import_key">Import key</string>
+    <string name="model_custom_params">Custom parameters</string>
+    <string name="file_manager_home">Home</string>
+    <string name="file_manager_new_tab">New tab</string>
+    <string name="mcp_merge_config">Merge config</string>
+    <string name="mcp_manage_env_variables">Manage environment variables</string>
+    <string name="mcp_error_no_zip_selected">No ZIP file selected</string>
+    <string name="update_unknown_error">Unknown error</string>
+    <string name="update_version_title">Version %1$s</string>
+    <string name="avatar_reset">Reset</string>
+
+    <!-- WorkflowExecutor (新增) -->
+    <string name="workflow_node_execution_exception">Node execution exception: %1$s</string>
+
+    <!-- MessageCoordinationDelegate (新增) -->
+    <string name="chat_cannot_create_new">Cannot create new conversation, please try again</string>
+    <string name="chat_ai_service_unavailable_memory">AI service unavailable, cannot update memory</string>
+    <string name="chat_history_empty_no_update">Chat history is empty, no need to update memory</string>
+    <string name="chat_memory_manually_updated">Memory has been manually updated</string>
+    <string name="chat_manual_update_memory_failed">Manual memory update failed: %1$s</string>
+    <string name="chat_summarizing_please_wait">Summarizing, please wait</string>
+    <string name="chat_conversation_summary_generated">Conversation summary generated</string>
+    <string name="chat_compressing_history">Compressing history records...</string>
+    <string name="chat_ai_service_unavailable_summarize">AI service unavailable, cannot summarize</string>
+    <string name="chat_summarize_failed_no_valid_summary">Summarization failed: unable to generate valid summary</string>
+    <string name="chat_summarize_generation_failed">Summary generation failed: %1$s</string>
+
+    <!-- AIForegroundService (新增) -->
+    <string name="service_operit_running">Operit is running</string>
+    <string name="service_chat_complete_reminder">Chat completion reminder</string>
+    <string name="service_keep_background">Keep Operit running in the background.</string>
+    <string name="service_notify_when_complete">Notify you when the conversation is complete.</string>
+    <string name="service_running_wake_pause">Operit is running (wake paused)</string>
+    <string name="service_running_wake_listening">Operit is running (wake listening)</string>
+    <string name="service_voice_floating_window">Voice floating window</string>
+    <string name="service_turn_off_wake">Turn off wake</string>
+    <string name="service_turn_on_wake">Turn on wake</string>
+    <string name="service_exit">Exit</string>
+    <string name="service_stop">Stop</string>
+
+    <!-- ProblemLibraryTool (新增) -->
+    <string name="problem_library_no_legacy_found">No related Legacy records found</string>
+    <string name="problem_library_query_error">Error querying Legacy problem library: %1$s</string>
+    <string name="problem_library_found_records">Found %1$d related Legacy records:</string>
+    <string name="problem_library_summary">Summary: %1$s</string>
+    <string name="problem_library_query">Question: %1$s</string>
+    <string name="problem_library_using_tool">Using tool: %1$s</string>
+    <string name="problem_library_time">Time: %1$s</string>
+
+    <!-- TextExporter (新增) -->
+    <string name="export_created_time">Created time: %1$s</string>
+    <string name="export_updated_time">Updated time: %1$s</string>
+    <string name="export_group">Group: %1$s</string>
+    <string name="export_message_count">Message count: %1$d</string>
+    <string name="export_export_time">Export time: %1$s</string>
+    <string name="export_conversation_count">Conversation count: %1$d</string>
+    <string name="export_total_message_count">Total messages: %1$d</string>
+    <string name="export_user">User</string>
+    <string name="export_assistant">Assistant</string>
+    <string name="export_model">(Model: %1$s)</string>
 
 </resources>

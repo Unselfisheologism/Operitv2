@@ -933,7 +933,7 @@ class ChatHistoryManager private constructor(private val context: Context) {
 
                     ExportFormat.TXT -> {
                         val file = File(exportDir, "chat_backup_$timestamp.txt")
-                        file.writeText(TextExporter.exportMultiple(completeHistories))
+                        file.writeText(TextExporter.exportMultiple(context, completeHistories))
                         file
                     }
 

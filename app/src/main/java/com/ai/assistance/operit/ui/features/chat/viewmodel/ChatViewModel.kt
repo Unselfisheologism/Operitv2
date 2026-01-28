@@ -495,6 +495,7 @@ class ChatViewModel(private val context: Context) : ViewModel() {
         // Initialize message coordination delegate
         messageCoordinationDelegate = 
                 MessageCoordinationDelegate(
+                        context = context,
                         coroutineScope = viewModelScope,
                         chatHistoryDelegate = chatHistoryDelegate,
                         messageProcessingDelegate = messageProcessingDelegate,

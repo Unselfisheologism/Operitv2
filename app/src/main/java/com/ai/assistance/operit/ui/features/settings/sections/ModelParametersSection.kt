@@ -1211,7 +1211,7 @@ private fun ParameterItem(
 
                     if (parameter.isCustom) {
                         Text(
-                                text = "自定义参数",
+                                text = stringResource(R.string.model_custom_params),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.outline
                         )

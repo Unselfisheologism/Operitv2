@@ -164,7 +164,7 @@ private fun CharacterCardAssignOption(
                     )
                 } else {
                     Text(
-                        text = card.name.firstOrNull()?.toString() ?: "角",
+                        text = card.name.firstOrNull()?.toString() ?: stringResource(R.string.character_card_single_char),
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSecondaryContainer
                     )

@@ -166,7 +166,7 @@ fun StreamMarkdownDemoScreen(onBackClick: () -> Unit = {}) {
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                            text = "流式渲染 (Streaming)",
+                            text = stringResource(R.string.stream_markdown_rendering),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                     )

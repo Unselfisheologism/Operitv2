@@ -11,10 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.style.TextOverflow
+import com.ai.assistance.operit.R
 import com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.models.FileItem
 import com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.utils.formatDate
 import com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.utils.formatFileSize

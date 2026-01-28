@@ -230,7 +230,7 @@ class PlanModeManager(
             // 使用获取到的服务实例来发送规划请求
             val planningStream = planningService.sendMessage(
                 context = context,
-                message = "请为这个请求生成详细的执行计划",
+                message = context.getString(R.string.plan_generate_detailed_plan),
                 chatHistory = planningHistory, // 传入包含系统提示词的历史
                 modelParameters = emptyList(), // 修正类型为 List
                 enableThinking = false,
@@ -312,9 +312,29 @@ $userMessage
     fun shouldUseDeepSearchMode(message: String): Boolean {
         val messageLength = message.length
         val complexityIndicators = listOf(
-            "分析", "比较", "研究", "调查", "总结", "评估", "计划", "设计", "开发",
-            "详细", "全面", "深入", "系统", "综合", "多角度", "步骤", "方案",
-            "分几个", "多个方面", "详细解释", "具体分析", "如何实现", "实施方案"
+            context.getString(R.string.plan_complexity_analyze),
+            context.getString(R.string.plan_complexity_compare),
+            context.getString(R.string.plan_complexity_research),
+            context.getString(R.string.plan_complexity_investigate),
+            context.getString(R.string.plan_complexity_summarize),
+            context.getString(R.string.plan_complexity_evaluate),
+            context.getString(R.string.plan_complexity_plan),
+            context.getString(R.string.plan_complexity_design),
+            context.getString(R.string.plan_complexity_develop),
+            context.getString(R.string.plan_complexity_detailed),
+            context.getString(R.string.plan_complexity_comprehensive),
+            context.getString(R.string.plan_complexity_in_depth),
+            context.getString(R.string.plan_complexity_systematic),
+            context.getString(R.string.plan_complexity_comprehensive_synthetic),
+            context.getString(R.string.plan_complexity_multi_angle),
+            context.getString(R.string.plan_complexity_steps),
+            context.getString(R.string.plan_complexity_solution),
+            context.getString(R.string.plan_complexity_several),
+            context.getString(R.string.plan_complexity_multiple_aspects),
+            context.getString(R.string.plan_complexity_detailed_explain),
+            context.getString(R.string.plan_complexity_specific_analysis),
+            context.getString(R.string.plan_complexity_how_to_implement),
+            context.getString(R.string.plan_complexity_implementation_plan)
         )
         
         val hasComplexityIndicators = complexityIndicators.any { indicator ->

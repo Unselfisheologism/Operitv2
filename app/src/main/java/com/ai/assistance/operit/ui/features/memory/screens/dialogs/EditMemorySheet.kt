@@ -38,13 +38,14 @@ fun EditMemorySheet(
         tags: List<String>
     ) -> Unit
 ) {
+    val defaultFolder = stringResource(R.string.memory_uncategorized)
     var title by remember { mutableStateOf(memory?.title ?: "") }
     var content by remember { mutableStateOf(memory?.content ?: "") }
     var contentType by remember { mutableStateOf(memory?.contentType ?: "text/plain") }
     var source by remember { mutableStateOf(memory?.source ?: "user_input") }
     var credibility by remember { mutableStateOf(memory?.credibility ?: 0.8f) }
     var importance by remember { mutableStateOf(memory?.importance ?: 0.5f) }
-    var folderPath by remember { mutableStateOf(memory?.folderPath ?: "未分类") }
+    var folderPath by remember { mutableStateOf(memory?.folderPath ?: defaultFolder) }
     val tags = remember { mutableStateListOf<String>() }
     
     LaunchedEffect(memory) {

@@ -679,7 +679,7 @@ class GeminiProvider(
             logDebug("连接状态: $status")
         }
 
-        emitConnectionStatus("连接到Gemini服务...")
+        emitConnectionStatus(context.getString(R.string.gemini_connecting))
 
         while (retryCount < maxRetries) {
             // 在循环开始时检查是否已被取消
@@ -771,7 +771,7 @@ class GeminiProvider(
                     throw IOException(context.getString(R.string.gemini_error_timeout_max_retries, e.message ?: ""))
                 }
                 logError("连接超时，尝试重试 $retryCount/$maxRetries", e)
-                onNonFatalError("【网络超时，正在进行第 $retryCount 次重试...】")
+                onNonFatalError(context.getString(R.string.gemini_network_timeout_retry, retryCount))
                 delay(1000L * (1 shl (retryCount - 1)))
             } catch (e: UnknownHostException) {
                 if (isManuallyCancelled) {
@@ -785,7 +785,7 @@ class GeminiProvider(
                     throw IOException(context.getString(R.string.gemini_error_cannot_connect))
                 }
                 logError("无法解析主机，尝试重试 $retryCount/$maxRetries", e)
-                onNonFatalError("【网络不稳定，正在进行第 $retryCount 次重试...】")
+                onNonFatalError(context.getString(R.string.gemini_network_unstable_retry, retryCount))
                 delay(1000L * (1 shl (retryCount - 1)))
             } catch (e: IOException) {
                 if (isManuallyCancelled) {
@@ -800,7 +800,7 @@ class GeminiProvider(
                     throw IOException(context.getString(R.string.gemini_error_max_retries, e.message ?: ""))
                 }
                 logError("IO异常，尝试重试 $retryCount/$maxRetries", e)
-                onNonFatalError("【网络中断，正在进行第 $retryCount 次重试...】")
+                onNonFatalError(context.getString(R.string.gemini_network_interrupted_retry, retryCount))
                 delay(1000L * (1 shl (retryCount - 1)))
             } catch (e: Exception) {
                 if (isManuallyCancelled) {

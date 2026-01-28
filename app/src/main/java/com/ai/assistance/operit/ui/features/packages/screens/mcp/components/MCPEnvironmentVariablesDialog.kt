@@ -54,7 +54,7 @@ fun MCPEnvironmentVariablesDialog(
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
             Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
-                Text(text = "管理环境变量", style = MaterialTheme.typography.headlineSmall)
+                Text(text = stringResource(R.string.mcp_manage_env_variables), style = MaterialTheme.typography.headlineSmall)
 
                 Spacer(modifier = Modifier.height(16.dp))
 

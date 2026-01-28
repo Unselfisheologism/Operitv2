@@ -210,7 +210,7 @@ fun PackageDetailsDialog(
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(text = "默认")
+                                        Text(text = stringResource(R.string.default_option))
                                         if (activeStateId.isNullOrBlank()) {
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Icon(
@@ -269,7 +269,7 @@ fun PackageDetailsDialog(
                             }
 
                             if (toolsForTab.isEmpty()) {
-                                EmptyToolsCard(message = "暂无可用工具")
+                                EmptyToolsCard(message = stringResource(R.string.mcp_no_available_tools))
                             } else {
                                 LazyColumn(
                                     modifier = Modifier.fillMaxSize(),
@@ -396,7 +396,7 @@ private fun ToolCard(
                     contentPadding = PaddingValues(horizontal = 8.dp)
                 ) {
                     Text(
-                        text = "运行",
+                        text = stringResource(R.string.run),
                         style = MaterialTheme.typography.labelMedium
                     )
                 }

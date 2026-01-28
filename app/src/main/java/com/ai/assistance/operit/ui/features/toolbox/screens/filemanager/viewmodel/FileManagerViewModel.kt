@@ -15,6 +15,7 @@ import com.ai.assistance.operit.core.tools.FileInfoData
 import com.ai.assistance.operit.core.tools.FindFilesResultData
 import com.ai.assistance.operit.data.model.AITool
 import com.ai.assistance.operit.data.model.ToolParameter
+import com.ai.assistance.operit.R
 import com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.components.DisplayMode
 import com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.models.FileItem
 import com.ai.assistance.operit.ui.features.toolbox.screens.filemanager.models.TabItem
@@ -52,7 +53,7 @@ class FileManagerViewModel(private val context: Context) : ViewModel() {
     var pendingScrollPosition by mutableStateOf<Pair<String, Int>?>(null)
 
     // 标签页状态
-    var tabs = mutableStateListOf(TabItem("/sdcard", "主目录")) // TODO: 国际化 - 这个需要context，暂时保留中文
+    var tabs = mutableStateListOf(TabItem("/sdcard", context.getString(R.string.file_manager_home)))
     var activeTabIndex by mutableStateOf(0)
 
     // 上下文菜单状态
@@ -201,7 +202,7 @@ class FileManagerViewModel(private val context: Context) : ViewModel() {
     }
 
     // 添加新标签
-    fun addTab(path: String = "/sdcard", title: String = "新标签") { // TODO: 国际化 - 这个需要context，暂时保留中文
+    fun addTab(path: String = "/sdcard", title: String = context.getString(R.string.file_manager_new_tab)) {
         tabs.add(TabItem(path, title))
         activeTabIndex = tabs.size - 1
         currentPath = path

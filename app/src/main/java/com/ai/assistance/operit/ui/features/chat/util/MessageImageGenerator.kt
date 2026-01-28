@@ -88,9 +88,9 @@ object MessageImageGenerator {
     ): File {
         try {
             AppLogger.d(TAG, "开始生成消息图片（使用 Capturable），消息数量: ${messages.size}, 宽度: $width, 风格: $chatStyle")
-            
+
             if (messages.isEmpty()) {
-                throw IllegalArgumentException("消息列表不能为空")
+                throw IllegalArgumentException("Message list cannot be empty")
             }
             
             // 获取 Activity 和根视图，用于临时附加 ComposeView

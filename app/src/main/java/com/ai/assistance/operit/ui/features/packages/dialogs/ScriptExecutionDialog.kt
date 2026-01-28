@@ -240,7 +240,7 @@ fun ScriptExecutionDialog(
                                             toolName = "${packageName}:${tool.name}",
                                             success = false,
                                             result = StringResultData(""),
-                                            error = stringResource(R.string.script_missing_params, missingParams.joinToString(", "))
+                                            error = context.getString(R.string.script_missing_params, missingParams.joinToString(", "))
                                         )
                                         withContext(Dispatchers.Main) {
                                             executionResults = listOf(missingResult)
@@ -266,7 +266,7 @@ fun ScriptExecutionDialog(
                                                     toolName = "${packageName}:${tool.name}",
                                                     success = false,
                                                     result = StringResultData(""),
-                                                    error = stringResource(R.string.script_flow_error, e.message ?: "")
+                                                    error = context.getString(R.string.script_flow_error, e.message ?: "")
                                                 )
                                                 withContext(Dispatchers.Main) {
                                                     executionResults = executionResults + errorResult
@@ -292,7 +292,7 @@ fun ScriptExecutionDialog(
                                             toolName = "${packageName}:${tool.name}",
                                             success = false,
                                             result = StringResultData(""),
-                                            error = stringResource(R.string.script_execution_error, e.message ?: "")
+                                            error = context.getString(R.string.script_execution_error, e.message ?: "")
                                         )
                                         executionResults = executionResults + finalError
                                         onExecuted(finalError)

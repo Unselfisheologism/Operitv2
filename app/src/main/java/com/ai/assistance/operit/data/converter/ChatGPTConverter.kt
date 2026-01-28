@@ -25,7 +25,7 @@ class ChatGPTConverter : ChatFormatConverter {
             val conversations = json.decodeFromString<List<ChatGPTConversation>>(content)
             conversations.mapNotNull { convertConversation(it) }
         } catch (e: Exception) {
-            throw ConversionException("解析 ChatGPT 格式失败: ${e.message}", e)
+            throw ConversionException("Failed to parse ChatGPT format: ${e.message}", e)
         }
     }
     

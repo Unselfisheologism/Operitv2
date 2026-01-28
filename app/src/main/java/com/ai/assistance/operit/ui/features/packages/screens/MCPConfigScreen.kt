@@ -85,7 +85,7 @@ fun MCPConfigScreen(
 
     // 实例化ViewModel
     val viewModel = remember {
-        MCPViewModel.Factory(mcpRepository).create(MCPViewModel::class.java)
+        MCPViewModel.Factory(mcpRepository, context).create(MCPViewModel::class.java)
     }
     val deployViewModel = remember {
         MCPDeployViewModel.Factory(context, mcpRepository).create(MCPDeployViewModel::class.java)
@@ -906,7 +906,7 @@ fun MCPConfigScreen(
                     }
                     Text(when(importTabIndex) {
                         2 -> stringResource(R.string.connect)
-                        3 -> "合并配置"
+                        3 -> stringResource(R.string.mcp_merge_config)
                         else -> stringResource(R.string.import_action)
                     })
                 }

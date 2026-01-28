@@ -402,8 +402,8 @@ private fun ProgressCard(
 private fun statusIconFor(statusText: String): ImageVector {
     val text = statusText.lowercase()
     return when {
-        text.contains("执行") || text.contains("execut") -> Icons.Filled.PlayArrow
-        text.contains("完成") || text.contains("done") || text.contains("success") -> Icons.Filled.CheckCircle
+        text.contains("execut") -> Icons.Filled.PlayArrow
+        text.contains("done") || text.contains("success") -> Icons.Filled.CheckCircle
         else -> Icons.Filled.Info
     }
 }

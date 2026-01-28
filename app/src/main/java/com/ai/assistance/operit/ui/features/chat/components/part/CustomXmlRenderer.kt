@@ -409,7 +409,7 @@ class CustomXmlRenderer(
         // 提取工具名称
         val nameRegex = "name=\"([^\"]+)\"".toRegex()
         val nameMatch = nameRegex.find(content)
-        val toolName = nameMatch?.groupValues?.get(1) ?: "未知工具"
+        val toolName = nameMatch?.groupValues?.get(1) ?: "Unknown tool"
 
         // 提取参数
         val params = extractParamsFromTool(content)
@@ -476,7 +476,7 @@ class CustomXmlRenderer(
 
         // 提取工具名称
         val nameMatch = ChatMarkupRegex.nameAttr.find(content)
-        val toolName = nameMatch?.groupValues?.get(1) ?: "未知工具"
+        val toolName = nameMatch?.groupValues?.get(1) ?: stringResource(R.string.unknown_tool)
 
         // 提取状态
         val statusMatch = ChatMarkupRegex.statusAttr.find(content)

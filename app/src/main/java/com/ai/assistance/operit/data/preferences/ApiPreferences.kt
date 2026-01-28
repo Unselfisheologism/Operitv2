@@ -92,9 +92,6 @@ class ApiPreferences private constructor(private val context: Context) {
         // Key for Disable Stream Output
         val DISABLE_STREAM_OUTPUT = booleanPreferencesKey("disable_stream_output")
 
-        // Custom Prompt Settings
-        val CUSTOM_INTRO_PROMPT = stringPreferencesKey("custom_intro_prompt")
-        
         // Custom System Prompt Template (Advanced Configuration)
         val CUSTOM_SYSTEM_PROMPT_TEMPLATE = stringPreferencesKey("custom_system_prompt_template")
 
@@ -121,9 +118,6 @@ class ApiPreferences private constructor(private val context: Context) {
         // Default value for Disable Stream Output (default false, meaning stream is enabled by default)
         const val DEFAULT_DISABLE_STREAM_OUTPUT = false
 
-        // Default values for custom prompts
-        const val DEFAULT_INTRO_PROMPT = "你是Operit，一个全能AI助手，旨在解决用户提出的任何任务。你有各种工具可以调用，以高效完成复杂的请求。"
-        
         // Default system prompt template (empty means use built-in template)
         const val DEFAULT_SYSTEM_PROMPT_TEMPLATE = ""
 
@@ -207,14 +201,6 @@ class ApiPreferences private constructor(private val context: Context) {
         context.apiDataStore.data.map { preferences ->
             preferences[DISABLE_STREAM_OUTPUT] ?: DEFAULT_DISABLE_STREAM_OUTPUT
         }
-
-    // Custom Prompt Flows
-    val customIntroPromptFlow: Flow<String> =
-            context.apiDataStore.data.map { preferences ->
-                preferences[CUSTOM_INTRO_PROMPT] ?: DEFAULT_INTRO_PROMPT
-            }
-
-
 
     // Custom System Prompt Template Flow
     val customSystemPromptTemplateFlow: Flow<String> =
@@ -409,24 +395,10 @@ class ApiPreferences private constructor(private val context: Context) {
             result
         }
 
-    // Save custom prompts
-    suspend fun saveCustomPrompts(introPrompt: String) {
-        context.apiDataStore.edit { preferences ->
-            preferences[CUSTOM_INTRO_PROMPT] = introPrompt
-        }
-    }
-
     // Save custom system prompt template
     suspend fun saveCustomSystemPromptTemplate(template: String) {
         context.apiDataStore.edit { preferences ->
             preferences[CUSTOM_SYSTEM_PROMPT_TEMPLATE] = template
-        }
-    }
-
-    // Reset custom prompts to default values
-    suspend fun resetCustomPrompts() {
-        context.apiDataStore.edit { preferences ->
-            preferences[CUSTOM_INTRO_PROMPT] = DEFAULT_INTRO_PROMPT
         }
     }
 
