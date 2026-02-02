@@ -425,6 +425,7 @@ class EnhancedAIService private constructor(private val context: Context) {
     /** Send a message to the AI service */
     suspend fun sendMessage(
         message: String,
+        chatId: String? = null,
         chatHistory: List<Pair<String, String>> = emptyList(),
         workspacePath: String? = null,
         workspaceEnv: String? = null,
@@ -656,6 +657,8 @@ class EnhancedAIService private constructor(private val context: Context) {
                             isSubTask,
                             characterName,
                             avatarUri,
+                            roleCardId,
+                            chatId,
                             onToolInvocation,
                             stream
                         )
@@ -771,6 +774,8 @@ class EnhancedAIService private constructor(private val context: Context) {
             isSubTask: Boolean,
             characterName: String? = null,
             avatarUri: String? = null,
+            roleCardId: String? = null,
+            chatId: String? = null,
             onToolInvocation: (suspend (String) -> Unit)? = null,
             stream: Boolean = true
     ) {
@@ -889,6 +894,8 @@ class EnhancedAIService private constructor(private val context: Context) {
                         isSubTask,
                         characterName,
                         avatarUri,
+                        roleCardId,
+                        chatId,
                         onToolInvocation,
                         stream = stream
                 )
@@ -993,6 +1000,8 @@ class EnhancedAIService private constructor(private val context: Context) {
         isSubTask: Boolean,
         characterName: String? = null,
         avatarUri: String? = null,
+        roleCardId: String? = null,
+        chatId: String? = null,
         onToolInvocation: (suspend (String) -> Unit)? = null,
         stream: Boolean = true
     ) {
@@ -1015,7 +1024,9 @@ class EnhancedAIService private constructor(private val context: Context) {
                 toolHandler = toolHandler,
                 packageManager = packageManager,
                 collector = collector,
-                callerName = characterName
+                callerName = characterName,
+                callerChatId = chatId,
+                callerCardId = roleCardId
             )
 
             if (allToolResults.isNotEmpty()) {
@@ -1023,7 +1034,7 @@ class EnhancedAIService private constructor(private val context: Context) {
                 processToolResults(
                     allToolResults, context, functionType, collector, enableThinking,
                     enableMemoryQuery, onNonFatalError, onTokenLimitExceeded, maxTokens, tokenUsageThreshold, isSubTask,
-                    characterName, avatarUri, onToolInvocation, stream
+                    characterName, avatarUri, roleCardId, chatId, onToolInvocation, stream
                 )
             }
         }
@@ -1054,6 +1065,8 @@ class EnhancedAIService private constructor(private val context: Context) {
             isSubTask: Boolean,
             characterName: String? = null,
             avatarUri: String? = null,
+            roleCardId: String? = null,
+            chatId: String? = null,
             onToolInvocation: (suspend (String) -> Unit)? = null,
             stream: Boolean = true
     ) {
@@ -1218,6 +1231,8 @@ class EnhancedAIService private constructor(private val context: Context) {
                     isSubTask,
                     characterName,
                     avatarUri,
+                    roleCardId,
+                    chatId,
                     onToolInvocation,
                     stream
                 )

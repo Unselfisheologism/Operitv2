@@ -105,6 +105,16 @@ private constructor(private val context: Context, private val packageManager: Pa
             } else {
                 injectedParams.remove("__operit_package_caller_name")
             }
+            if (params["__operit_package_chat_id"] != null) {
+                injectedParams["__operit_package_chat_id"] = params["__operit_package_chat_id"].toString()
+            } else {
+                injectedParams.remove("__operit_package_chat_id")
+            }
+            if (params["__operit_package_caller_card_id"] != null) {
+                injectedParams["__operit_package_caller_card_id"] = params["__operit_package_caller_card_id"].toString()
+            } else {
+                injectedParams.remove("__operit_package_caller_card_id")
+            }
             val result = engine.executeScriptFunction(script, functionName, injectedParams)
 
             return result?.toString() ?: "null"
@@ -187,6 +197,16 @@ private constructor(private val context: Context, private val packageManager: Pa
                 injectedParams["__operit_package_caller_name"] = params["__operit_package_caller_name"].toString()
             } else {
                 injectedParams.remove("__operit_package_caller_name")
+            }
+            if (params["__operit_package_chat_id"] != null) {
+                injectedParams["__operit_package_chat_id"] = params["__operit_package_chat_id"].toString()
+            } else {
+                injectedParams.remove("__operit_package_chat_id")
+            }
+            if (params["__operit_package_caller_card_id"] != null) {
+                injectedParams["__operit_package_caller_card_id"] = params["__operit_package_caller_card_id"].toString()
+            } else {
+                injectedParams.remove("__operit_package_caller_card_id")
             }
 
             // Execute the script with timeout

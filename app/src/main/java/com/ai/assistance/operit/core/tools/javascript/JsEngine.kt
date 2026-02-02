@@ -477,6 +477,30 @@ class JsEngine(private val context: Context) {
                 }
             }
 
+            function getChatId() {
+                try {
+                    var v = window['__operit_package_chat_id'];
+                    if (v === null || v === undefined || v === "") {
+                        return undefined;
+                    }
+                    return String(v);
+                } catch (e) {
+                    return undefined;
+                }
+            }
+
+            function getCallerCardId() {
+                try {
+                    var v = window['__operit_package_caller_card_id'];
+                    if (v === null || v === undefined || v === "") {
+                        return undefined;
+                    }
+                    return String(v);
+                } catch (e) {
+                    return undefined;
+                }
+            }
+
             // Operit standard directories (injected from native)
             var OPERIT_DOWNLOAD_DIR = ${JSONObject.quote(operitDownloadDir)};
             var OPERIT_CLEAN_ON_EXIT_DIR = ${JSONObject.quote(operitCleanOnExitDir)};
@@ -784,6 +808,20 @@ class JsEngine(private val context: Context) {
                     ? String(params.__operit_package_caller_name)
                     : undefined;
                 window['__operit_package_caller_name'] = __operitCallerName;
+            } catch (e) {
+            }
+            try {
+                var __operitChatId = (params && params.__operit_package_chat_id !== undefined && params.__operit_package_chat_id !== null && String(params.__operit_package_chat_id).length > 0)
+                    ? String(params.__operit_package_chat_id)
+                    : undefined;
+                window['__operit_package_chat_id'] = __operitChatId;
+            } catch (e) {
+            }
+            try {
+                var __operitCallerCardId = (params && params.__operit_package_caller_card_id !== undefined && params.__operit_package_caller_card_id !== null && String(params.__operit_package_caller_card_id).length > 0)
+                    ? String(params.__operit_package_caller_card_id)
+                    : undefined;
+                window['__operit_package_caller_card_id'] = __operitCallerCardId;
             } catch (e) {
             }
             

@@ -192,7 +192,9 @@ object ToolExecutionManager {
         toolHandler: AIToolHandler,
         packageManager: PackageManager,
         collector: StreamCollector<String>,
-        callerName: String? = null
+        callerName: String? = null,
+        callerChatId: String? = null,
+        callerCardId: String? = null
     ): List<ToolResult> = coroutineScope {
         // 默认工具注册现在可能在启动阶段被延后；这里确保在真正执行工具前已完成注册
         // registerDefaultTools() 是幂等且线程安全的，可安全重复调用
@@ -217,7 +219,7 @@ object ToolExecutionManager {
             }
         }
 
-        val injectedInvocations = if (callerName.isNullOrBlank()) {
+        val injectedInvocations = if (callerName.isNullOrBlank() && callerChatId.isNullOrBlank() && callerCardId.isNullOrBlank()) {
             permittedInvocations
         } else {
             permittedInvocations.map { invocation ->
@@ -225,17 +227,28 @@ object ToolExecutionManager {
                 if (!isPackageTool) {
                     invocation
                 } else {
-                    val hasCallerParam = invocation.tool.parameters.any { it.name == "__operit_package_caller_name" }
-                    if (hasCallerParam) {
-                        invocation
-                    } else {
-                        invocation.copy(
-                            tool = invocation.tool.copy(
-                                parameters = invocation.tool.parameters +
-                                    ToolParameter("__operit_package_caller_name", callerName)
-                            )
-                        )
+                    val updatedParams = invocation.tool.parameters.toMutableList()
+                    if (!callerName.isNullOrBlank()) {
+                        val hasCallerParam = updatedParams.any { it.name == "__operit_package_caller_name" }
+                        if (!hasCallerParam) {
+                            updatedParams.add(ToolParameter("__operit_package_caller_name", callerName))
+                        }
                     }
+                    if (!callerChatId.isNullOrBlank()) {
+                        val hasChatIdParam = updatedParams.any { it.name == "__operit_package_chat_id" }
+                        if (!hasChatIdParam) {
+                            updatedParams.add(ToolParameter("__operit_package_chat_id", callerChatId))
+                        }
+                    }
+                    if (!callerCardId.isNullOrBlank()) {
+                        val hasCallerCardParam = updatedParams.any { it.name == "__operit_package_caller_card_id" }
+                        if (!hasCallerCardParam) {
+                            updatedParams.add(ToolParameter("__operit_package_caller_card_id", callerCardId))
+                        }
+                    }
+                    invocation.copy(
+                        tool = invocation.tool.copy(parameters = updatedParams)
+                    )
                 }
             }
         }

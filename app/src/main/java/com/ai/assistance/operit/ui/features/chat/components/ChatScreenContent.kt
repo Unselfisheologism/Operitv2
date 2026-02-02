@@ -198,13 +198,22 @@ fun ChatScreenContent(
                 }
             }
 
-    LaunchedEffect(activeCharacterCard, displayedChatHistories, currentChatId) {
+    LaunchedEffect(activeCharacterCard, displayedChatHistories, currentChatId, chatHistories) {
         val activeCard = activeCharacterCard ?: return@LaunchedEffect
         if (displayedChatHistories.isEmpty()) {
             return@LaunchedEffect
         }
         val hasCurrentChatInFilter = displayedChatHistories.any { it.id == currentChatId }
-        if (currentChatId.isBlank() || !hasCurrentChatInFilter) {
+        val hasCurrentChatInAll =
+            currentChatId.isNotBlank() && chatHistories.any { it.id == currentChatId }
+        if (currentChatId.isBlank()) {
+            actualViewModel.switchChat(displayedChatHistories.first().id)
+            return@LaunchedEffect
+        }
+        if (!hasCurrentChatInFilter) {
+            if (!hasCurrentChatInAll) {
+                return@LaunchedEffect
+            }
             actualViewModel.switchChat(displayedChatHistories.first().id)
         }
     }

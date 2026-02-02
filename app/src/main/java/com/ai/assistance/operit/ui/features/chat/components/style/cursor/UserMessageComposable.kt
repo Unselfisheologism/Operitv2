@@ -216,18 +216,13 @@ fun UserMessageComposable(message: ChatMessage, backgroundColor: Color, textColo
             Column(modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)) {
-                if (!proxySenderName.isNullOrBlank()) {
-                    Text(
-                        text = proxySenderName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                }
-
                 // 用户消息标题
                 Text(
-                    text = "Prompt",
+                    text = if (!proxySenderName.isNullOrBlank()) {
+                        "Prompt by $proxySenderName"
+                    } else {
+                        "Prompt"
+                    },
                     style = MaterialTheme.typography.labelSmall,
                     color = effectiveTextColor.copy(alpha = 0.7f),
                     modifier = Modifier.padding(bottom = 8.dp)

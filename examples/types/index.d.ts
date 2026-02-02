@@ -185,6 +185,10 @@ declare global {
 
     function getCallerName(): string | undefined;
 
+    function getChatId(): string | undefined;
+
+    function getCallerCardId(): string | undefined;
+
     const OPERIT_DOWNLOAD_DIR: string;
     const OPERIT_CLEAN_ON_EXIT_DIR: string;
 

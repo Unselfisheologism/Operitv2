@@ -334,6 +334,7 @@ object AIMessageManager {
             // 使用普通模式
             enhancedAiService.sendMessage(
                 message = messageContent,
+                chatId = chatId,
                 chatHistory = memoryForRequest, // Correct parameter name is chatHistory
                 workspacePath = workspacePath,
                 promptFunctionType = promptFunctionType,
