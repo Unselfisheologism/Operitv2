@@ -127,14 +127,30 @@ measure_download_speed() {
 download_file() {
   local url="$1"
   local dest="$2"
-  if command_exists curl; then
-    curl -L "$url" -o "$dest"
-  elif command_exists wget; then
-    wget -O "$dest" "$url"
-  else
-    log "curl or wget is required to download files."
-    exit 1
-  fi
+  local max_retries=3
+  local retry_count=0
+  
+  while [[ $retry_count -lt $max_retries ]]; do
+    if command_exists curl; then
+      if curl -L --connect-timeout 30 --max-time 120 --retry 2 --retry-delay 3 "$url" -o "$dest"; then
+        return 0
+      fi
+    elif command_exists wget; then
+      if wget --timeout=30 --tries=3 --waitretry=3 -O "$dest" "$url"; then
+        return 0
+      fi
+    else
+      log "curl or wget is required to download files."
+      exit 1
+    fi
+    
+    retry_count=$((retry_count + 1))
+    log "Download failed, retrying ($retry_count/$max_retries)..."
+    sleep 2
+  done
+  
+  log "Failed to download file after $max_retries attempts: $url"
+  return 1
 }
 
 install_packages() {
@@ -231,10 +247,26 @@ ensure_android_tools() {
 }
 
 ensure_gradle() {
+  # 检查是否已安装Gradle，并且版本是否>=8.7
   if command_exists gradle; then
-    log "Gradle already installed"
-    return
+    local installed_version
+    installed_version=$(gradle --version 2>/dev/null | grep -oP 'Gradle \K[0-9.]+' | head -1)
+    if [[ -n "$installed_version" ]]; then
+      log "Gradle version $installed_version detected"
+      # 比较版本号，如果已安装版本>=8.7，则跳过安装
+      if [[ "$(printf '%s\n' "$installed_version" "8.7" | sort -V | head -1)" == "8.7" ]]; then
+        log "Gradle version $installed_version is >= 8.7, skipping installation"
+        return
+      else
+        log "Gradle version $installed_version is < 8.7, will install Gradle 8.7"
+      fi
+    else
+      log "Gradle detected but version check failed, will install Gradle 8.7"
+    fi
+  else
+    log "Gradle not found, will install Gradle 8.7"
   fi
+  
   install_packages unzip
   mkdir -p "$GRADLE_ROOT"
   if [[ ! -f "$GRADLE_ZIP" ]]; then
@@ -438,8 +470,12 @@ replace_aapt2() {
     "ARM64 aapt2" \
     "https://github.com/AndroidIDEOfficial/platform-tools/releases/download/v34.0.4/aapt2-arm64-v8a" \
     "github.com" \
+    "ghfast.top" "https://ghfast.top/https://github.com/AndroidIDEOfficial/platform-tools/releases/download/v34.0.4/aapt2-arm64-v8a" \
     "ghproxy.com" "https://ghproxy.com/https://github.com/AndroidIDEOfficial/platform-tools/releases/download/v34.0.4/aapt2-arm64-v8a" \
-    "mirror.ghproxy.com" "https://mirror.ghproxy.com/https://github.com/AndroidIDEOfficial/platform-tools/releases/download/v34.0.4/aapt2-arm64-v8a")
+    "mirror.ghproxy.com" "https://mirror.ghproxy.com/https://github.com/AndroidIDEOfficial/platform-tools/releases/download/v34.0.4/aapt2-arm64-v8a" \
+    "ghproxy.net" "https://ghproxy.net/https://github.com/AndroidIDEOfficial/platform-tools/releases/download/v34.0.4/aapt2-arm64-v8a" \
+    "gh-proxy.com" "https://gh-proxy.com/https://github.com/AndroidIDEOfficial/platform-tools/releases/download/v34.0.4/aapt2-arm64-v8a" \
+    "gitclone.com" "https://gitclone.com/github.com/AndroidIDEOfficial/platform-tools/releases/download/v34.0.4/aapt2-arm64-v8a")
   local tmp_dir
   tmp_dir=$(mktemp -d)
   local aapt2_path="$tmp_dir/aapt2"

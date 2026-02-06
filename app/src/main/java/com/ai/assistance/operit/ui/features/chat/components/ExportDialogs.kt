@@ -662,11 +662,7 @@ suspend fun exportAndroidApp(
             // 1. 初始化APK编辑器
             val apkEditor = ApkEditor.fromAsset(context, "subpack/android.apk")
 
-            // 2. 解压APK
-            onProgress(0.2f, context.getString(R.string.export_extract_apk))
-            apkEditor.extract()
-
-            // 3. 修改包名和应用名
+            // 2. 修改包名和应用名
             onProgress(0.3f, context.getString(R.string.export_modify_app_info))
             apkEditor.changePackageName(packageName)
             apkEditor.changeAppName(appName)
@@ -680,26 +676,6 @@ suspend fun exportAndroidApp(
                     apkEditor.changeIcon(inputStream)
                 }
             }
-
-            // 5. 复制网页文件到APK
-            onProgress(0.5f, context.getString(R.string.export_pack_web_content))
-
-            // 创建临时目录用于存储网页文件
-            val extractedDir = apkEditor.getExtractedDir()
-            if (extractedDir == null) {
-                throw RuntimeException(context.getString(R.string.export_apk_extract_dir_missing))
-            }
-            val webAssetsDir = File(extractedDir, "assets/flutter_assets/assets/web_content")
-            if (!webAssetsDir.exists()) {
-                webAssetsDir.mkdirs()
-            }
-            AppLogger.d(
-                    "ExportDialogs",
-                    "复制网页文件到APK ${webContentDir.absolutePath} -> ${webAssetsDir.absolutePath}"
-            )
-
-            // 复制网页文件
-            copyDirectory(webContentDir, webAssetsDir)
 
             // 6. 准备签名文件
             onProgress(0.7f, context.getString(R.string.export_prepare_signing))
@@ -737,10 +713,10 @@ suspend fun exportAndroidApp(
                     )
                     .setOutput(outputFile)
 
-            // 8. 打包并签名
-            onProgress(0.9f, context.getString(R.string.export_finish_packaging))
             try {
-                val signedApk = apkEditor.repackAndSign()
+                onProgress(0.5f, context.getString(R.string.export_pack_web_content))
+                onProgress(0.9f, context.getString(R.string.export_finish_packaging))
+                val signedApk = apkEditor.repackAndSignWithWebContent(webContentDir)
 
                 // 9. 清理
                 apkEditor.cleanup()
