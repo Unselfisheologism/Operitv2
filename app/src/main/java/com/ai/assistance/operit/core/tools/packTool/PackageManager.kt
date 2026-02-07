@@ -774,13 +774,19 @@ private constructor(private val context: Context, private val aiToolHandler: AIT
     }
 
     /**
-     * Gets a list of all available packages for discovery (the "market")
+     * Gets a list of all available packages for discovery (the "market").
+     *
+     * By default this returns the in-memory cache to avoid re-scanning assets/external storage
+     * on every call (which is expensive and can spam logs).
+     *
+     * @param forceRefresh Set to true to explicitly rescan package sources.
      * @return A map of package name to description
      */
-    fun getAvailablePackages(): Map<String, ToolPackage> {
+    fun getAvailablePackages(forceRefresh: Boolean = false): Map<String, ToolPackage> {
         ensureInitialized()
-        // Refresh the list to ensure it's up to date
-        loadAvailablePackages()
+        if (forceRefresh) {
+            loadAvailablePackages()
+        }
         return availablePackages
     }
 

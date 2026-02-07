@@ -3396,6 +3396,7 @@
     <string name="auto_save_failed">Auto save failed</string>
     <!-- API Provider names -->
     <string name="provider_openai">OpenAI (GPT Series)</string>
+    <string name="provider_openai_responses">OpenAI (Responses API)</string>
     <string name="provider_anthropic">Anthropic (Claude Series)</string>
     <string name="provider_anthropic_generic">Anthropic (Generic)</string>
     <string name="provider_google">Google (Gemini Series)</string>

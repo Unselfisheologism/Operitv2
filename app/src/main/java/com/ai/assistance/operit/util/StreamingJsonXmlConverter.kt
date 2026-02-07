@@ -31,6 +31,24 @@ class StreamingJsonXmlConverter {
     private var state = State.WAIT_BRACE
     private val buffer = StringBuilder()
     private var unicodeCount = 0
+    private var primitiveNestingDepth = 0
+    private var primitiveInString = false
+    private var primitiveEscape = false
+    private var readingComplexValue = false
+
+    private fun resetPrimitiveTracking() {
+        primitiveNestingDepth = 0
+        primitiveInString = false
+        primitiveEscape = false
+        readingComplexValue = false
+    }
+
+    private fun emitPrimitiveParam(events: MutableList<Event>) {
+        events.add(Event.Content(escapeXml(buffer.toString())))
+        events.add(Event.Tag("</param>"))
+        buffer.setLength(0)
+        resetPrimitiveTracking()
+    }
 
     /**
      * 处理 JSON 块并返回 XML 事件列表
@@ -66,6 +84,10 @@ class StreamingJsonXmlConverter {
                             state = State.READ_PRIMITIVE
                             buffer.setLength(0)
                             buffer.append(c)
+                            readingComplexValue = c == '[' || c == '{'
+                            primitiveNestingDepth = if (readingComplexValue) 1 else 0
+                            primitiveInString = false
+                            primitiveEscape = false
                         }
                     }
                 }
@@ -112,15 +134,51 @@ class StreamingJsonXmlConverter {
                     }
                 }
                 State.READ_PRIMITIVE -> {
-                    if (c == ',' || c == '}' || c.isWhitespace()) {
-                        events.add(Event.Content(escapeXml(buffer.toString())))
-                        events.add(Event.Tag("</param>"))
-                        
-                        if (c == ',') state = State.WAIT_KEY_QUOTE
-                        else if (c == '}') state = State.WAIT_BRACE
-                        else state = State.WAIT_COMMA
+                    if (readingComplexValue) {
+                        if (primitiveInString) {
+                            buffer.append(c)
+                            if (primitiveEscape) {
+                                primitiveEscape = false
+                            } else if (c == '\\') {
+                                primitiveEscape = true
+                            } else if (c == '"') {
+                                primitiveInString = false
+                            }
+                        } else {
+                            when (c) {
+                                '"' -> {
+                                    primitiveInString = true
+                                    buffer.append(c)
+                                }
+
+                                '[', '{' -> {
+                                    primitiveNestingDepth++
+                                    buffer.append(c)
+                                }
+
+                                ']', '}' -> {
+                                    primitiveNestingDepth--
+                                    buffer.append(c)
+
+                                    if (primitiveNestingDepth == 0) {
+                                        emitPrimitiveParam(events)
+                                        state = State.WAIT_COMMA
+                                    }
+                                }
+
+                                else -> buffer.append(c)
+                            }
+                        }
                     } else {
-                        buffer.append(c)
+                        if (c == ',' || c == '}' || c.isWhitespace()) {
+                            emitPrimitiveParam(events)
+
+                            if (c == ',') state = State.WAIT_KEY_QUOTE
+                            else if (c == '}') state = State.WAIT_BRACE
+                            else state = State.WAIT_COMMA
+                        } else {
+                            buffer.append(c)
+                        }
                     }
                 }
                 State.WAIT_COMMA -> {
@@ -138,8 +196,7 @@ class StreamingJsonXmlConverter {
     fun flush(): List<Event> {
         val events = mutableListOf<Event>()
         if (state == State.READ_PRIMITIVE && buffer.isNotEmpty()) {
-            events.add(Event.Content(escapeXml(buffer.toString())))
-            events.add(Event.Tag("</param>"))
+            emitPrimitiveParam(events)
         }
         return events
     }

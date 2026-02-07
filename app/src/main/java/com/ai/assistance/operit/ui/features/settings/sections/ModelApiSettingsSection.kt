@@ -94,6 +94,7 @@ fun ModelApiSettingsSection(
     fun getDefaultModelName(providerType: ApiProviderType): String {
         return when (providerType) {
             ApiProviderType.OPENAI -> "gpt-4o"
+            ApiProviderType.OPENAI_RESPONSES -> "gpt-4o"
             ApiProviderType.OPENAI_GENERIC -> ""
             ApiProviderType.ANTHROPIC -> "claude-3-opus-20240229"
             ApiProviderType.ANTHROPIC_GENERIC -> ""
@@ -319,6 +320,7 @@ fun ModelApiSettingsSection(
     fun getDefaultApiEndpoint(providerType: ApiProviderType): String {
         return when (providerType) {
             ApiProviderType.OPENAI -> "https://api.openai.com/v1/chat/completions"
+            ApiProviderType.OPENAI_RESPONSES -> "https://api.openai.com/v1/responses"
             ApiProviderType.ANTHROPIC -> "https://api.anthropic.com/v1/messages"
             ApiProviderType.ANTHROPIC_GENERIC -> ""
             ApiProviderType.GOOGLE -> "https://generativelanguage.googleapis.com/v1beta/models"
@@ -357,7 +359,7 @@ fun ModelApiSettingsSection(
     // 当API提供商改变时更新端点
     LaunchedEffect(selectedApiProvider) {
         AppLogger.d("ModelApiSettingsSection", "API提供商改变")
-        if (selectedApiProvider == ApiProviderType.OPENAI || selectedApiProvider == ApiProviderType.OPENAI_GENERIC || selectedApiProvider == ApiProviderType.GOOGLE
+        if (selectedApiProvider == ApiProviderType.OPENAI || selectedApiProvider == ApiProviderType.OPENAI_RESPONSES || selectedApiProvider == ApiProviderType.OPENAI_GENERIC || selectedApiProvider == ApiProviderType.GOOGLE
             || selectedApiProvider == ApiProviderType.GEMINI_GENERIC
             || selectedApiProvider == ApiProviderType.ANTHROPIC || selectedApiProvider == ApiProviderType.ANTHROPIC_GENERIC || selectedApiProvider == ApiProviderType.MISTRAL) {
             val inChina = LocationUtils.isDeviceInMainlandChina(context)
@@ -1089,6 +1091,7 @@ fun ModelApiSettingsSection(
 private fun getProviderDisplayName(provider: ApiProviderType, context: android.content.Context): String {
     return when (provider) {
         ApiProviderType.OPENAI -> context.getString(R.string.provider_openai)
+        ApiProviderType.OPENAI_RESPONSES -> context.getString(R.string.provider_openai_responses)
         ApiProviderType.OPENAI_GENERIC -> context.getString(R.string.provider_openai_generic)
         ApiProviderType.ANTHROPIC -> context.getString(R.string.provider_anthropic)
         ApiProviderType.ANTHROPIC_GENERIC -> context.getString(R.string.provider_anthropic_generic)
@@ -1677,6 +1680,7 @@ private fun ApiProviderDialog(
 private fun getProviderColor(provider: ApiProviderType): androidx.compose.ui.graphics.Color {
     return when (provider) {
         ApiProviderType.OPENAI -> MaterialTheme.colorScheme.primary
+        ApiProviderType.OPENAI_RESPONSES -> MaterialTheme.colorScheme.primary.copy(alpha = 0.92f)
         ApiProviderType.OPENAI_GENERIC -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
         ApiProviderType.ANTHROPIC -> MaterialTheme.colorScheme.tertiary
         ApiProviderType.ANTHROPIC_GENERIC -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.85f)

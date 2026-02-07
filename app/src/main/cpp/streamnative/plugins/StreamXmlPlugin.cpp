@@ -28,6 +28,7 @@ void StreamXmlPlugin::reset() {
     endMatcher_.reset();
     endPattern_.clear();
     haveEndPattern_ = false;
+    lastChar_ = 0;
 }
 
 bool StreamXmlPlugin::isAsciiLetter(char16_t c) {
@@ -128,25 +129,31 @@ void StreamXmlPlugin::buildEndPattern() {
 }
 
 bool StreamXmlPlugin::processChar(char16_t c, bool atStartOfLine) {
+    const char16_t prevChar = lastChar_;
+    auto finish = [&](bool result) {
+        lastChar_ = c;
+        return result;
+    };
+
     if (state_ == PluginState::PROCESSING) {
         if (haveEndPattern_) {
             if (endMatcher_.process(c)) {
                 allowStartAfterEndTag_ = true;
                 allowStartAfterPunctuation_ = false;
                 reset();
-                return includeTagsInOutput_;
+                return finish(includeTagsInOutput_);
             }
         }
-        return includeTagsInOutput_;
+        return finish(includeTagsInOutput_);
     }
 
     if (state_ == PluginState::IDLE && !atStartOfLine) {
         const bool allowStart = allowStartAfterEndTag_ || allowStartAfterPunctuation_;
         if (!allowStart) {
-            return handleDefaultCharacter(c);
+            return finish(handleDefaultCharacter(c));
         }
         if (c == u' ' || c == u'\t') {
-            return handleDefaultCharacter(c);
+            return finish(handleDefaultCharacter(c));
         }
     }
 
@@ -154,17 +161,22 @@ bool StreamXmlPlugin::processChar(char16_t c, bool atStartOfLine) {
     const bool startMatched = processStartMatcher(c);
 
     if (startMatched) {
+        if (prevChar == u'/') {
+            // Treat self-closing tags like <br/> as plain text to avoid entering XML mode.
+            reset();
+            return finish(true);
+        }
         state_ = PluginState::PROCESSING;
         allowStartAfterEndTag_ = false;
         allowStartAfterPunctuation_ = false;
         buildEndPattern();
         startState_ = StartState::WAIT_LT;
-        return includeTagsInOutput_;
+        return finish(includeTagsInOutput_);
     }
 
     if (state_ == PluginState::TRYING) {
         allowStartAfterPunctuation_ = false;
-        return includeTagsInOutput_;
+        return finish(includeTagsInOutput_);
     }
 
     if (previousState == PluginState::TRYING) {
@@ -172,7 +184,7 @@ bool StreamXmlPlugin::processChar(char16_t c, bool atStartOfLine) {
     }
     allowStartAfterEndTag_ = false;
     allowStartAfterPunctuation_ = false;
-    return handleDefaultCharacter(c);
+    return finish(handleDefaultCharacter(c));
 }
 
 } // namespace streamnative

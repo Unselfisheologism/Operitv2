@@ -178,7 +178,7 @@ fun PackageManagerScreen(
 
                                         packageManager.importPackageFromExternalStorage(tempFile.absolutePath)
 
-                                        val available = packageManager.getAvailablePackages()
+                                        val available = packageManager.getAvailablePackages(forceRefresh = true)
                                         val imported = packageManager.getImportedPackages()
                                         val errors = packageManager.getPackageLoadErrors()
 
@@ -220,7 +220,7 @@ fun PackageManagerScreen(
         try {
             val loadResult =
                 withContext(Dispatchers.IO) {
-                    val available = packageManager.getAvailablePackages()
+                    val available = packageManager.getAvailablePackages(forceRefresh = true)
                     val imported = packageManager.getImportedPackages()
                     val errors = packageManager.getPackageLoadErrors()
                     Triple(available, imported, errors)
@@ -629,7 +629,7 @@ fun PackageManagerScreen(
                             isLoading = true
                             val loadResult =
                                 withContext(Dispatchers.IO) {
-                                    val available = packageManager.getAvailablePackages()
+                                    val available = packageManager.getAvailablePackages(forceRefresh = true)
                                     val imported = packageManager.getImportedPackages()
                                     available to imported
                                 }
