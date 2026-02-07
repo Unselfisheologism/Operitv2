@@ -66,13 +66,10 @@ fun PermissionLevelCard(
         isOperitTerminalInstalled: Boolean,
         isDeviceRooted: Boolean,
         hasRootAccess: Boolean,
-        isAccessibilityProviderInstalled: Boolean, // 新增：提供者App是否已安装
-        isAccessibilityUpdateNeeded: Boolean,
         onStoragePermissionClick: () -> Unit,
         onOverlayPermissionClick: () -> Unit,
         onBatteryOptimizationClick: () -> Unit,
         onAccessibilityClick: () -> Unit,
-        onInstallAccessibilityProviderClick: () -> Unit, // 新增：安装提供者App的回调
         onLocationPermissionClick: () -> Unit,
         onShizukuClick: () -> Unit,
         onOperitTerminalClick: () -> Unit,
@@ -331,17 +328,14 @@ fun PermissionLevelCard(
                                             hasBatteryOptimizationExemption =
                                                     hasBatteryOptimizationExemption,
                                             hasLocationPermission = hasLocationPermission,
-                                            isAccessibilityProviderInstalled = isAccessibilityProviderInstalled,
                                             hasAccessibilityServiceEnabled =
                                                     hasAccessibilityServiceEnabled,
-                                            isAccessibilityUpdateNeeded = isAccessibilityUpdateNeeded,
                                             isOperitTerminalInstalled = isOperitTerminalInstalled,
                                             onStoragePermissionClick = onStoragePermissionClick,
                                             onOverlayPermissionClick = onOverlayPermissionClick,
                                             onBatteryOptimizationClick = onBatteryOptimizationClick,
                                             onLocationPermissionClick = onLocationPermissionClick,
                                             onAccessibilityClick = onAccessibilityClick,
-                                            onInstallAccessibilityProviderClick = onInstallAccessibilityProviderClick,
                                             onOperitTerminalClick = onOperitTerminalClick
                                     )
                                 }
@@ -387,17 +381,14 @@ fun PermissionLevelCard(
                                             isShizukuInstalled = isShizukuInstalled,
                                             isShizukuRunning = isShizukuRunning,
                                             hasShizukuPermission = hasShizukuPermission,
-                                            isAccessibilityProviderInstalled = isAccessibilityProviderInstalled,
                                             hasAccessibilityServiceEnabled = hasAccessibilityServiceEnabled,
-                                            isAccessibilityUpdateNeeded = isAccessibilityUpdateNeeded,
                                             onStoragePermissionClick = onStoragePermissionClick,
                                             onOverlayPermissionClick = onOverlayPermissionClick,
                                             onBatteryOptimizationClick = onBatteryOptimizationClick,
                                             onLocationPermissionClick = onLocationPermissionClick,
                                             onOperitTerminalClick = onOperitTerminalClick,
                                             onShizukuClick = onShizukuClick,
-                                            onAccessibilityClick = onAccessibilityClick,
-                                            onInstallAccessibilityProviderClick = onInstallAccessibilityProviderClick
+                                            onAccessibilityClick = onAccessibilityClick
                                     )
                                 }
                         )
@@ -657,16 +648,13 @@ private fun AccessibilityPermissionSection(
         hasOverlayPermission: Boolean,
         hasBatteryOptimizationExemption: Boolean,
         hasLocationPermission: Boolean,
-        isAccessibilityProviderInstalled: Boolean, // 新增
         hasAccessibilityServiceEnabled: Boolean,
-        isAccessibilityUpdateNeeded: Boolean,
         isOperitTerminalInstalled: Boolean,
         onStoragePermissionClick: () -> Unit,
         onOverlayPermissionClick: () -> Unit,
         onBatteryOptimizationClick: () -> Unit,
         onLocationPermissionClick: () -> Unit,
         onAccessibilityClick: () -> Unit,
-        onInstallAccessibilityProviderClick: () -> Unit, // 新增
         onOperitTerminalClick: () -> Unit
 ) {
     Column {
@@ -751,17 +739,8 @@ private fun AccessibilityPermissionSection(
             Column(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
-                val isFullyEnabled =
-                        isAccessibilityProviderInstalled && hasAccessibilityServiceEnabled
-                val onClickAction =
-                        when {
-                            // 需要更新时，触发向导展开/收起
-                            isAccessibilityUpdateNeeded -> onAccessibilityClick
-                            // 未安装时，点击无效
-                            !isAccessibilityProviderInstalled -> onInstallAccessibilityProviderClick
-                            // 其他情况（已安装且无需更新），跳转到系统设置
-                            else -> onAccessibilityClick
-                        }
+                val isFullyEnabled = hasAccessibilityServiceEnabled
+                val onClickAction = onAccessibilityClick
 
                 Row(
                         modifier =
@@ -791,26 +770,20 @@ private fun AccessibilityPermissionSection(
                     }
 
                     val statusText =
-                            when {
-                                !isAccessibilityProviderInstalled ->
-                                        stringResource(R.string.status_not_installed)
-                                !hasAccessibilityServiceEnabled ->
-                                        stringResource(R.string.status_not_granted)
-                                isAccessibilityUpdateNeeded ->
-                                        stringResource(R.string.status_update_needed)
-                                else -> stringResource(R.string.status_granted)
+                            if (hasAccessibilityServiceEnabled) {
+                                stringResource(R.string.status_granted)
+                            } else {
+                                stringResource(R.string.status_not_granted)
                             }
 
                     Text(
                             text = statusText,
                             style = MaterialTheme.typography.bodySmall,
                             color =
-                                    when {
-                                        !isAccessibilityProviderInstalled ||
-                                                !hasAccessibilityServiceEnabled ->
-                                                MaterialTheme.colorScheme.error
-                                        isAccessibilityUpdateNeeded -> Color(0xFFFF9800)
-                                        else -> MaterialTheme.colorScheme.primary
+                                    if (hasAccessibilityServiceEnabled) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.error
                                     }
                     )
                 }
@@ -951,17 +924,14 @@ private fun DebuggerPermissionSection(
         isShizukuInstalled: Boolean,
         isShizukuRunning: Boolean,
         hasShizukuPermission: Boolean,
-        isAccessibilityProviderInstalled: Boolean,
         hasAccessibilityServiceEnabled: Boolean,
-        isAccessibilityUpdateNeeded: Boolean,
         onStoragePermissionClick: () -> Unit,
         onOverlayPermissionClick: () -> Unit,
         onBatteryOptimizationClick: () -> Unit,
         onLocationPermissionClick: () -> Unit,
         onOperitTerminalClick: () -> Unit,
         onShizukuClick: () -> Unit,
-        onAccessibilityClick: () -> Unit,
-        onInstallAccessibilityProviderClick: () -> Unit
+        onAccessibilityClick: () -> Unit
 ) {
     // 获取当前上下文
     val context = LocalContext.current
@@ -1159,16 +1129,8 @@ private fun DebuggerPermissionSection(
             Column(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             ) {
-                val isFullyEnabled = isAccessibilityProviderInstalled && hasAccessibilityServiceEnabled
-                val onClickAction =
-                        when {
-                            // 需要更新时，触发向导展开/收起
-                            isAccessibilityUpdateNeeded -> onAccessibilityClick
-                            // 未安装时，点击无效
-                            !isAccessibilityProviderInstalled -> onInstallAccessibilityProviderClick
-                            // 其他情况（已安装且无需更新），跳转到系统设置
-                            else -> onAccessibilityClick
-                        }
+                val isFullyEnabled = hasAccessibilityServiceEnabled
+                val onClickAction = onAccessibilityClick
 
                 Row(
                         modifier =
@@ -1197,26 +1159,20 @@ private fun DebuggerPermissionSection(
                     }
 
                     val statusText =
-                            when {
-                                !isAccessibilityProviderInstalled ->
-                                        stringResource(R.string.status_not_installed)
-                                !hasAccessibilityServiceEnabled ->
-                                        stringResource(R.string.status_not_granted)
-                                isAccessibilityUpdateNeeded ->
-                                        stringResource(R.string.status_update_needed)
-                                else -> stringResource(R.string.status_granted)
+                            if (hasAccessibilityServiceEnabled) {
+                                stringResource(R.string.status_granted)
+                            } else {
+                                stringResource(R.string.status_not_granted)
                             }
 
                     Text(
                             text = statusText,
                             style = MaterialTheme.typography.bodySmall,
                             color =
-                                    when {
-                                        !isAccessibilityProviderInstalled ||
-                                                !hasAccessibilityServiceEnabled ->
-                                                MaterialTheme.colorScheme.error
-                                        isAccessibilityUpdateNeeded -> Color(0xFFFF9800)
-                                        else -> MaterialTheme.colorScheme.primary
+                                    if (hasAccessibilityServiceEnabled) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.error
                                     }
                     )
                 }

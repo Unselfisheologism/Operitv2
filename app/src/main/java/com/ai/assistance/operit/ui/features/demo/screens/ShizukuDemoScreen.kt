@@ -25,7 +25,6 @@ import com.ai.assistance.operit.R
 import com.ai.assistance.operit.core.tools.system.AndroidPermissionLevel
 import com.ai.assistance.operit.ui.main.screens.Screen
 import com.ai.assistance.operit.ui.main.screens.ScreenNavigationHandler
-import com.ai.assistance.operit.core.tools.system.AccessibilityProviderInstaller
 import com.ai.assistance.operit.core.tools.system.ShizukuAuthorizer
 import com.ai.assistance.operit.core.tools.system.ShizukuInstaller
 import com.ai.assistance.operit.data.repository.UIHierarchyManager
@@ -125,15 +124,6 @@ fun ShizukuDemoScreen(
             }
         }
 
-        // 检查无障碍服务版本状态
-        val (accessibilityInstalledVersion, accessibilityBundledVersion, isAccessibilityUpdateNeeded) =
-                remember(uiState.isRefreshing.value) {
-                    val installed = AccessibilityProviderInstaller.getInstalledVersion(context)
-                    val bundled = AccessibilityProviderInstaller.getBundledVersion(context)
-                    val needsUpdate = AccessibilityProviderInstaller.isUpdateNeeded(context)
-                    Triple(installed, bundled, needsUpdate)
-                }
-
         // 权限管理卡片
         PermissionLevelCard(
                 hasStoragePermission = uiState.hasStoragePermission.value,
@@ -147,15 +137,12 @@ fun ShizukuDemoScreen(
                 isOperitTerminalInstalled = uiState.isOperitTerminalInstalled.value,
                 isDeviceRooted = uiState.isDeviceRooted.value,
                 hasRootAccess = uiState.hasRootAccess.value,
-                isAccessibilityProviderInstalled = uiState.isAccessibilityProviderInstalled.value,
-                isAccessibilityUpdateNeeded = isAccessibilityUpdateNeeded,
                 isRefreshing = uiState.isRefreshing.value,
                 onRefresh = {
                     scope.launch(Dispatchers.IO) {
                         // 手动刷新时，清除版本缓存以获取最新状态
-                        AccessibilityProviderInstaller.clearCache()
                         ShizukuInstaller.clearCache()
-                        AppLogger.d("ShizukuDemoScreen", "手动刷新：已清除无障碍和Shizuku版本缓存")
+                        AppLogger.d("ShizukuDemoScreen", "手动刷新：已清除Shizuku版本缓存")
                         viewModel.refreshStatus(context)
                     }
                 },
@@ -217,17 +204,6 @@ fun ShizukuDemoScreen(
                         context.startActivity(intent)
                     } catch (e: Exception) {
                         Toast.makeText(context, context.getString(R.string.cannot_open_accessibility_settings), Toast.LENGTH_SHORT).show()
-                    }
-                },
-                onInstallAccessibilityProviderClick = {
-                    scope.launch(Dispatchers.IO) {
-                        if (!UIHierarchyManager.isProviderAppInstalled(context)) {
-                            UIHierarchyManager.launchProviderInstall(context)
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(context, context.getString(R.string.accessibility_provider_installed), Toast.LENGTH_SHORT).show()
-                            }
-                        }
                     }
                 },
                 onLocationPermissionClick = {
@@ -300,9 +276,7 @@ fun ShizukuDemoScreen(
         val needAccessibilitySetupGuide =
             (currentDisplayedPermissionLevel == AndroidPermissionLevel.ACCESSIBILITY ||
                     currentDisplayedPermissionLevel == AndroidPermissionLevel.DEBUGGER) &&
-                    (!uiState.isAccessibilityProviderInstalled.value ||
-                            !uiState.hasAccessibilityServiceEnabled.value ||
-                            isAccessibilityUpdateNeeded)
+                    !uiState.hasAccessibilityServiceEnabled.value
 
 
         val needSetupGuide = needOperitTerminalSetupGuide || needShizukuSetupGuide || needRootSetupGuide || needAccessibilitySetupGuide
@@ -341,29 +315,15 @@ fun ShizukuDemoScreen(
             // Accessibility向导卡片
             if (needAccessibilitySetupGuide) {
                 AccessibilityWizardCard(
-                    isProviderInstalled = uiState.isAccessibilityProviderInstalled.value,
                     isServiceEnabled = uiState.hasAccessibilityServiceEnabled.value,
                     showWizard = uiState.showAccessibilityWizard.value,
                     onToggleWizard = { viewModel.toggleAccessibilityWizard() },
-                    onInstallProvider = {
-                        scope.launch(Dispatchers.IO) {
-                            UIHierarchyManager.launchProviderInstall(context)
-                        }
-                    },
                     onOpenAccessibilitySettings = {
                         try {
                             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                             context.startActivity(intent)
                         } catch (e: Exception) {
                             Toast.makeText(context, context.getString(R.string.cannot_open_accessibility_settings), Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    updateNeeded = isAccessibilityUpdateNeeded,
-                    installedVersion = accessibilityInstalledVersion,
-                    bundledVersion = accessibilityBundledVersion,
-                    onUpdateProvider = {
-                        scope.launch(Dispatchers.IO) {
-                            UIHierarchyManager.launchProviderInstall(context)
                         }
                     }
                 )
