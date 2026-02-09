@@ -448,13 +448,17 @@ dependencies {
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
 
+    // NOTE: Runanywhere SDK and Cactus Compute SDK dependencies are commented out
+    // because they are not yet published to Maven Central.
+    // When the SDKs are available, uncomment these lines:
+
     // Runanywhere SDK for on-device AI (LLM, STT, TTS)
-    implementation("com.runanywhere.sdk:runanywhere-kotlin:0.1.4")
-    implementation("com.runanywhere.sdk:runanywhere-core-llamacpp:0.1.4")
-    implementation("com.runanywhere.sdk:runanywhere-core-onnx:0.1.4")
+    // implementation("com.runanywhere.sdk:runanywhere-kotlin:0.1.4")
+    // implementation("com.runanywhere.sdk:runanywhere-core-llamacpp:0.1.4")
+    // implementation("com.runanywhere.sdk:runanywhere-core-onnx:0.1.4")
     
     // Cactus Compute SDK for on-device AI (LLM, STT, Vision, Embeddings)
-    implementation("com.cactuscompute:cactus:1.4.1-beta")
+    // implementation("com.cactuscompute:cactus:1.4.1-beta")
 
     // Accompanist
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")

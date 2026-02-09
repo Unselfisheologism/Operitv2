@@ -10,23 +10,22 @@ import com.ai.assistance.operit.data.model.ToolPrompt
 import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.util.stream.Stream
 import com.ai.assistance.operit.util.stream.stream
-import com.cactuscompute.cactus.Cactus
-import com.cactuscompute.cactus.CactusCompletionParams
-import com.cactuscompute.cactus.CactusInitParams
-import com.cactuscompute.cactus.ChatMessage
-import com.cactuscompute.cactus.InferenceMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
- * Cactus Compute SDK provider for on-device LLM inference.
+ * Cactus Compute SDK provider stub for on-device LLM inference.
  * 
- * Supported models:
+ * NOTE: This is a placeholder implementation. To enable full functionality:
+ * 1. Add the dependency: implementation("com.cactuscompute:cactus:1.4.1-beta")
+ * 2. Use the actual Cactus SDK classes
+ * 
+ * Supported models (when SDK is available):
  * - Qwen3 0.6B (default), Qwen2.5 0.5B, Gemma3 270M/1B
  * - SmolLM2 360M, LFM2 1B/3B
  * 
- * Features:
+ * Features (when SDK is available):
  * - Local/Remote inference modes (LOCAL, REMOTE, LOCAL_FIRST, REMOTE_FIRST)
  * - Function calling
  * - Vision/Multimodal support
@@ -61,19 +60,6 @@ class CactusProvider(
             ModelOption("lfm2-1b", "LFM2 1B", false),
             ModelOption("lfm2-3b", "LFM2 3B", false)
         )
-
-        private var cactusInstance: Cactus? = null
-        private var isInitialized = false
-
-        private fun getInferenceMode(mode: String): InferenceMode {
-            return when (mode.uppercase()) {
-                "LOCAL" -> InferenceMode.LOCAL
-                "REMOTE" -> InferenceMode.REMOTE
-                "LOCAL_FIRST" -> InferenceMode.LOCAL_FIRST
-                "REMOTE_FIRST" -> InferenceMode.REMOTE_FIRST
-                else -> InferenceMode.LOCAL_FIRST
-            }
-        }
     }
 
     private var _inputTokenCount: Int = 0
@@ -95,20 +81,6 @@ class CactusProvider(
     override val providerModel: String
         get() = "${providerType.name}:$modelName"
 
-    private fun initializeCactus() {
-        if (!isInitialized) {
-            val initParams = CactusInitParams(
-                modelsDir = getModelsDir().absolutePath,
-                threadCount = threadCount,
-                contextSize = contextSize,
-                inferenceMode = getInferenceMode(inferenceMode),
-                cloudToken = if (cactusToken.isNotEmpty()) cactusToken else null
-            )
-            cactusInstance = Cactus.initialize(initParams)
-            isInitialized = true
-        }
-    }
-
     override fun resetTokenCounts() {
         _inputTokenCount = 0
         _outputTokenCount = 0
@@ -117,13 +89,10 @@ class CactusProvider(
 
     override fun cancelStreaming() {
         isCancelled = true
-        cactusInstance?.cancelGeneration()
     }
 
     override fun release() {
-        cactusInstance?.release()
-        cactusInstance = null
-        isInitialized = false
+        // Release SDK resources when available
     }
 
     override suspend fun getModelsList(context: Context): Result<List<ModelOption>> {
@@ -131,16 +100,11 @@ class CactusProvider(
     }
 
     override suspend fun testConnection(context: Context): Result<String> = withContext(Dispatchers.IO) {
-        try {
-            initializeCactus()
-            if (cactusInstance != null) {
-                Result.success("Cactus SDK connected successfully!\nModel: $modelName")
-            } else {
-                Result.failure(Exception("Failed to initialize Cactus SDK"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+        Result.failure(Exception(
+            "Cactus SDK not initialized. Please add " +
+            "implementation(\"com.cactuscompute:cactus:1.4.1-beta\") " +
+            "to build.gradle.kts and rebuild."
+        ))
     }
 
     override suspend fun calculateInputTokens(
@@ -166,39 +130,33 @@ class CactusProvider(
         onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
         onNonFatalError: suspend (error: String) -> Unit
     ): Stream<String> = stream {
-        initializeCactus()
-        
-        val messages = chatHistory.map { (role, content) ->
-            ChatMessage(role = role, content = content)
-        } + ChatMessage(role = "user", content = message)
-
-        val params = CactusCompletionParams(
-            model = modelName,
-            messages = messages,
-            maxTokens = modelParameters.find { it.name == "maxTokens" }?.value as? Int ?: 4096,
-            temperature = modelParameters.find { it.name == "temperature" }?.value as? Float ?: 0.7f,
-            stream = stream
-        )
-
-        try {
-            cactusInstance?.let { cactus ->
-                val response = cactus.complete(params) { chunk ->
-                    if (!isCancelled) {
-                        _outputTokenCount++
-                        onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
-                        emit(chunk)
-                    }
-                }
-                // For non-streaming, emit the full response
-                if (!stream && response != null) {
-                    emit(response)
-                }
-            } ?: run {
-                emit("Error: Cactus SDK not initialized")
-            }
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Cactus inference error", e)
-            emit("Error: ${e.message}")
-        }
+        emit("""
+            |
+            |[Cactus SDK Not Available]
+            |
+            |To use Cactus Compute for on-device AI inference:
+            |
+            |1. Add the dependency to app/build.gradle.kts:
+            |   implementation("com.cactuscompute:cactus:1.4.1-beta")
+            |
+            |2. Rebuild the project
+            |
+            |Cactus Compute provides:
+            |- Local LLM inference (Qwen3, Gemma3, LFM2, SmolLM2)
+            |- Speech-to-Text (Whisper, Moonshine)
+            |- Vision/Multimodal support
+            |- Text embeddings
+            |- Cloud handoff for complex queries
+            |
+        """.trimMargin())
     }
 }
+
+/*
+// SDK imports (uncomment when SDK is available):
+import com.cactuscompute.cactus.Cactus
+import com.cactuscompute.cactus.CactusCompletionParams
+import com.cactuscompute.cactus.CactusInitParams
+import com.cactuscompute.cactus.ChatMessage
+import com.cactuscompute.cactus.InferenceMode
+*/
