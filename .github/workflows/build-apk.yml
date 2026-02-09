@@ -67,18 +67,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # Force clean all caches to ensure fresh build
-      - name: Force Clean Gradle Caches
-        run: |
-          rm -rf ~/.gradle/caches/*
-          rm -rf ~/.gradle/wrapper/dists/*
-          rm -rf .gradle
-          rm -rf build
-          rm -rf app/build
-          rm -rf */build
-          rm -rf */*/build
-          echo "All Gradle caches and build directories cleared"
-
       # Get the app source
       - name: Get the source
         uses: actions/checkout@v4
