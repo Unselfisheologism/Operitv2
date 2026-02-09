@@ -3431,6 +3431,24 @@
     <string name="llama_thread_count">Thread count</string>
     <string name="llama_context_size">Context size</string>
 
+    <!-- Cactus Settings -->
+    <string name="cactus_context_size">Context size</string>
+    <string name="cactus_inference_mode">Inference Mode</string>
+    <string name="cactus_mode_local">Local Only</string>
+    <string name="cactus_mode_remote">Cloud Only</string>
+    <string name="cactus_mode_local_first">Local First</string>
+    <string name="cactus_mode_remote_first">Cloud First</string>
+    <string name="cactus_token">Cactus Token</string>
+    <string name="cactus_token_placeholder">Enter Cactus cloud API token</string>
+    <string name="cactus_local_model_dir">Model directory: %1$s</string>
+    <string name="cactus_local_model_download_tip">Please download model files to the above directory</string>
+    
+    <!-- Runanywhere Settings -->
+    <string name="runanywhere_thread_count">Thread count</string>
+    <string name="runanywhere_context_size">Context size</string>
+    <string name="runanywhere_local_model_dir">Model directory: %1$s</string>
+    <string name="runanywhere_local_model_download_tip">Please download model files to the above directory</string>
+
     <!-- ModelParametersSection strings -->
     <string name="max_tokens_name">Max Tokens</string>
     <string name="max_tokens_description">Controls the maximum number of tokens AI generates each time</string>

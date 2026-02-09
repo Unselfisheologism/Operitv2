@@ -449,10 +449,12 @@ dependencies {
 
 
     // Runanywhere SDK for on-device AI (LLM, STT, TTS)
-    implementation("com.runanywhere:runanywhere-sdk:1.0.0")
+    implementation("com.runanywhere.sdk:runanywhere-kotlin:0.1.4")
+    implementation("com.runanywhere.sdk:runanywhere-core-llamacpp:0.1.4")
+    implementation("com.runanywhere.sdk:runanywhere-core-onnx:0.1.4")
     
     // Cactus Compute SDK for on-device AI (LLM, STT, Vision, Embeddings)
-    implementation("com.cactuscompute:cactus:1.2.0-beta")
+    implementation("com.cactuscompute:cactus:1.4.1-beta")
 
     // Accompanist
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")

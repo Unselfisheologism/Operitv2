@@ -160,6 +160,15 @@ fun ModelApiSettingsSection(
     var llamaThreadCountInput by remember(config.id) { mutableStateOf(config.llamaThreadCount.toString()) }
     var llamaContextSizeInput by remember(config.id) { mutableStateOf(config.llamaContextSize.toString()) }
     
+    // Cactus 特定配置状态
+    var cactusContextSizeInput by remember(config.id) { mutableStateOf(config.cactusContextSize.toString()) }
+    var cactusInferenceModeInput by remember(config.id) { mutableStateOf(config.cactusInferenceMode) }
+    var cactusTokenInput by remember(config.id) { mutableStateOf(config.cactusToken) }
+    
+    // Runanywhere 特定配置状态
+    var runanywhereThreadCountInput by remember(config.id) { mutableStateOf(config.runanywhereThreadCount.toString()) }
+    var runanywhereContextSizeInput by remember(config.id) { mutableStateOf(config.runanywhereContextSize.toString()) }
+    
     // 图片处理配置状态
     var enableDirectImageProcessingInput by remember(config.id) { mutableStateOf(config.enableDirectImageProcessing) }
 
@@ -188,6 +197,11 @@ fun ModelApiSettingsSection(
         val mnnThreadCount: Int,
         val llamaThreadCount: Int,
         val llamaContextSize: Int,
+        val cactusContextSize: Int,
+        val cactusInferenceMode: String,
+        val cactusToken: String,
+        val runanywhereThreadCount: Int,
+        val runanywhereContextSize: Int,
         val enableDirectImageProcessing: Boolean,
         val enableDirectAudioProcessing: Boolean,
         val enableDirectVideoProcessing: Boolean,
@@ -209,6 +223,11 @@ fun ModelApiSettingsSection(
                     mnnThreadCount = state.mnnThreadCount,
                     llamaThreadCount = state.llamaThreadCount,
                     llamaContextSize = state.llamaContextSize,
+                    cactusContextSize = state.cactusContextSize,
+                    cactusInferenceMode = state.cactusInferenceMode,
+                    cactusToken = state.cactusToken,
+                    runanywhereThreadCount = state.runanywhereThreadCount,
+                    runanywhereContextSize = state.runanywhereContextSize,
                     enableDirectImageProcessing = state.enableDirectImageProcessing,
                     enableDirectAudioProcessing = state.enableDirectAudioProcessing,
                     enableDirectVideoProcessing = state.enableDirectVideoProcessing,
@@ -233,6 +252,11 @@ fun ModelApiSettingsSection(
             mnnThreadCount = mnnThreadCountInput.toIntOrNull() ?: 4,
             llamaThreadCount = llamaThreadCountInput.toIntOrNull() ?: 4,
             llamaContextSize = llamaContextSizeInput.toIntOrNull() ?: 4096,
+            cactusContextSize = cactusContextSizeInput.toIntOrNull() ?: 2048,
+            cactusInferenceMode = cactusInferenceModeInput,
+            cactusToken = cactusTokenInput,
+            runanywhereThreadCount = runanywhereThreadCountInput.toIntOrNull() ?: 4,
+            runanywhereContextSize = runanywhereContextSizeInput.toIntOrNull() ?: 4096,
             enableDirectImageProcessing = enableDirectImageProcessingInput,
             enableDirectAudioProcessing = enableDirectAudioProcessingInput,
             enableDirectVideoProcessing = enableDirectVideoProcessingInput,
@@ -285,6 +309,11 @@ fun ModelApiSettingsSection(
                 mnnThreadCount = mnnThreadCountInput.toIntOrNull() ?: 4,
                 llamaThreadCount = llamaThreadCountInput.toIntOrNull() ?: 4,
                 llamaContextSize = llamaContextSizeInput.toIntOrNull() ?: 4096,
+                cactusContextSize = cactusContextSizeInput.toIntOrNull() ?: 2048,
+                cactusInferenceMode = cactusInferenceModeInput,
+                cactusToken = cactusTokenInput,
+                runanywhereThreadCount = runanywhereThreadCountInput.toIntOrNull() ?: 4,
+                runanywhereContextSize = runanywhereContextSizeInput.toIntOrNull() ?: 4096,
                 enableDirectImageProcessing = enableDirectImageProcessingInput,
                 enableDirectAudioProcessing = enableDirectAudioProcessingInput,
                 enableDirectVideoProcessing = enableDirectVideoProcessingInput,
@@ -468,6 +497,8 @@ fun ModelApiSettingsSection(
 
             val isMnnProvider = selectedApiProvider == ApiProviderType.MNN
             val isLlamaProvider = selectedApiProvider == ApiProviderType.LLAMA_CPP
+            val isCactusProvider = selectedApiProvider == ApiProviderType.CACTUS
+            val isRunanywhereProvider = selectedApiProvider == ApiProviderType.RUNANYWHERE
             val endpointOptions = getEndpointOptions(selectedApiProvider)
             if (isMnnProvider) {
                 MnnSettingsBlock(
@@ -493,6 +524,34 @@ fun ModelApiSettingsSection(
                     onContextSizeChange = { input ->
                         if (input.isEmpty() || input.toIntOrNull() != null) {
                             llamaContextSizeInput = input
+                        }
+                    }
+                )
+            } else if (isCactusProvider) {
+                CactusSettingsBlock(
+                    cactusContextSizeInput = cactusContextSizeInput,
+                    onContextSizeChange = { input ->
+                        if (input.isEmpty() || input.toIntOrNull() != null) {
+                            cactusContextSizeInput = input
+                        }
+                    },
+                    cactusInferenceModeInput = cactusInferenceModeInput,
+                    onInferenceModeChange = { cactusInferenceModeInput = it },
+                    cactusTokenInput = cactusTokenInput,
+                    onTokenChange = { cactusTokenInput = it }
+                )
+            } else if (isRunanywhereProvider) {
+                RunanywhereSettingsBlock(
+                    runanywhereThreadCountInput = runanywhereThreadCountInput,
+                    onThreadCountChange = { input ->
+                        if (input.isEmpty() || input.toIntOrNull() != null) {
+                            runanywhereThreadCountInput = input
+                        }
+                    },
+                    runanywhereContextSizeInput = runanywhereContextSizeInput,
+                    onContextSizeChange = { input ->
+                        if (input.isEmpty() || input.toIntOrNull() != null) {
+                            runanywhereContextSizeInput = input
                         }
                     }
                 )
@@ -1538,6 +1597,155 @@ private fun LlamaSettingsBlock(
                 keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Number,
                         imeAction = ImeAction.Next
+                ),
+                valueFilter = { input -> input.filter { it.isDigit() } }
+        )
+    }
+}
+
+@Composable
+private fun CactusSettingsBlock(
+        cactusContextSizeInput: String,
+        onContextSizeChange: (String) -> Unit,
+        cactusInferenceModeInput: String,
+        onInferenceModeChange: (String) -> Unit,
+        cactusTokenInput: String,
+        onTokenChange: (String) -> Unit
+) {
+    var showInferenceModeDialog by remember { mutableStateOf(false) }
+    
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SettingsInfoBanner(text = stringResource(R.string.mnn_local_model_tip))
+
+        SettingsInfoBanner(
+            text = stringResource(R.string.cactus_local_model_download_tip) +
+                "\n" +
+                stringResource(
+                    R.string.cactus_local_model_dir,
+                    CactusProvider.getModelsDir().absolutePath
+                )
+        )
+
+        SettingsTextField(
+                title = stringResource(R.string.cactus_context_size),
+                value = cactusContextSizeInput,
+                onValueChange = onContextSizeChange,
+                placeholder = "2048",
+                keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                ),
+                valueFilter = { input -> input.filter { it.isDigit() } }
+        )
+
+        SettingsSelectorRow(
+            title = stringResource(R.string.cactus_inference_mode),
+            subtitle = "",
+            value = when (cactusInferenceModeInput) {
+                "LOCAL" -> stringResource(R.string.cactus_mode_local)
+                "REMOTE" -> stringResource(R.string.cactus_mode_remote)
+                "LOCAL_FIRST" -> stringResource(R.string.cactus_mode_local_first)
+                "REMOTE_FIRST" -> stringResource(R.string.cactus_mode_remote_first)
+                else -> stringResource(R.string.cactus_mode_local_first)
+            },
+            onClick = { showInferenceModeDialog = true }
+        )
+
+        if (showInferenceModeDialog) {
+            AlertDialog(
+                onDismissRequest = { showInferenceModeDialog = false },
+                title = { Text(stringResource(R.string.cactus_inference_mode)) },
+                text = {
+                    Column {
+                        listOf(
+                            "LOCAL_FIRST" to stringResource(R.string.cactus_mode_local_first),
+                            "LOCAL" to stringResource(R.string.cactus_mode_local),
+                            "REMOTE_FIRST" to stringResource(R.string.cactus_mode_remote_first),
+                            "REMOTE" to stringResource(R.string.cactus_mode_remote)
+                        ).forEach { (mode, name) ->
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clickable {
+                                        onInferenceModeChange(mode)
+                                        showInferenceModeDialog = false
+                                    },
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (cactusInferenceModeInput == mode)
+                                    MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.surface
+                            ) {
+                                Text(
+                                    text = name,
+                                    modifier = Modifier.padding(14.dp),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showInferenceModeDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
+
+        SettingsTextField(
+                title = stringResource(R.string.cactus_token),
+                value = cactusTokenInput,
+                onValueChange = onTokenChange,
+                placeholder = stringResource(R.string.cactus_token_placeholder),
+                keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.Done
+                ),
+                isPassword = true
+        )
+    }
+}
+
+@Composable
+private fun RunanywhereSettingsBlock(
+        runanywhereThreadCountInput: String,
+        onThreadCountChange: (String) -> Unit,
+        runanywhereContextSizeInput: String,
+        onContextSizeChange: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SettingsInfoBanner(text = stringResource(R.string.mnn_local_model_tip))
+
+        SettingsInfoBanner(
+            text = stringResource(R.string.runanywhere_local_model_download_tip) +
+                "\n" +
+                stringResource(
+                    R.string.runanywhere_local_model_dir,
+                    RunanywhereProvider.getModelsDir().absolutePath
+                )
+        )
+
+        SettingsTextField(
+                title = stringResource(R.string.runanywhere_thread_count),
+                value = runanywhereThreadCountInput,
+                onValueChange = onThreadCountChange,
+                placeholder = "4",
+                keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                ),
+                valueFilter = { input -> input.filter { it.isDigit() } }
+        )
+
+        SettingsTextField(
+                title = stringResource(R.string.runanywhere_context_size),
+                value = runanywhereContextSizeInput,
+                onValueChange = onContextSizeChange,
+                placeholder = "4096",
+                keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
                 ),
                 valueFilter = { input -> input.filter { it.isDigit() } }
         )

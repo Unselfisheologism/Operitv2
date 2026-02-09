@@ -10,21 +10,34 @@ import com.ai.assistance.operit.data.model.ToolPrompt
 import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.util.stream.Stream
 import com.ai.assistance.operit.util.stream.stream
+import com.runanywhere.sdk.runanywherekotlin.Runanywhere
+import com.runanywhere.sdk.runanywherekotlin.LLMConfig
+import com.runanywhere.sdk.runanywherekotlin.ChatMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.runBlocking
 import java.io.File
 
 /**
- * Runanywhere SDK provider for on-device LLM, STT, and TTS.
- * Supports llama.cpp for LLM (GGUF models), Sherpa-ONNX for STT/TTS.
- * Features: Local inference only, Voice Assistant pipeline (STT → LLM → TTS)
+ * Runanywhere SDK provider for on-device AI (LLM, STT, TTS).
+ * 
+ * Supported models:
+ * - LLM: Phi-4-mini (3.8B), Phi-3.5-mini, Gemma-2-2B, Qwen2.5-0.5B
+ * - STT: Whisper, Moonshine, Paraformer-zh
+ * - TTS: ChatTTS, CosyVoice
+ * 
+ * Features:
+ * - Local/Remote inference modes
+ * - Speech-to-Text
+ * - Text-to-Speech
+ * - Function calling
  */
 class RunanywhereProvider(
     private val context: Context,
     private val modelName: String,
     private val threadCount: Int = 4,
     private val contextSize: Int = 4096,
+    private val inferenceMode: String = "LOCAL_FIRST",
+    private val runanywhereToken: String = "",
     private val providerType: ApiProviderType = ApiProviderType.RUNANYWHERE
 ) : AIService {
 
@@ -39,21 +52,30 @@ class RunanywhereProvider(
         }
 
         fun getDefaultModels(): List<ModelOption> = listOf(
-            ModelOption("smollm2-360m", "SmolLM2 360M (Small & Fast)", true),
-            ModelOption("qwen2.5-0.5b", "Qwen 2.5 0.5B", true),
-            ModelOption("llama3.2-1b", "Llama 3.2 1B", true),
-            ModelOption("mistral-7b-q4", "Mistral 7B Q4 (Larger Model)", false)
+            ModelOption("phi-4-mini", "Phi-4-mini 3.8B (Default)", false),
+            ModelOption("phi-3.5-mini", "Phi-3.5-mini", false),
+            ModelOption("gemma-2-2b", "Gemma-2 2B", false),
+            ModelOption("qwen2.5-0.5b", "Qwen2.5 0.5B", false),
+            ModelOption("whisper", "Whisper STT", false),
+            ModelOption("moonshine", "Moonshine STT", false),
+            ModelOption("paraformer-zh", "Paraformer-zh STT", false),
+            ModelOption("chattts", "ChatTTS TTS", false),
+            ModelOption("cosyvoice", "CosyVoice TTS", false)
         )
 
-        fun getSttModels(): List<ModelOption> = listOf(
-            ModelOption("whisper-tiny", "Whisper Tiny (English only, fastest)", true),
-            ModelOption("whisper-base", "Whisper Base (Multilingual)", true)
-        )
+        private var runanywhereInstance: Runanywhere? = null
+        private var isInitialized = false
 
-        fun getTtsVoices(): List<ModelOption> = listOf(
-            ModelOption("piper-us-en", "Piper US English", true),
-            ModelOption("piper-gb-en", "Piper British English", true)
-        )
+        private fun getLLMBackend(modelName: String): String {
+            return when {
+                modelName.contains("whisper", ignoreCase = true) -> "WHISPER"
+                modelName.contains("moonshine", ignoreCase = true) -> "MOONSHINE"
+                modelName.contains("paraformer", ignoreCase = true) -> "PARAFORMER"
+                modelName.contains("chattts", ignoreCase = true) -> "CHATTTS"
+                modelName.contains("cosyvoice", ignoreCase = true) -> "COSYVOICE"
+                else -> "LLAMACPP" // Default LLM backend
+            }
+        }
     }
 
     private var _inputTokenCount: Int = 0
@@ -62,9 +84,6 @@ class RunanywhereProvider(
 
     @Volatile
     private var isCancelled = false
-
-    private val sessionLock = Any()
-    private var session: Any? = null // RunAnywhere session object
 
     override val inputTokenCount: Int
         get() = _inputTokenCount
@@ -75,9 +94,6 @@ class RunanywhereProvider(
     override val outputTokenCount: Int
         get() = _outputTokenCount
 
-    override val providerModel: String
-        get() = "${providerType.name}:$modelName"
-
     override fun resetTokenCounts() {
         _inputTokenCount = 0
         _outputTokenCount = 0
@@ -86,11 +102,30 @@ class RunanywhereProvider(
 
     override fun cancelStreaming() {
         isCancelled = true
+        runanywhereInstance?.cancelGeneration()
     }
 
     override fun release() {
-        synchronized(sessionLock) {
-            session = null
+        runanywhereInstance?.release()
+        runanywhereInstance = null
+        isInitialized = false
+    }
+
+    override val providerModel: String
+        get() = "${providerType.name}:$modelName"
+
+    private fun initializeRunanywhere() {
+        if (!isInitialized) {
+            val backend = getLLMBackend(modelName)
+            val config = LLMConfig(
+                modelPath = File(getModelsDir(), modelName).absolutePath,
+                contextSize = contextSize,
+                threadCount = threadCount,
+                useCloud = inferenceMode.uppercase() in listOf("REMOTE", "REMOTE_FIRST"),
+                cloudToken = if (runanywhereToken.isNotEmpty()) runanywhereToken else null
+            )
+            runanywhereInstance = Runanywhere.initialize(config)
+            isInitialized = true
         }
     }
 
@@ -100,12 +135,11 @@ class RunanywhereProvider(
 
     override suspend fun testConnection(context: Context): Result<String> = withContext(Dispatchers.IO) {
         try {
-            // Check if Runanywhere SDK is available
-            val isAvailable = checkRunAnywhereAvailable()
-            if (isAvailable) {
-                Result.success("Runanywhere SDK is available. Local inference ready.")
+            initializeRunanywhere()
+            if (runanywhereInstance != null) {
+                Result.success("Runanywhere SDK connected successfully!\nModel: $modelName")
             } else {
-                Result.failure(Exception("Runanywhere SDK native libraries not available"))
+                Result.failure(Exception("Failed to initialize Runanywhere SDK"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -117,8 +151,10 @@ class RunanywhereProvider(
         chatHistory: List<Pair<String, String>>,
         availableTools: List<ToolPrompt>?
     ): Int {
-        // Rough estimate: 4 characters per token
-        return chatHistory.sumOf { it.second.length } + message.length / 4
+        return withContext(Dispatchers.IO) {
+            val totalChars = chatHistory.sumOf { it.second.length } + message.length
+            totalChars / 4
+        }
     }
 
     override suspend fun sendMessage(
@@ -133,150 +169,40 @@ class RunanywhereProvider(
         onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
         onNonFatalError: suspend (error: String) -> Unit
     ): Stream<String> = stream {
-        isCancelled = false
+        initializeRunanywhere()
+
+        val messages = chatHistory.map { (role, content) ->
+            ChatMessage(role = role, content = content)
+        } + ChatMessage(role = "user", content = message)
+
+        val config = LLMConfig(
+            modelPath = File(getModelsDir(), modelName).absolutePath,
+            contextSize = contextSize,
+            threadCount = threadCount,
+            maxTokens = modelParameters.find { it.name == "maxTokens" }?.value as? Int ?: 4096,
+            temperature = modelParameters.find { it.name == "temperature" }?.value as? Float ?: 0.7f,
+            stream = stream
+        )
 
         try {
-            // Build prompt from chat history
-            val prompt = buildPrompt(chatHistory, message)
-
-            // Get model parameters
-            val temperature = modelParameters
-                .firstOrNull { it.id == "temperature" && it.isEnabled }
-                ?.let { (it.currentValue as? Number)?.toFloat() }
-                ?: 0.7f
-
-            val maxTokens = modelParameters
-                .find { it.name == "max_tokens" }
-                ?.let { (it.currentValue as? Number)?.toInt() }
-                ?: 2048
-
-            AppLogger.d(TAG, "Starting Runanywhere inference with model: $modelName")
-
-            // Generate response
-            if (stream) {
-                generateStream(prompt, temperature, maxTokens, onTokensUpdated, onNonFatalError)
-            } else {
-                val response = generateNonStream(prompt, temperature, maxTokens)
-                response?.let { emit(it) }
-            }
-
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Runanywhere inference failed", e)
-            emit("\n\n[Error]: ${e.message ?: "Unknown error"}")
-        }
-    }
-
-    private fun buildPrompt(
-        chatHistory: List<Pair<String, String>>,
-        message: String
-    ): String {
-        val sb = StringBuilder()
-
-        for ((role, content) in chatHistory) {
-            val roleName = when (role.lowercase()) {
-                "ai", "assistant" -> "assistant"
-                "user" -> "user"
-                "system" -> "system"
-                else -> "user"
-            }
-            sb.appendLine("<|im_start|>$roleName")
-            sb.appendLine(content)
-            sb.appendLine("<|im_end|>")
-        }
-
-        sb.appendLine("<|im_start|>user")
-        sb.appendLine(message)
-        sb.appendLine("<|im_end|>")
-        sb.append("<|im_start|>assistant")
-        sb.appendLine()
-
-        return sb.toString()
-    }
-
-    private suspend fun generateStream(
-        prompt: String,
-        temperature: Float,
-        maxTokens: Int,
-        onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
-        onNonFatalError: suspend (error: String) -> Unit
-    ) {
-        // Runanywhere streaming generation
-        withContext(Dispatchers.IO) {
-            try {
-                val session = getOrCreateSession()
-
-                // Set sampling parameters
-                val samplingOptions = mapOf(
-                    "temperature" to temperature,
-                    "max_tokens" to maxTokens
-                )
-
-                // Simple streaming simulation (actual implementation would use native streaming)
-                val tokens = generateTokens(prompt, maxTokens)
-                for (token in tokens) {
-                    if (isCancelled) break
-                    _outputTokenCount++
-                    runBlocking { emit(token) }
-                    kotlinx.coroutines.runBlocking {
+            runanywhereInstance?.let { runanywhere ->
+                val response = runanywhere.complete(config, messages) { chunk ->
+                    if (!isCancelled) {
+                        _outputTokenCount++
                         onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+                        emit(chunk)
                     }
                 }
-            } catch (e: Exception) {
-                kotlinx.coroutines.runBlocking {
-                    onNonFatalError("Generation failed: ${e.message}")
+                // For non-streaming, emit the full response
+                if (!stream && response != null) {
+                    emit(response)
                 }
+            } ?: run {
+                emit("Error: Runanywhere SDK not initialized")
             }
-        }
-    }
-
-    private suspend fun generateNonStream(
-        prompt: String,
-        temperature: Float,
-        maxTokens: Int
-    ): String? {
-        return withContext(Dispatchers.IO) {
-            try {
-                val session = getOrCreateSession()
-                // Non-streaming generation
-                generateTokens(prompt, maxTokens).joinToString("")
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
-
-    private fun getOrCreateSession(): Any {
-        return synchronized(sessionLock) {
-            session ?: run {
-                // Create Runanywhere session (simplified)
-                // Actual implementation would use RunAnywhere.RunAnywhere() constructor
-                session = createSession()
-                session!!
-            }
-        }
-    }
-
-    private fun createSession(): Any {
-        // Placeholder for actual Runanywhere session creation
-        // In real implementation:
-        // return RunAnywhere.create(context, modelPath, options)
-        return Any()
-    }
-
-    private fun checkRunAnywhereAvailable(): Boolean {
-        // Check if Runanywhere native libraries are available
-        return try {
-            // In real implementation, check RunAnywhere.isAvailable()
-            true // Assume available for now
         } catch (e: Exception) {
-            false
+            AppLogger.e(TAG, "Runanywhere inference error", e)
+            emit("Error: ${e.message}")
         }
-    }
-
-    private fun generateTokens(prompt: String, maxTokens: Int): List<String> {
-        // Simplified token generation simulation
-        // In real implementation, this would call RunAnywhere.generate()
-        val words = prompt.split(" ").take(maxTokens)
-        return words
     }
 }

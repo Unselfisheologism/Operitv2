@@ -3340,6 +3340,25 @@
     <string name="provider_llama_cpp">llama.cpp 本地推理</string>
     <string name="provider_cactus">Cactus Compute (本地LLM+STT+Vision)</string>
     <string name="provider_runanywhere">Runanywhere (本地LLM+STT+TTS)</string>
+    
+    <!-- Cactus Settings -->
+    <string name="cactus_context_size">上下文大小</string>
+    <string name="cactus_inference_mode">推理模式</string>
+    <string name="cactus_mode_local">本地优先</string>
+    <string name="cactus_mode_remote">云端优先</string>
+    <string name="cactus_mode_local_first">仅本地</string>
+    <string name="cactus_mode_remote_first">仅云端</string>
+    <string name="cactus_token">Cactus Token</string>
+    <string name="cactus_token_placeholder">输入Cactus云端API Token</string>
+    <string name="cactus_local_model_dir">模型目录: %1$s</string>
+    <string name="cactus_local_model_download_tip">请将模型文件(.gguf等)下载到上述目录</string>
+    
+    <!-- Runanywhere Settings -->
+    <string name="runanywhere_thread_count">推理线程数</string>
+    <string name="runanywhere_context_size">上下文大小</string>
+    <string name="runanywhere_local_model_dir">模型目录: %1$s</string>
+    <string name="runanywhere_local_model_download_tip">请将模型文件下载到上述目录</string>
+    
     <string name="provider_ppinfra">派欧云</string>
     <string name="provider_openai_generic">OpenAI通用</string>
     <string name="provider_other">其他供应商</string>
