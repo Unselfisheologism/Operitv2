@@ -103,12 +103,21 @@ jobs:
           dos2unix ./gradlew || true
 
       # Clean and compile the apk
-      - name: Clean and Generate Debug APK
+      - name: Clean and Generate Debug APK with Info
         run: |
-          ./gradlew clean assembleDebug --warning-mode=all --stacktrace
+          ./gradlew clean assembleDebug --stacktrace --info 2>&1 | tee gradle_output.txt
+      
+      - name: Upload Gradle Output
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-output
+          path: gradle_output.txt
+          retention-days: 7
 
       # Upload the action artifact
       - name: Upload Debug APK (artifact)
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
