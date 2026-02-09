@@ -52,13 +52,13 @@ class CactusProvider(
         }
 
         fun getDefaultModels(): List<ModelOption> = listOf(
-            ModelOption("qwen3-0.6", "Qwen3 0.6B (Default)", false),
-            ModelOption("qwen2.5-0.5b", "Qwen2.5 0.5B", false),
-            ModelOption("gemma3-270m", "Gemma3 270M", false),
-            ModelOption("gemma3-1b", "Gemma3 1B", false),
-            ModelOption("smollm2-360m", "SmolLM2 360M", false),
-            ModelOption("lfm2-1b", "LFM2 1B", false),
-            ModelOption("lfm2-3b", "LFM2 3B", false)
+            ModelOption("qwen3-0.6", "Qwen3 0.6B"),
+            ModelOption("qwen2.5-0.5b", "Qwen2.5 0.5B"),
+            ModelOption("gemma3-270m", "Gemma3 270M"),
+            ModelOption("gemma3-1b", "Gemma3 1B"),
+            ModelOption("smollm2-360m", "SmolLM2 360M"),
+            ModelOption("lfm2-1b", "LFM2 1B"),
+            ModelOption("lfm2-3b", "LFM2 3B")
         )
     }
 

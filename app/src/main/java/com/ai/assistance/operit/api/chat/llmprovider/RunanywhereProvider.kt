@@ -56,15 +56,15 @@ class RunanywhereProvider(
         }
 
         fun getDefaultModels(): List<ModelOption> = listOf(
-            ModelOption("phi-4-mini", "Phi-4-mini 3.8B (Default)", false),
-            ModelOption("phi-3.5-mini", "Phi-3.5-mini", false),
-            ModelOption("gemma-2-2b", "Gemma-2 2B", false),
-            ModelOption("qwen2.5-0.5b", "Qwen2.5 0.5B", false),
-            ModelOption("whisper", "Whisper STT", false),
-            ModelOption("moonshine", "Moonshine STT", false),
-            ModelOption("paraformer-zh", "Paraformer-zh STT", false),
-            ModelOption("chattts", "ChatTTS TTS", false),
-            ModelOption("cosyvoice", "CosyVoice TTS", false)
+            ModelOption("phi-4-mini", "Phi-4-mini 3.8B"),
+            ModelOption("phi-3.5-mini", "Phi-3.5-mini"),
+            ModelOption("gemma-2-2b", "Gemma-2 2B"),
+            ModelOption("qwen2.5-0.5b", "Qwen2.5 0.5B"),
+            ModelOption("whisper", "Whisper STT"),
+            ModelOption("moonshine", "Moonshine STT"),
+            ModelOption("paraformer-zh", "Paraformer-zh STT"),
+            ModelOption("chattts", "ChatTTS TTS"),
+            ModelOption("cosyvoice", "CosyVoice TTS")
         )
     }
 

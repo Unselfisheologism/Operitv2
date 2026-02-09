@@ -1701,8 +1701,7 @@ private fun CactusSettingsBlock(
                 keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.Done
-                ),
-                isPassword = true
+                )
         )
     }
 }
