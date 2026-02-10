@@ -2,7 +2,7 @@ package com.ai.assistance.operit.ui.features.settings.sections
 
 import android.annotation.SuppressLint
 import com.ai.assistance.operit.util.AppLogger
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -430,6 +430,17 @@ fun ModelApiSettingsSection(
         }
     }
 
+    // 获取字符串资源（放在Composable上下文中）
+    val gettingModelsText = stringResource(R.string.getting_models_list)
+    val unknownErrorText = stringResource(R.string.unknown_error)
+    val getModelsFailedText = stringResource(R.string.get_models_list_failed)
+    val defaultConfigNoModelsText = stringResource(R.string.default_config_no_models_list)
+    val fillEndpointKeyText = stringResource(R.string.fill_endpoint_and_key)
+    val modelsListSuccessText = stringResource(R.string.models_list_success)
+    val refreshModelsFailedText = stringResource(R.string.refresh_models_failed)
+    val refreshModelsListFailedText = stringResource(R.string.refresh_models_list_failed)
+    val refreshModelsSuccessText = stringResource(R.string.refresh_models_success)
+
     // 模型列表状态
     var isLoadingModels by remember { mutableStateOf(false) }
     var showModelsDialog by remember { mutableStateOf(false) }
@@ -672,13 +683,6 @@ fun ModelApiSettingsSection(
                                              TAG,
                                              "模型列表按钮被点击 - API端点: $apiEndpointInput, API类型: ${selectedApiProvider.name}"
                                      )
-                                     val gettingModelsText = context.getString(R.string.getting_models_list)
-                                     val unknownErrorText = context.getString(R.string.unknown_error)
-                                     val getModelsFailedText = context.getString(R.string.get_models_list_failed)
-                                     val defaultConfigNoModelsText = context.getString(R.string.default_config_no_models_list)
-                                     val fillEndpointKeyText = context.getString(R.string.fill_endpoint_and_key)
-                                     val modelsListSuccessText = context.getString(R.string.models_list_success)
-                                     val refreshModelsFailedText = context.getString(R.string.refresh_models_failed)
                                      
                                      showNotification(gettingModelsText)
 
@@ -799,285 +803,273 @@ fun ModelApiSettingsSection(
         }
     }
 
-    // 模型列表对话框
+    // 显示模型列表对话框
     if (showModelsDialog) {
-        var searchQuery by remember { mutableStateOf("") }
-        // 维护已选中的模型集合
-        val selectedModels = remember {
-            mutableStateOf(
-                modelNameInput.split(",")
-                    .map { it.trim() }
-                    .filter { it.isNotEmpty() }
-                    .toSet()
-            )
-        }
-        val filteredModelsList =
-                remember(searchQuery, modelsList) {
-                    if (searchQuery.isEmpty()) modelsList
-                    else modelsList.filter { it.id.contains(searchQuery, ignoreCase = true) }
+        ModelListDialog(
+            modelsList = modelsList,
+            initialSelectedModels = modelNameInput.split(",")
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .toSet(),
+            onDismiss = { showModelsDialog = false },
+            onModelsSelected = { selectedModels ->
+                modelNameInput = selectedModels.joinToString(",")
+                if (selectedApiProvider == ApiProviderType.CACTUS) {
+                    AppLogger.d(TAG, "选择Cactus模型: $modelNameInput")
                 }
-
-        Dialog(onDismissRequest = { showModelsDialog = false }) {
-            Surface(
-                    modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    tonalElevation = 6.dp,
-                    shadowElevation = 8.dp
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    // 标题栏
-                    Row(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                showModelsDialog = false
+            },
+            onRefreshModels = {
+                scope.launch {
+                    if (apiEndpointInput.isNotBlank() &&
+                        apiKeyInput.isNotBlank() &&
+                        !isUsingDefaultApiKey
                     ) {
-                        Text(
-                                stringResource(R.string.available_models_list),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
-                        )
-
-                        FilledIconButton(
-                                onClick = {
-                                    scope.launch {
-                                        if (apiEndpointInput.isNotBlank() &&
-                                                        apiKeyInput.isNotBlank() &&
-                                                        !isUsingDefaultApiKey
-                                        ) {
-                                            isLoadingModels = true
-                                            try {
-                                                val result =
-                                                        ModelListFetcher.getModelsList(
-                                                                context,
-                                                                apiKeyInput,
-                                                                apiEndpointInput,
-                                                                selectedApiProvider
-                                                        )
-                                                if (result.isSuccess) {
-                                                    modelsList = result.getOrThrow()
-                                                } else {
-                                                    val errorMsg = result.exceptionOrNull()?.message ?: context.getString(R.string.unknown_error)
-                                                    modelLoadError = context.getString(R.string.refresh_models_list_failed, errorMsg)
-                                                    showNotification(modelLoadError ?: context.getString(R.string.refresh_models_failed))
-                                                }
-                                            } catch (e: Exception) {
-                                                val errorMsg = e.message ?: context.getString(R.string.unknown_error)
-                                                modelLoadError = context.getString(R.string.refresh_models_list_failed, errorMsg)
-                                                showNotification(modelLoadError ?: context.getString(R.string.refresh_models_failed))
-                                            } finally {
-                                                isLoadingModels = false
-                                            }
-                                        }
-                                    }
-                                },
-                                colors =
-                                        IconButtonDefaults.filledIconButtonColors(
-                                                containerColor =
-                                                        MaterialTheme.colorScheme.primaryContainer,
-                                                contentColor =
-                                                        MaterialTheme.colorScheme.onPrimaryContainer
-                                        ),
-                                modifier = Modifier.size(36.dp)
-                        ) {
-                            if (isLoadingModels) {
-                                CircularProgressIndicator(
-                                        modifier = Modifier.size(18.dp),
-                                        strokeWidth = 2.dp,
-                                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
+                        isLoadingModels = true
+                        try {
+                            val result = ModelListFetcher.getModelsList(
+                                context,
+                                apiKeyInput,
+                                apiEndpointInput,
+                                selectedApiProvider
+                            )
+                            if (result.isSuccess) {
+                                modelsList = result.getOrThrow()
                             } else {
-                                Icon(
-                                        Icons.Default.Refresh,
-                                        contentDescription = stringResource(R.string.refresh_models_list),
-                                        modifier = Modifier.size(18.dp)
-                                )
+                                val errorMsg = result.exceptionOrNull()?.message ?: unknownErrorText
+                                modelLoadError = refreshModelsListFailedText.format(errorMsg)
+                                showNotification(modelLoadError ?: refreshModelsFailedText)
                             }
+                        } catch (e: Exception) {
+                            val errorMsg = e.message ?: unknownErrorText
+                            modelLoadError = refreshModelsListFailedText.format(errorMsg)
+                            showNotification(modelLoadError ?: refreshModelsFailedText)
+                        } finally {
+                            isLoadingModels = false
                         }
                     }
+                }
+            },
+            isLoadingModels = isLoadingModels,
+            modelLoadError = modelLoadError
+        )
+    }
+}
 
-                    // 搜索框 - 用普通的OutlinedTextField替代实验性的SearchBar
-                    OutlinedTextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text(stringResource(R.string.search_models), fontSize = 14.sp) },
-                            leadingIcon = {
-                                Icon(
-                                        Icons.Default.Search,
-                                        contentDescription = stringResource(R.string.search),
-                                        modifier = Modifier.size(18.dp)
-                                )
-                            },
-                            trailingIcon = {
-                                if (searchQuery.isNotEmpty()) {
-                                    IconButton(
-                                            onClick = { searchQuery = "" },
-                                            modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(
-                                                Icons.Default.Clear,
-                                                contentDescription = stringResource(R.string.clear),
-                                                modifier = Modifier.size(18.dp)
-                                        )
-                                    }
-                                }
-                            },
-                            singleLine = true,
-                            modifier =
-                                    Modifier.fillMaxWidth().padding(bottom = 12.dp).height(48.dp),
-                            colors =
-                                    OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                            unfocusedBorderColor =
-                                                    MaterialTheme.colorScheme.outline,
-                                            focusedLeadingIconColor =
-                                                    MaterialTheme.colorScheme.primary,
-                                            unfocusedLeadingIconColor =
-                                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                    ),
-                            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp)
+@Composable
+fun ModelListDialog(
+    modelsList: List<ModelOption>,
+    initialSelectedModels: Set<String>,
+    onDismiss: () -> Unit,
+    onModelsSelected: (Set<String>) -> Unit,
+    onRefreshModels: () -> Unit,
+    isLoadingModels: Boolean,
+    modelLoadError: String?
+) {
+    var searchQuery by remember { mutableStateOf("") }
+    val selectedModels = remember { mutableStateOf(initialSelectedModels) }
+    
+    val filteredModelsList = remember(searchQuery, modelsList) {
+        if (searchQuery.isEmpty()) modelsList
+        else modelsList.filter { it.id.contains(searchQuery, ignoreCase = true) }
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp),
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // 标题栏
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.available_models_list),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
                     )
 
-                    // 模型列表
-                    if (modelsList.isEmpty()) {
-                        Box(
-                                modifier = Modifier.fillMaxWidth().height(200.dp),
-                                contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.Center
+                    FilledIconButton(
+                        onClick = onRefreshModels,
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        ),
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        if (isLoadingModels) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.refresh_models_list),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 搜索框
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text(stringResource(R.string.search_models), fontSize = 14.sp) },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = stringResource(R.string.search),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(
+                                onClick = { searchQuery = "" },
+                                modifier = Modifier.size(36.dp)
                             ) {
                                 Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(48.dp),
-                                        tint =
-                                                MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                                                        alpha = 0.6f
-                                                )
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                        text = modelLoadError ?: stringResource(R.string.no_models_found),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    Icons.Default.Clear,
+                                    contentDescription = stringResource(R.string.clear),
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
-                    } else {
-                        androidx.compose.foundation.lazy.LazyColumn(
-                                modifier = Modifier.fillMaxWidth().weight(1f)
-                        ) {
-                            items(filteredModelsList.size) { index ->
-                                val model = filteredModelsList[index]
-                                val isSelected = selectedModels.value.contains(model.id)
-                                
-                                // 使用带Checkbox的Row实现多选
-                                Row(
-                                        modifier =
-                                                Modifier.fillMaxWidth()
-                                                        .clickable {
-                                                            // 切换选中状态
-                                                            val newSelection = selectedModels.value.toMutableSet()
-                                                            if (isSelected) {
-                                                                newSelection.remove(model.id)
-                                                            } else {
-                                                                newSelection.add(model.id)
-                                                            }
-                                                            selectedModels.value = newSelection
-                                                        }
-                                                        .padding(
-                                                                horizontal = 12.dp,
-                                                                vertical = 6.dp
-                                                        ),
-                                        verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                            checked = isSelected,
-                                            onCheckedChange = { checked ->
-                                                val newSelection = selectedModels.value.toMutableSet()
-                                                if (checked) {
-                                                    newSelection.add(model.id)
-                                                } else {
-                                                    newSelection.remove(model.id)
-                                                }
-                                                selectedModels.value = newSelection
-                                            },
-                                            colors = CheckboxDefaults.colors(
-                                                    checkedColor = MaterialTheme.colorScheme.primary
-                                            )
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                            text = model.name,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            modifier = Modifier.weight(1f),
-                                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                            color = if (isSelected) 
-                                                    MaterialTheme.colorScheme.primary 
-                                                else 
-                                                    MaterialTheme.colorScheme.onSurface
-                                    )
-                                }
+                    },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp).height(48.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    textStyle = TextStyle(fontSize = 14.sp)
+                )
 
-                                if (index < filteredModelsList.size - 1) {
-                                    HorizontalDivider(
-                                            thickness = 0.5.dp,
-                                            color =
-                                                    MaterialTheme.colorScheme.outlineVariant.copy(
-                                                            alpha = 0.5f
-                                                    ),
-                                            modifier = Modifier.padding(horizontal = 12.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // 底部信息
-                    if (filteredModelsList.isNotEmpty()) {
-                        Text(
-                                text =
-                                        stringResource(R.string.models_displayed, filteredModelsList.size) +
-                                                (if (searchQuery.isNotEmpty()) stringResource(R.string.models_displayed_filtered) else "") +
-                                                (if (selectedModels.value.isNotEmpty()) " • ${selectedModels.value.size}" + stringResource(R.string.models_selected_suffix) else ""),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
-                                fontSize = 12.sp
-                        )
-                    }
-
-                    // 底部按钮
-                    Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                // 模型列表
+                if (modelsList.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        FilledTonalButton(
-                                onClick = { showModelsDialog = false },
-                                modifier = Modifier.height(36.dp)
-                        ) { Text(stringResource(R.string.close), fontSize = 14.sp) }
-                        
-                        Button(
-                                onClick = {
-                                    // 将选中的模型用逗号连接
-                                    val orderedSelection = modelsList.map { it.id }
-                                        .filter { selectedModels.value.contains(it) }
-                                    modelNameInput = orderedSelection.joinToString(",")
-                                    if (selectedApiProvider == ApiProviderType.CACTUS) {
-                                        AppLogger.d(TAG, "选择Cactus模型: $modelNameInput")
-                                    }
-                                    showModelsDialog = false
-                                },
-                                modifier = Modifier.height(36.dp),
-                                enabled = selectedModels.value.isNotEmpty()
-                        ) { 
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                stringResource(R.string.confirm_action) + 
-                                    if (selectedModels.value.isNotEmpty()) " (${selectedModels.value.size})" else "",
-                                fontSize = 14.sp
-                            ) 
+                                text = modelLoadError ?: stringResource(R.string.no_models_found),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    ) {
+                        items(filteredModelsList.size) { index ->
+                            val model = filteredModelsList[index]
+                            val isSelected = selectedModels.value.contains(model.id)
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .clickable {
+                                        val newSelection = selectedModels.value.toMutableSet()
+                                        if (isSelected) {
+                                            newSelection.remove(model.id)
+                                        } else {
+                                            newSelection.add(model.id)
+                                        }
+                                        selectedModels.value = newSelection
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = { checked ->
+                                        val newSelection = selectedModels.value.toMutableSet()
+                                        if (checked) {
+                                            newSelection.add(model.id)
+                                        } else {
+                                            newSelection.remove(model.id)
+                                        }
+                                        selectedModels.value = newSelection
+                                    },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = MaterialTheme.colorScheme.primary
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = model.name,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.weight(1f),
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+
+                            if (index < filteredModelsList.size - 1) {
+                                HorizontalDivider(
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.padding(horizontal = 12.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 底部信息
+                if (filteredModelsList.isNotEmpty()) {
+                    Text(
+                        text = stringResource(R.string.models_displayed, filteredModelsList.size) +
+                            (if (searchQuery.isNotEmpty()) stringResource(R.string.models_displayed_filtered) else "") +
+                            (if (selectedModels.value.isNotEmpty()) " • ${selectedModels.value.size}" + stringResource(R.string.models_selected_suffix) else ""),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 6.dp),
+                        fontSize = 12.sp
+                    )
+                }
+
+                // 底部按钮
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                ) {
+                    FilledTonalButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.height(36.dp)
+                    ) { Text(stringResource(R.string.close), fontSize = 14.sp) }
+                    
+                    Button(
+                        onClick = { onModelsSelected(selectedModels.value) },
+                        modifier = Modifier.height(36.dp),
+                        enabled = selectedModels.value.isNotEmpty()
+                    ) { 
+                        Text(
+                            stringResource(R.string.confirm_action) + 
+                                if (selectedModels.value.isNotEmpty()) " (${selectedModels.value.size})" else "",
+                            fontSize = 14.sp
+                        ) 
                     }
                 }
             }
