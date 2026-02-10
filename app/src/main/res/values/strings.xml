@@ -3307,6 +3307,7 @@
     <string name="refresh_models_list_failed">刷新模型列表失败: %s</string>
     <string name="refresh_models_failed">刷新模型列表失败</string>
     <string name="refresh_models_list">刷新模型列表</string>
+    <string name="refresh_models_success">刷新模型列表成功</string>
     <string name="search_models">搜索模型</string>
     <string name="search">搜索</string>
     <string name="clear">清除</string>

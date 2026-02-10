@@ -665,7 +665,6 @@ fun ModelApiSettingsSection(
                         visualTransformation = if (isApiKeyFocused || apiKeyInput.isEmpty()) VisualTransformation.None else ApiKeyVisualTransformation(),
                         interactionSource = apiKeyInteractionSource
                 )
-            }
             SettingsTextField(
                     title = stringResource(R.string.model_name),
                     subtitle = stringResource(R.string.model_name_placeholder) + stringResource(R.string.model_name_multiple_hint),
@@ -758,6 +757,7 @@ fun ModelApiSettingsSection(
                             }
                         }
                     }
+                )
 
 
             SettingsSwitchRow(
