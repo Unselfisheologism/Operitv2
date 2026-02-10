@@ -42,10 +42,6 @@ import com.ai.assistance.operit.data.preferences.ModelConfigManager
 import com.ai.assistance.operit.ui.features.settings.sections.AdvancedSettingsSection
 import com.ai.assistance.operit.ui.features.settings.sections.ModelApiSettingsSection
 import com.ai.assistance.operit.ui.features.settings.sections.ModelParametersSection
-import com.ai.assistance.operit.ui.features.settings.sections.SettingsInfoBanner
-import com.ai.assistance.operit.ui.features.settings.sections.SettingsSectionHeader
-import com.ai.assistance.operit.ui.features.settings.sections.SettingsSwitchRow
-import com.ai.assistance.operit.ui.features.settings.sections.SettingsTextField
 import com.ai.assistance.operit.util.AssetCopyUtils
 import com.ai.assistance.operit.util.ImagePoolManager
 import com.ai.assistance.operit.util.MediaPoolManager
@@ -1088,37 +1084,57 @@ private fun ContextSummarySettingsSection(
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SettingsInfoBanner(text = stringResource(id = R.string.settings_context_card_content))
+                        // SettingsInfoBanner(text = stringResource(id = R.string.settings_context_card_content))
 
-                        SettingsTextField(
-                            title = stringResource(id = R.string.settings_context_length),
-                            subtitle = stringResource(id = R.string.settings_context_length_subtitle),
-                            value = contextLengthInput,
-                            onValueChange = {
-                                contextLengthInput = it
-                                contextError = null
-                            },
-                            unitText = "K",
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Decimal,
-                                imeAction = ImeAction.Next
+                        Column {
+                            Text(
+                                text = stringResource(id = R.string.settings_context_length),
+                                style = MaterialTheme.typography.bodyMedium
                             )
-                        )
+                            Text(
+                                text = stringResource(id = R.string.settings_context_length_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            OutlinedTextField(
+                                value = contextLengthInput,
+                                onValueChange = {
+                                    contextLengthInput = it
+                                    contextError = null
+                                },
+                                suffix = { Text("K") },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Next
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
 
-                        SettingsTextField(
-                            title = stringResource(id = R.string.settings_max_context_length),
-                            subtitle = stringResource(id = R.string.settings_max_context_length_subtitle),
-                            value = maxContextLengthInput,
-                            onValueChange = {
-                                maxContextLengthInput = it
-                                contextError = null
-                            },
-                            unitText = "K",
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Decimal,
-                                imeAction = ImeAction.Done
+                        Column {
+                            Text(
+                                text = stringResource(id = R.string.settings_max_context_length),
+                                style = MaterialTheme.typography.bodyMedium
                             )
-                        )
+                            Text(
+                                text = stringResource(id = R.string.settings_max_context_length_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            OutlinedTextField(
+                                value = maxContextLengthInput,
+                                onValueChange = {
+                                    maxContextLengthInput = it
+                                    contextError = null
+                                },
+                                suffix = { Text("K") },
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Done
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
 
                         contextError?.let {
                             Text(
@@ -1175,51 +1191,101 @@ private fun ContextSummarySettingsSection(
                     exit = shrinkVertically() + fadeOut()
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        SettingsSwitchRow(
-                            title = stringResource(id = R.string.settings_enable_summary),
-                            subtitle = stringResource(id = R.string.settings_enable_summary_desc),
-                            checked = enableSummary,
-                            onCheckedChange = { enableSummary = it }
-                        )
-
-                        SettingsTextField(
-                            title = stringResource(id = R.string.settings_summary_threshold),
-                            subtitle = stringResource(id = R.string.settings_summary_threshold_subtitle),
-                            value = summaryTokenThresholdInput,
-                            onValueChange = {
-                                summaryTokenThresholdInput = it
-                                summaryError = null
-                            },
-                            enabled = enableSummary,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Decimal,
-                                imeAction = ImeAction.Next
+                        // Summary enable switch
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(id = R.string.settings_enable_summary),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.settings_enable_summary_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = enableSummary,
+                                onCheckedChange = { enableSummary = it }
                             )
-                        )
+                        }
 
-                        SettingsSwitchRow(
-                            title = stringResource(id = R.string.settings_enable_summary_by_message_count),
-                            subtitle = stringResource(id = R.string.settings_enable_summary_by_message_count_desc),
-                            checked = enableSummaryByMessageCount,
-                            onCheckedChange = { enableSummaryByMessageCount = it },
-                            enabled = enableSummary
-                        )
-
-                        SettingsTextField(
-                            title = stringResource(id = R.string.settings_summary_message_count_threshold),
-                            subtitle = stringResource(id = R.string.settings_summary_message_count_threshold_subtitle),
-                            value = summaryMessageCountThresholdInput,
-                            onValueChange = {
-                                summaryMessageCountThresholdInput = it
-                                summaryError = null
-                            },
-                            unitText = stringResource(id = R.string.model_config_unit_items),
-                            enabled = enableSummary && enableSummaryByMessageCount,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
-                                imeAction = ImeAction.Done
+                        Column {
+                            Text(
+                                text = stringResource(id = R.string.settings_summary_threshold),
+                                style = MaterialTheme.typography.bodyMedium
                             )
-                        )
+                            Text(
+                                text = stringResource(id = R.string.settings_summary_threshold_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            OutlinedTextField(
+                                value = summaryTokenThresholdInput,
+                                onValueChange = {
+                                    summaryTokenThresholdInput = it
+                                    summaryError = null
+                                },
+                                enabled = enableSummary,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Next
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        // Summary by message count switch
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(id = R.string.settings_enable_summary_by_message_count),
+                                    style = MaterialTheme.typography.bodyLarge
+                                )
+                                Text(
+                                    text = stringResource(id = R.string.settings_enable_summary_by_message_count_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = enableSummaryByMessageCount,
+                                onCheckedChange = { enableSummaryByMessageCount = it },
+                                enabled = enableSummary
+                            )
+                        }
+
+                        Column {
+                            Text(
+                                text = stringResource(id = R.string.settings_summary_message_count_threshold),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = stringResource(id = R.string.settings_summary_message_count_threshold_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            OutlinedTextField(
+                                value = summaryMessageCountThresholdInput,
+                                onValueChange = {
+                                    summaryMessageCountThresholdInput = it
+                                    summaryError = null
+                                },
+                                suffix = { Text(stringResource(id = R.string.model_config_unit_items)) },
+                                enabled = enableSummary && enableSummaryByMessageCount,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction = ImeAction.Done
+                                ),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
 
                         summaryError?.let {
                             Text(
