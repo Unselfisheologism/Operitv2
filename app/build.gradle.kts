@@ -10,7 +10,6 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.kotlin.parcelize)
     id("io.objectbox")
-    id("kotlin-kapt")
 }
 
 val localProperties = Properties()
@@ -128,6 +127,13 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+    
+    // Kapt configuration to fix annotation processor discovery
+    kapt {
+        includeCompileClasspath = false
+        correctErrorTypes = true
+    }
+    
     buildFeatures {
         compose = true
         aidl = true
