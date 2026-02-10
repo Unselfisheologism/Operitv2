@@ -112,7 +112,8 @@ object EndpointCompleter {
 
             ApiProviderType.GOOGLE,
             ApiProviderType.GEMINI_GENERIC,
-            ApiProviderType.MNN -> {
+            ApiProviderType.CACTUS,
+            ApiProviderType.RUNANYWHERE -> {
                 return endpoint
             }
 

@@ -403,6 +403,7 @@ dependencies {
     // Coroutine
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
+    implementation(libs.coroutines.guava)
 
     // ObjectBox
     implementation(libs.objectbox.kotlin)

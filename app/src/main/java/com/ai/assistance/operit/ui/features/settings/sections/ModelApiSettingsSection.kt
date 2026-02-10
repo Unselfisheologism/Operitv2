@@ -183,7 +183,7 @@ fun ModelApiSettingsSection(
 
     /*
     LaunchedEffect(config.id, selectedApiProvider) {
-        if (selectedApiProvider == ApiProviderType.MNN || selectedApiProvider == ApiProviderType.LLAMA_CPP) {
+        if (selectedApiProvider == ApiProviderType.CACTUS || selectedApiProvider == ApiProviderType.RUNANYWHERE) {
             enableToolCallInput = false
         }
     }
@@ -222,12 +222,6 @@ fun ModelApiSettingsSection(
                     apiEndpoint = state.apiEndpoint,
                     modelName = state.modelName,
                     apiProviderType = state.provider,
-                    // MNN fields commented out
-                    mnnForwardType = 0,
-                    mnnThreadCount = 4,
-                    // llama.cpp fields commented out
-                    llamaThreadCount = 4,
-                    llamaContextSize = 4096,
                     cactusContextSize = state.cactusContextSize,
                     cactusInferenceMode = state.cactusInferenceMode,
                     cactusToken = state.cactusToken,
@@ -504,8 +498,6 @@ fun ModelApiSettingsSection(
                 selectedApiProvider == ApiProviderType.GEMINI_GENERIC ||
                 selectedApiProvider == ApiProviderType.ANTHROPIC_GENERIC
 
-            val isMnnProvider = selectedApiProvider == ApiProviderType.MNN
-            val isLlamaProvider = selectedApiProvider == ApiProviderType.LLAMA_CPP
             val isCactusProvider = selectedApiProvider == ApiProviderType.CACTUS
             val isRunanywhereProvider = selectedApiProvider == ApiProviderType.RUNANYWHERE
             val endpointOptions = getEndpointOptions(selectedApiProvider)
@@ -871,7 +863,7 @@ fun ModelApiSettingsSection(
                 subtitle = stringResource(R.string.enable_tool_call_desc),
                 checked = enableToolCallInput,
                 onCheckedChange = { enableToolCallInput = it },
-                enabled = selectedApiProvider != ApiProviderType.MNN && selectedApiProvider != ApiProviderType.LLAMA_CPP
+                enabled = selectedApiProvider != ApiProviderType.CACTUS && selectedApiProvider != ApiProviderType.RUNANYWHERE
             )
             
         }
@@ -1142,8 +1134,8 @@ fun ModelApiSettingsSection(
                                     val orderedSelection = modelsList.map { it.id }
                                         .filter { selectedModels.value.contains(it) }
                                     modelNameInput = orderedSelection.joinToString(",")
-                                    if (selectedApiProvider == ApiProviderType.MNN) {
-                                        AppLogger.d(TAG, "选择MNN模型: $modelNameInput")
+                                    if (selectedApiProvider == ApiProviderType.CACTUS) {
+                                        AppLogger.d(TAG, "选择Cactus模型: $modelNameInput")
                                     }
                                     showModelsDialog = false
                                 },
@@ -1186,8 +1178,6 @@ private fun getProviderDisplayName(provider: ApiProviderType, context: android.c
         ApiProviderType.ALIPAY_BAILING -> context.getString(R.string.provider_alipay_bailing)
         ApiProviderType.DOUBAO -> context.getString(R.string.provider_doubao)
         ApiProviderType.LMSTUDIO -> context.getString(R.string.provider_lmstudio)
-        ApiProviderType.MNN -> context.getString(R.string.provider_mnn)
-        ApiProviderType.LLAMA_CPP -> context.getString(R.string.provider_llama_cpp)
         ApiProviderType.CACTUS -> context.getString(R.string.provider_cactus)
         ApiProviderType.RUNANYWHERE -> context.getString(R.string.provider_runanywhere)
         ApiProviderType.PPINFRA -> context.getString(R.string.provider_ppinfra)
@@ -1925,8 +1915,6 @@ private fun getProviderColor(provider: ApiProviderType): androidx.compose.ui.gra
         ApiProviderType.ALIPAY_BAILING -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.45f)
         ApiProviderType.DOUBAO -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f)
         ApiProviderType.LMSTUDIO -> MaterialTheme.colorScheme.tertiary
-        ApiProviderType.MNN -> MaterialTheme.colorScheme.secondary
-        ApiProviderType.LLAMA_CPP -> MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
         ApiProviderType.CACTUS -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.8f)
         ApiProviderType.RUNANYWHERE -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
         ApiProviderType.PPINFRA -> MaterialTheme.colorScheme.primaryContainer

@@ -481,7 +481,7 @@ class CustomXmlRenderer(
         // 提取状态
         val statusMatch = ChatMarkupRegex.statusAttr.find(content)
         val status = statusMatch?.groupValues?.get(1) ?: "success"
-        val isSuccess = status.toLowerCase() == "success"
+        val isSuccess = status.lowercase() == "success"
 
         // 提取结果内容
         val contentMatch = ChatMarkupRegex.contentTag.find(content)

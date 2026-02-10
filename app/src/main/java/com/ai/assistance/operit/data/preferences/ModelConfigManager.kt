@@ -337,10 +337,6 @@ class ModelConfigManager(private val context: Context) {
             apiEndpoint: String,
             modelName: String,
             apiProviderType: ApiProviderType,
-            mnnForwardType: Int,
-            mnnThreadCount: Int,
-            llamaThreadCount: Int,
-            llamaContextSize: Int,
             cactusContextSize: Int,
             cactusInferenceMode: String,
             cactusToken: String,
@@ -354,7 +350,7 @@ class ModelConfigManager(private val context: Context) {
     ): ModelConfigData {
         return updateConfigInternal(configId) {
             val resolvedEnableToolCall =
-                if (apiProviderType == ApiProviderType.MNN || apiProviderType == ApiProviderType.LLAMA_CPP) {
+                if (apiProviderType == ApiProviderType.CACTUS || apiProviderType == ApiProviderType.RUNANYWHERE) {
                     false
                 } else {
                     enableToolCall
@@ -364,10 +360,6 @@ class ModelConfigManager(private val context: Context) {
                     apiEndpoint = apiEndpoint,
                     modelName = modelName,
                     apiProviderType = apiProviderType,
-                    mnnForwardType = mnnForwardType,
-                    mnnThreadCount = mnnThreadCount,
-                    llamaThreadCount = llamaThreadCount,
-                    llamaContextSize = llamaContextSize,
                     cactusContextSize = cactusContextSize,
                     cactusInferenceMode = cactusInferenceMode,
                     cactusToken = cactusToken,
@@ -494,7 +486,7 @@ class ModelConfigManager(private val context: Context) {
     suspend fun updateToolCall(configId: String, enableToolCall: Boolean): ModelConfigData {
         return updateConfigInternal(configId) {
             val resolvedEnableToolCall =
-                if (it.apiProviderType == ApiProviderType.MNN || it.apiProviderType == ApiProviderType.LLAMA_CPP) {
+                if (it.apiProviderType == ApiProviderType.CACTUS || it.apiProviderType == ApiProviderType.RUNANYWHERE) {
                     false
                 } else {
                     enableToolCall

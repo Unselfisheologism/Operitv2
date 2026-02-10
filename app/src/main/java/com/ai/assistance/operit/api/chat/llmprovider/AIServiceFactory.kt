@@ -170,7 +170,7 @@ object AIServiceFactory {
             ApiProviderType.CACTUS -> CactusProvider(
                 context = context,
                 modelName = config.modelName.ifEmpty { "qwen3-0.6" },
-                threadCount = config.mnnThreadCount, // Reuse MNN thread count setting
+                threadCount = 4, // Default thread count for Cactus
                 contextSize = config.cactusContextSize,
                 inferenceMode = config.cactusInferenceMode,
                 cactusToken = config.cactusToken,
