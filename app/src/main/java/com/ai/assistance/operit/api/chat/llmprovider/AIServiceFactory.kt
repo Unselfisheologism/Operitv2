@@ -142,6 +142,7 @@ object AIServiceFactory {
                     enableToolCall = enableToolCall
                 )
 
+            /*
             // MNN本地推理引擎
             ApiProviderType.MNN -> MNNProvider(
                 context = context,
@@ -163,6 +164,7 @@ object AIServiceFactory {
                 contextSize = config.llamaContextSize,
                 providerType = config.apiProviderType
             )
+            */
 
             // Cactus Compute 本地推理引擎 (支持LLM+STT+Vision+Embeddings)
             ApiProviderType.CACTUS -> CactusProvider(

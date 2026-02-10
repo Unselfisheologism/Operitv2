@@ -48,7 +48,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.ai.assistance.operit.R
 import com.ai.assistance.operit.api.chat.llmprovider.EndpointCompleter
 import com.ai.assistance.operit.api.chat.EnhancedAIService
-import com.ai.assistance.operit.api.chat.llmprovider.LlamaProvider
 import com.ai.assistance.operit.api.chat.llmprovider.CactusProvider
 import com.ai.assistance.operit.api.chat.llmprovider.RunanywhereProvider
 import com.ai.assistance.operit.api.chat.llmprovider.ModelListFetcher
@@ -116,8 +115,8 @@ fun ModelApiSettingsSection(
             ApiProviderType.ALIPAY_BAILING -> "Ling-1T"
             ApiProviderType.DOUBAO -> "Doubao-pro-4k"
             ApiProviderType.LMSTUDIO -> "meta-llama-3.1-8b-instruct"
-            ApiProviderType.MNN -> ""
-            ApiProviderType.LLAMA_CPP -> ""
+            // ApiProviderType.MNN -> ""
+            // ApiProviderType.LLAMA_CPP -> ""
             ApiProviderType.CACTUS -> "qwen3-0.6"
             ApiProviderType.RUNANYWHERE -> "smollm2-360m"
             ApiProviderType.PPINFRA -> "gpt-4o-mini"
@@ -152,13 +151,13 @@ fun ModelApiSettingsSection(
     var modelNameInput by remember(config.id) { mutableStateOf(config.modelName) }
     var selectedApiProvider by remember(config.id) { mutableStateOf(config.apiProviderType) }
     
-    // MNN特定配置状态
-    var mnnForwardTypeInput by remember(config.id) { mutableStateOf(config.mnnForwardType) }
-    var mnnThreadCountInput by remember(config.id) { mutableStateOf(config.mnnThreadCount.toString()) }
+    // MNN特定配置状态 (已移除，使用CACTUS替代)
+    // var mnnForwardTypeInput by remember(config.id) { mutableStateOf(config.mnnForwardType) }
+    // var mnnThreadCountInput by remember(config.id) { mutableStateOf(config.mnnThreadCount.toString()) }
 
-    // llama.cpp 特定配置状态
-    var llamaThreadCountInput by remember(config.id) { mutableStateOf(config.llamaThreadCount.toString()) }
-    var llamaContextSizeInput by remember(config.id) { mutableStateOf(config.llamaContextSize.toString()) }
+    // llama.cpp 特定配置状态 (已移除，使用RUNANYWHERE替代)
+    // var llamaThreadCountInput by remember(config.id) { mutableStateOf(config.llamaThreadCount.toString()) }
+    // var llamaContextSizeInput by remember(config.id) { mutableStateOf(config.llamaContextSize.toString()) }
     
     // Cactus 特定配置状态
     var cactusContextSizeInput by remember(config.id) { mutableStateOf(config.cactusContextSize.toString()) }
@@ -182,21 +181,25 @@ fun ModelApiSettingsSection(
     // Tool Call配置状态
     var enableToolCallInput by remember(config.id) { mutableStateOf(config.enableToolCall) }
 
+    /*
     LaunchedEffect(config.id, selectedApiProvider) {
         if (selectedApiProvider == ApiProviderType.MNN || selectedApiProvider == ApiProviderType.LLAMA_CPP) {
             enableToolCallInput = false
         }
     }
+    */
 
     data class ApiAutoSaveState(
         val apiEndpoint: String,
         val apiKey: String,
         val modelName: String,
         val provider: ApiProviderType,
-        val mnnForwardType: Int,
-        val mnnThreadCount: Int,
-        val llamaThreadCount: Int,
-        val llamaContextSize: Int,
+        // MNN fields commented out (using CACTUS instead)
+        // val mnnForwardType: Int,
+        // val mnnThreadCount: Int,
+        // llama.cpp fields commented out (using RUNANYWHERE instead)
+        // val llamaThreadCount: Int,
+        // val llamaContextSize: Int,
         val cactusContextSize: Int,
         val cactusInferenceMode: String,
         val cactusToken: String,
@@ -219,10 +222,12 @@ fun ModelApiSettingsSection(
                     apiEndpoint = state.apiEndpoint,
                     modelName = state.modelName,
                     apiProviderType = state.provider,
-                    mnnForwardType = state.mnnForwardType,
-                    mnnThreadCount = state.mnnThreadCount,
-                    llamaThreadCount = state.llamaThreadCount,
-                    llamaContextSize = state.llamaContextSize,
+                    // MNN fields commented out
+                    mnnForwardType = 0,
+                    mnnThreadCount = 4,
+                    // llama.cpp fields commented out
+                    llamaThreadCount = 4,
+                    llamaContextSize = 4096,
                     cactusContextSize = state.cactusContextSize,
                     cactusInferenceMode = state.cactusInferenceMode,
                     cactusToken = state.cactusToken,
@@ -248,10 +253,12 @@ fun ModelApiSettingsSection(
             apiKey = apiKeyInput,
             modelName = modelNameInput,
             provider = selectedApiProvider,
-            mnnForwardType = mnnForwardTypeInput,
-            mnnThreadCount = mnnThreadCountInput.toIntOrNull() ?: 4,
-            llamaThreadCount = llamaThreadCountInput.toIntOrNull() ?: 4,
-            llamaContextSize = llamaContextSizeInput.toIntOrNull() ?: 4096,
+            // MNN fields commented out
+            // mnnForwardType = mnnForwardTypeInput,
+            // mnnThreadCount = mnnThreadCountInput.toIntOrNull() ?: 4,
+            // llama.cpp fields commented out
+            // llamaThreadCount = llamaThreadCountInput.toIntOrNull() ?: 4,
+            // llamaContextSize = llamaContextSizeInput.toIntOrNull() ?: 4096,
             cactusContextSize = cactusContextSizeInput.toIntOrNull() ?: 2048,
             cactusInferenceMode = cactusInferenceModeInput,
             cactusToken = cactusTokenInput,
@@ -305,10 +312,12 @@ fun ModelApiSettingsSection(
                 apiKey = apiKeyInput,
                 modelName = modelNameInput,
                 provider = selectedApiProvider,
-                mnnForwardType = mnnForwardTypeInput,
-                mnnThreadCount = mnnThreadCountInput.toIntOrNull() ?: 4,
-                llamaThreadCount = llamaThreadCountInput.toIntOrNull() ?: 4,
-                llamaContextSize = llamaContextSizeInput.toIntOrNull() ?: 4096,
+                // MNN fields commented out
+                // mnnForwardType = mnnForwardTypeInput,
+                // mnnThreadCount = mnnThreadCountInput.toIntOrNull() ?: 4,
+                // llama.cpp fields commented out
+                // llamaThreadCount = llamaThreadCountInput.toIntOrNull() ?: 4,
+                // llamaContextSize = llamaContextSizeInput.toIntOrNull() ?: 4096,
                 cactusContextSize = cactusContextSizeInput.toIntOrNull() ?: 2048,
                 cactusInferenceMode = cactusInferenceModeInput,
                 cactusToken = cactusTokenInput,
@@ -376,8 +385,8 @@ fun ModelApiSettingsSection(
             ApiProviderType.ALIPAY_BAILING -> "https://api.tbox.cn/api/llm/v1/chat/completions"
             ApiProviderType.DOUBAO -> "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
             ApiProviderType.LMSTUDIO -> "http://localhost:1234/v1/chat/completions"
-            ApiProviderType.MNN -> "" // MNN本地推理不需要endpoint
-            ApiProviderType.LLAMA_CPP -> "" // llama.cpp本地推理不需要endpoint
+            // ApiProviderType.MNN -> "" // MNN本地推理不需要endpoint
+            // ApiProviderType.LLAMA_CPP -> "" // llama.cpp本地推理不需要endpoint
             ApiProviderType.CACTUS -> "" // Cactus本地推理不需要endpoint
             ApiProviderType.RUNANYWHERE -> "" // Runanywhere本地推理不需要endpoint
             ApiProviderType.PPINFRA -> "https://api.ppinfra.com/openai/v1/chat/completions"
@@ -500,6 +509,7 @@ fun ModelApiSettingsSection(
             val isCactusProvider = selectedApiProvider == ApiProviderType.CACTUS
             val isRunanywhereProvider = selectedApiProvider == ApiProviderType.RUNANYWHERE
             val endpointOptions = getEndpointOptions(selectedApiProvider)
+            /*
             if (isMnnProvider) {
                 MnnSettingsBlock(
                         mnnForwardTypeInput = mnnForwardTypeInput,
@@ -527,7 +537,7 @@ fun ModelApiSettingsSection(
                         }
                     }
                 )
-            } else if (isCactusProvider) {
+            } else */ if (isCactusProvider) {
                 CactusSettingsBlock(
                     cactusContextSizeInput = cactusContextSizeInput,
                     onContextSizeChange = { input ->

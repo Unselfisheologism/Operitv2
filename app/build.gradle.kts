@@ -180,8 +180,6 @@ dependencies {
     implementation("com.github.jelmerk:hnswlib-core:1.2.1")
     implementation(project(":dragonbones"))
     implementation(project(":terminal"))
-    implementation(project(":mnn"))
-    implementation(project(":llama"))
     implementation(project(":showerclient"))
     implementation(libs.androidx.ui.graphics.android)
     implementation(files("libs\\ffmpegkit.jar"))
