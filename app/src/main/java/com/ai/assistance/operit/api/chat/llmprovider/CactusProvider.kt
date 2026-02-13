@@ -302,7 +302,8 @@ class CactusProvider(
             
             if (model != null) {
                 // Use streaming completion
-                streamWithSdk(model, prompt, onTokensUpdated, onNonFatalError)
+                val result = streamWithSdkInternal(model, prompt, onTokensUpdated, onNonFatalError)
+                emit(result)
             } else {
                 // SDK not available, show helpful message
                 emit("""
@@ -332,12 +333,12 @@ class CactusProvider(
         }
     }
     
-    private suspend fun Stream<String>.streamWithSdk(
+    private suspend fun streamWithSdkInternal(
         model: Any,
         prompt: String,
         onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
         onNonFatalError: suspend (error: String) -> Unit
-    ) {
+    ): String {
         try {
             // Try to use streaming completion via reflection
             val streamMethod = model.javaClass.getDeclaredMethod(
@@ -354,10 +355,9 @@ class CactusProvider(
             
             streamMethod.invoke(model, prompt, callback)
             
-            // Emit the complete response
-            emit(outputTokens.toString())
-            
             onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+            
+            return outputTokens.toString()
             
         } catch (e: NoSuchMethodException) {
             // Fall back to non-streaming completion
@@ -366,18 +366,18 @@ class CactusProvider(
                 val result = completeMethod.invoke(model, prompt) as? String ?: ""
                 
                 _outputTokenCount = result.length / 4
-                emit(result)
                 
                 onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+                return result
             } catch (e2: Exception) {
                 AppLogger.e(TAG, "Error in fallback completion: ${e2.message}", e2)
                 onNonFatalError("Completion error: ${e2.message}")
-                emit("\n[Error] ${e2.message}\n")
+                return "\n[Error] ${e2.message}\n"
             }
         } catch (e: Exception) {
             AppLogger.e(TAG, "Error in streaming: ${e.message}", e)
             onNonFatalError("Streaming error: ${e.message}")
-            emit("\n[Error] ${e.message}\n")
+            return "\n[Error] ${e.message}\n"
         }
     }
     
