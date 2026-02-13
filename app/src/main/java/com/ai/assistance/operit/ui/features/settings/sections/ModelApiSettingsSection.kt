@@ -559,115 +559,145 @@ fun ModelApiSettingsSection(
             } else {
                 */
 
-                if (endpointOptions != null) {
-                    var showEndpointDialog by remember { mutableStateOf(false) }
+                // Hide API endpoint and API key inputs for SDK providers (CACTUS and RUNANYWHERE)
+                val isSdkProvider = selectedApiProvider == ApiProviderType.CACTUS || selectedApiProvider == ApiProviderType.RUNANYWHERE
+                
+                if (!isSdkProvider) {
+                    if (endpointOptions != null) {
+                        var showEndpointDialog by remember { mutableStateOf(false) }
 
-                    SettingsTextField(
-                        title = stringResource(R.string.api_endpoint),
-                        subtitle = stringResource(R.string.api_endpoint_placeholder),
-                        value = apiEndpointInput,
-                        onValueChange = {},
-                        enabled = true,
-                        readOnly = true,
-                        onClick = { showEndpointDialog = true },
-                        trailingContent = {
-                            Icon(
-                                imageVector = Icons.Default.KeyboardArrowDown,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    )
+                        SettingsTextField(
+                            title = stringResource(R.string.api_endpoint),
+                            subtitle = stringResource(R.string.api_endpoint_placeholder),
+                            value = apiEndpointInput,
+                            onValueChange = {},
+                            enabled = true,
+                            readOnly = true,
+                            onClick = { showEndpointDialog = true },
+                            trailingContent = {
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        )
 
-                    if (showEndpointDialog) {
-                        Dialog(onDismissRequest = { showEndpointDialog = false }) {
-                            Surface(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(16.dp),
-                                color = MaterialTheme.colorScheme.surface
-                            ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = stringResource(R.string.api_endpoint),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    endpointOptions.forEach { (endpoint, label) ->
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .clickable {
-                                                    apiEndpointInput = endpoint
-                                                    showEndpointDialog = false
-                                                }
-                                                .padding(vertical = 10.dp, horizontal = 8.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = endpoint,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                fontWeight = FontWeight.Medium
-                                            )
+                        if (showEndpointDialog) {
+                            Dialog(onDismissRequest = { showEndpointDialog = false }) {
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = MaterialTheme.colorScheme.surface
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = stringResource(R.string.api_endpoint),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        endpointOptions.forEach { (endpoint, label) ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .clickable {
+                                                        apiEndpointInput = endpoint
+                                                        showEndpointDialog = false
+                                                    }
+                                                    .padding(vertical = 10.dp, horizontal = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = endpoint,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
-                    }
-                } else {
-                SettingsTextField(
-                        title = stringResource(R.string.api_endpoint),
-                        subtitle = stringResource(R.string.api_endpoint_placeholder),
-                    value = apiEndpointInput,
-                    onValueChange = { 
-                        apiEndpointInput = it.replace("\n", "").replace("\r", "").replace(" ", "")
-                    },
-                        enabled = isGenericProvider,
-                        keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Uri,
-                                imeAction = ImeAction.Next
-                        )
-                )
-                }
-
-            val completedEndpoint = EndpointCompleter.completeEndpoint(apiEndpointInput, selectedApiProvider)
-            if (completedEndpoint != apiEndpointInput) {
-                Text(
-                    text = stringResource(R.string.actual_request_url, completedEndpoint),
-                    style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = stringResource(R.string.endpoint_completion_hint),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                val apiKeyInteractionSource = remember { MutableInteractionSource() }
-                val isApiKeyFocused by apiKeyInteractionSource.collectIsFocusedAsState()
-
-                SettingsTextField(
-                        title = stringResource(R.string.api_key),
-                        subtitle =
-                                if (isUsingDefaultApiKey)
-                                        stringResource(R.string.api_key_placeholder_default)
-                                else
-                                        stringResource(R.string.api_key_placeholder_custom),
-                        value = if (isUsingDefaultApiKey) "" else apiKeyInput,
-                        onValueChange = {
-                            val filteredInput = it.replace("\n", "").replace("\r", "").replace(" ", "")
-                            apiKeyInput = filteredInput
+                    } else {
+                    SettingsTextField(
+                            title = stringResource(R.string.api_endpoint),
+                            subtitle = stringResource(R.string.api_endpoint_placeholder),
+                        value = apiEndpointInput,
+                        onValueChange = { 
+                            apiEndpointInput = it.replace("\n", "").replace("\r", "").replace(" ", "")
                         },
-                        keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Text,
-                                imeAction = ImeAction.Next
-                        ),
-                        visualTransformation = if (isApiKeyFocused || apiKeyInput.isEmpty()) VisualTransformation.None else ApiKeyVisualTransformation(),
-                        interactionSource = apiKeyInteractionSource
-                )
+                            enabled = isGenericProvider,
+                            keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Uri,
+                                    imeAction = ImeAction.Next
+                            )
+                    )
+                    }
+
+                val completedEndpoint = EndpointCompleter.completeEndpoint(apiEndpointInput, selectedApiProvider)
+                if (completedEndpoint != apiEndpointInput) {
+                    Text(
+                        text = stringResource(R.string.actual_request_url, completedEndpoint),
+                        style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = stringResource(R.string.endpoint_completion_hint),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    val apiKeyInteractionSource = remember { MutableInteractionSource() }
+                    val isApiKeyFocused by apiKeyInteractionSource.collectIsFocusedAsState()
+
+                    SettingsTextField(
+                            title = stringResource(R.string.api_key),
+                            subtitle =
+                                    if (isUsingDefaultApiKey)
+                                            stringResource(R.string.api_key_placeholder_default)
+                                    else
+                                            stringResource(R.string.api_key_placeholder_custom),
+                            value = if (isUsingDefaultApiKey) "" else apiKeyInput,
+                            onValueChange = {
+                                val filteredInput = it.replace("\n", "").replace("\r", "").replace(" ", "")
+                                apiKeyInput = filteredInput
+                            },
+                            keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text,
+                                    imeAction = ImeAction.Next
+                            ),
+                            visualTransformation = if (isApiKeyFocused || apiKeyInput.isEmpty()) VisualTransformation.None else ApiKeyVisualTransformation(),
+                            interactionSource = apiKeyInteractionSource
+                    )
+                } else {
+                    // SDK provider info banner
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Local AI model - No API key required. Select and download a model below.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             SettingsTextField(
                     title = stringResource(R.string.model_name),
                     subtitle = stringResource(R.string.model_name_placeholder) + stringResource(R.string.model_name_multiple_hint),
@@ -1192,22 +1222,42 @@ fun ModelListDialog(
                                             else -> {
                                                 OutlinedButton(
                                                     onClick = {
-                                                        scope.launch {
-                                                            currentDownloadingId = model.id
-                                                            currentDownloadProgress = 0f
-                                                            
-                                                            SdkModelManager.downloadModel(context, providerName, model.id)
-                                                                .collect { progress ->
-                                                                    currentDownloadProgress = progress.progress
-                                                                    
-                                                                    if (progress.state == SdkModelManager.DownloadState.COMPLETED) {
-                                                                        currentDownloadingId = null
-                                                                        // Refresh the list
-                                                                        onRefreshModels()
-                                                                    } else if (progress.state == SdkModelManager.DownloadState.FAILED) {
-                                                                        currentDownloadingId = null
-                                                                    }
+                                                        scope.launch(Dispatchers.IO) {
+                                                            try {
+                                                                AppLogger.d("ModelListDialog", "Starting download for model: ${model.id}, provider: $providerName")
+                                                                
+                                                                withContext(Dispatchers.Main) {
+                                                                    currentDownloadingId = model.id
+                                                                    currentDownloadProgress = 0f
                                                                 }
+                                                                
+                                                                SdkModelManager.downloadModel(context, providerName, model.id)
+                                                                    .collect { progress ->
+                                                                        AppLogger.d("ModelListDialog", "Download progress: ${progress.progress}, state: ${progress.state}")
+                                                                        
+                                                                        withContext(Dispatchers.Main) {
+                                                                            currentDownloadProgress = progress.progress
+                                                                            
+                                                                            when (progress.state) {
+                                                                                SdkModelManager.DownloadState.COMPLETED -> {
+                                                                                    currentDownloadingId = null
+                                                                                    AppLogger.d("ModelListDialog", "Download completed, refreshing models")
+                                                                                    onRefreshModels()
+                                                                                }
+                                                                                SdkModelManager.DownloadState.FAILED -> {
+                                                                                    currentDownloadingId = null
+                                                                                    AppLogger.e("ModelListDialog", "Download failed: ${progress.error}")
+                                                                                }
+                                                                                else -> {}
+                                                                            }
+                                                                        }
+                                                                    }
+                                                            } catch (e: Exception) {
+                                                                AppLogger.e("ModelListDialog", "Download exception: ${e.message}", e)
+                                                                withContext(Dispatchers.Main) {
+                                                                    currentDownloadingId = null
+                                                                }
+                                                            }
                                                         }
                                                     },
                                                     modifier = Modifier.height(32.dp)
