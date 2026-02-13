@@ -47,6 +47,84 @@ class CactusProvider(
 
     companion object {
         private const val TAG = "CactusProvider"
+        
+        // Singleton model instance for reuse
+        @Volatile
+        private var loadedModelId: String? = null
+        
+        @Volatile
+        private var modelInstance: Any? = null
+        
+        @Synchronized
+        fun getOrCreateModel(modelId: String, modelPath: String, threadCount: Int, contextSize: Int): Any? {
+            if (loadedModelId == modelId && modelInstance != null) {
+                return modelInstance
+            }
+            
+            // Release previous model if any
+            releaseModel()
+            
+            try {
+                // Try to use Cactus SDK if available
+                val model = createCactusModel(modelId, modelPath, threadCount, contextSize)
+                if (model != null) {
+                    loadedModelId = modelId
+                    modelInstance = model
+                    AppLogger.d(TAG, "Model loaded successfully: $modelId")
+                }
+                return model
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Failed to load model: ${e.message}", e)
+                return null
+            }
+        }
+        
+        private fun createCactusModel(modelId: String, modelPath: String, threadCount: Int, contextSize: Int): Any? {
+            return try {
+                // Use reflection to call SDK to avoid compile-time dependency issues
+                val cactusClass = Class.forName("com.cactus.Cactus")
+                
+                // Create model config
+                val configClass = Class.forName("com.cactus.ModelConfig")
+                val config = configClass.getDeclaredConstructor()
+                    .newInstance()
+                
+                // Set config parameters
+                val setModelPath = configClass.getDeclaredMethod("setModelPath", String::class.java)
+                setModelPath.invoke(config, modelPath)
+                
+                val setNThreads = configClass.getDeclaredMethod("setNThreads", Int::class.java)
+                setNThreads.invoke(config, threadCount)
+                
+                val setNCtx = configClass.getDeclaredMethod("setNCtx", Int::class.java)
+                setNCtx.invoke(config, contextSize)
+                
+                // Create the model
+                val createMethod = cactusClass.getDeclaredMethod("create", configClass)
+                createMethod.invoke(null, config)
+            } catch (e: ClassNotFoundException) {
+                AppLogger.w(TAG, "Cactus SDK not available: ${e.message}")
+                null
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Error creating Cactus model: ${e.message}", e)
+                null
+            }
+        }
+        
+        @Synchronized
+        fun releaseModel() {
+            modelInstance?.let { model ->
+                try {
+                    // Try to close the model
+                    val closeMethod = model.javaClass.getDeclaredMethod("close")
+                    closeMethod.invoke(model)
+                } catch (e: Exception) {
+                    // Ignore close errors
+                }
+            }
+            modelInstance = null
+            loadedModelId = null
+        }
 
         fun getModelsDir(): File {
             return SdkModelManager.getModelsDir("cactus")
@@ -95,8 +173,13 @@ class CactusProvider(
         /**
          * Delete a downloaded model
          */
-        fun deleteModel(modelId: String): Boolean =
-            SdkModelManager.deleteModel("cactus", modelId)
+        fun deleteModel(modelId: String): Boolean {
+            // Release the model if it's currently loaded
+            if (loadedModelId == modelId) {
+                releaseModel()
+            }
+            return SdkModelManager.deleteModel("cactus", modelId)
+        }
     }
 
     private var _inputTokenCount: Int = 0
@@ -105,9 +188,6 @@ class CactusProvider(
 
     @Volatile
     private var isCancelled = false
-
-    // Native model instance (would be initialized when SDK is available)
-    private var nativeModel: Any? = null
 
     override val inputTokenCount: Int
         get() = _inputTokenCount
@@ -132,8 +212,7 @@ class CactusProvider(
     }
 
     override fun release() {
-        // Release native model resources
-        nativeModel = null
+        // Don't release the singleton model here - it's managed at class level
     }
 
     override suspend fun getModelsList(context: Context): Result<List<ModelOption>> {
@@ -213,34 +292,111 @@ class CactusProvider(
 
         val modelPath = getModelPath(modelName)
         
-        // Try to use native SDK if available
+        // Build the prompt from chat history
+        val prompt = buildPrompt(message, chatHistory)
+        _inputTokenCount = prompt.length / 4
+        
+        // Try to use native SDK
         try {
-            // This would be the actual SDK call when integrated
-            // For now, provide a helpful message about SDK integration
-            emit("""
-                |
-                |[Cactus SDK Integration]
-                |
-                |Model: $modelName
-                |Path: $modelPath
-                |Thread Count: $threadCount
-                |Context Size: $contextSize
-                |Inference Mode: $inferenceMode
-                |
-                |The model is downloaded and ready for inference.
-                |To enable full SDK functionality, ensure the Cactus SDK
-                |is properly integrated in the build configuration.
-                |
-                |Model files are located at:
-                |$modelPath
-                |
-            """.trimMargin())
+            val model = getOrCreateModel(modelName, modelPath!!, threadCount, contextSize)
+            
+            if (model != null) {
+                // Use streaming completion
+                streamWithSdk(model, prompt, onTokensUpdated, onNonFatalError)
+            } else {
+                // SDK not available, show helpful message
+                emit("""
+                    |
+                    |[Cactus SDK Integration]
+                    |
+                    |Model: $modelName
+                    |Path: $modelPath
+                    |Thread Count: $threadCount
+                    |Context Size: $contextSize
+                    |Inference Mode: $inferenceMode
+                    |
+                    |The model is downloaded and ready for inference.
+                    |To enable full SDK functionality, ensure the Cactus SDK
+                    |is properly integrated in the build configuration.
+                    |
+                    |Model files are located at:
+                    |$modelPath
+                    |
+                """.trimMargin())
+            }
             
         } catch (e: Exception) {
             AppLogger.e(TAG, "Error during inference: ${e.message}", e)
             onNonFatalError("Inference error: ${e.message}")
             emit("\n[Error] ${e.message}\n")
         }
+    }
+    
+    private suspend fun Stream<String>.streamWithSdk(
+        model: Any,
+        prompt: String,
+        onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
+        onNonFatalError: suspend (error: String) -> Unit
+    ) {
+        try {
+            // Try to use streaming completion via reflection
+            val streamMethod = model.javaClass.getDeclaredMethod(
+                "streamComplete",
+                String::class.java,
+                kotlin.jvm.functions.Function1::class.java
+            )
+            
+            val outputTokens = StringBuilder()
+            val callback = { token: String ->
+                outputTokens.append(token)
+                _outputTokenCount = outputTokens.length / 4
+            }
+            
+            streamMethod.invoke(model, prompt, callback)
+            
+            // Emit the complete response
+            emit(outputTokens.toString())
+            
+            onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+            
+        } catch (e: NoSuchMethodException) {
+            // Fall back to non-streaming completion
+            try {
+                val completeMethod = model.javaClass.getDeclaredMethod("complete", String::class.java)
+                val result = completeMethod.invoke(model, prompt) as? String ?: ""
+                
+                _outputTokenCount = result.length / 4
+                emit(result)
+                
+                onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+            } catch (e2: Exception) {
+                AppLogger.e(TAG, "Error in fallback completion: ${e2.message}", e2)
+                onNonFatalError("Completion error: ${e2.message}")
+                emit("\n[Error] ${e2.message}\n")
+            }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Error in streaming: ${e.message}", e)
+            onNonFatalError("Streaming error: ${e.message}")
+            emit("\n[Error] ${e.message}\n")
+        }
+    }
+    
+    private fun buildPrompt(message: String, chatHistory: List<Pair<String, String>>): String {
+        val sb = StringBuilder()
+        
+        // Add chat history in chat format
+        for ((role, content) in chatHistory) {
+            when (role.lowercase()) {
+                "user", "human" -> sb.append("<|user|>\n$content<|end|>\n")
+                "assistant", "ai" -> sb.append("<|assistant|)\n$content<|end|>\n")
+                "system" -> sb.append("<|system|>\n$content<|end|>\n")
+            }
+        }
+        
+        // Add current message
+        sb.append("<|user|>\n$message<|end|>\n<|assistant|)\n")
+        
+        return sb.toString()
     }
 
     private fun formatBytes(bytes: Long): String {
@@ -252,53 +408,3 @@ class CactusProvider(
         }
     }
 }
-
-/*
-// SDK Integration Code (uncomment when SDK is available):
-// 
-// Add to build.gradle.kts:
-// implementation("com.cactuscompute:cactus-android:1.4.1-beta")
-//
-// SDK Imports:
-// import com.cactus.*
-//
-// Initialization:
-// val model = Cactus.create(modelPath)
-//
-// Inference:
-// val result = model.complete("What is the capital of France?")
-// println(result.text)
-//
-// Chat Messages:
-// val messages = listOf(
-//     ChatMessage(role = "user", content = "Hello!")
-// )
-// val result = model.chat(messages)
-//
-// Streaming:
-// model.streamComplete(prompt) { token ->
-//     print(token)
-// }
-//
-// Close:
-// model.close()
-//
-// Supported models from Cactus SDK:
-// - google/gemma-3-270m-it
-// - google/functiongemma-270m-it
-// - LiquidAI/LFM2-350M
-// - Qwen/Qwen3-0.6B
-// - LiquidAI/LFM2-700M
-// - google/gemma-3-1b-it
-// - LiquidAI/LFM2.5-1.2B-Thinking
-// - LiquidAI/LFM2.5-1.2B-Instruct
-// - Qwen/Qwen3-1.7B
-// - LiquidAI/LFM2-2.6B
-// - LiquidAI/LFM2-VL-450M
-// - LiquidAI/LFM2.5-VL-1.6B
-// - UsefulSensors/moonshine-base
-// - openai/whisper-small
-// - openai/whisper-medium
-// - nomic-ai/nomic-embed-text-v2-moe
-// - Qwen/Qwen3-Embedding-0.6B
-*/

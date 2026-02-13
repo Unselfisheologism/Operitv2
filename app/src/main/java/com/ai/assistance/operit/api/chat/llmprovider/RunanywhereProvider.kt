@@ -43,6 +43,75 @@ class RunanywhereProvider(
 
     companion object {
         private const val TAG = "RunanywhereProvider"
+        
+        // Singleton model instance for reuse
+        @Volatile
+        private var loadedModelId: String? = null
+        
+        @Volatile
+        private var modelInstance: Any? = null
+        
+        @Synchronized
+        fun getOrCreateModel(modelId: String, modelPath: String, threadCount: Int, contextSize: Int): Any? {
+            if (loadedModelId == modelId && modelInstance != null) {
+                return modelInstance
+            }
+            
+            // Release previous model if any
+            releaseModel()
+            
+            try {
+                // Try to use Runanywhere SDK if available
+                val model = createLlamaModel(modelId, modelPath, threadCount, contextSize)
+                if (model != null) {
+                    loadedModelId = modelId
+                    modelInstance = model
+                    AppLogger.d(TAG, "Model loaded successfully: $modelId")
+                }
+                return model
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Failed to load model: ${e.message}", e)
+                return null
+            }
+        }
+        
+        private fun createLlamaModel(modelId: String, modelPath: String, threadCount: Int, contextSize: Int): Any? {
+            return try {
+                // Use reflection to call SDK to avoid compile-time dependency issues
+                val sdkClass = Class.forName("com.runanywhere.sdk.public.RunAnywhere")
+                val llamaCppClass = Class.forName("com.runanywhere.sdk.public.extensions.LlamaCPP")
+                
+                // Try to load model using LlamaCPP backend
+                val loadModelMethod = llamaCppClass.getDeclaredMethod(
+                    "loadModel",
+                    String::class.java,
+                    Int::class.java,
+                    Int::class.java
+                )
+                loadModelMethod.invoke(null, modelPath, threadCount, contextSize)
+            } catch (e: ClassNotFoundException) {
+                AppLogger.w(TAG, "Runanywhere SDK not available: ${e.message}")
+                null
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Error creating Llama model: ${e.message}", e)
+                null
+            }
+        }
+        
+        @Synchronized
+        fun releaseModel() {
+            modelInstance?.let { model ->
+                try {
+                    // Try to close the model
+                    val closeMethod = model.javaClass.getDeclaredMethod("close")
+                    closeMethod.invoke(model)
+                } catch (e: Exception) {
+                    // Ignore close errors
+                }
+            }
+            modelInstance = null
+            loadedModelId = null
+        }
 
         fun getModelsDir(): File {
             return SdkModelManager.getModelsDir("runanywhere")
@@ -91,8 +160,13 @@ class RunanywhereProvider(
         /**
          * Delete a downloaded model
          */
-        fun deleteModel(modelId: String): Boolean =
-            SdkModelManager.deleteModel("runanywhere", modelId)
+        fun deleteModel(modelId: String): Boolean {
+            // Release the model if it's currently loaded
+            if (loadedModelId == modelId) {
+                releaseModel()
+            }
+            return SdkModelManager.deleteModel("runanywhere", modelId)
+        }
     }
 
     private var _inputTokenCount: Int = 0
@@ -101,9 +175,6 @@ class RunanywhereProvider(
 
     @Volatile
     private var isCancelled = false
-
-    // Native model instance (would be initialized when SDK is available)
-    private var nativeModel: Any? = null
 
     override val inputTokenCount: Int
         get() = _inputTokenCount
@@ -125,8 +196,7 @@ class RunanywhereProvider(
     }
 
     override fun release() {
-        // Release native model resources
-        nativeModel = null
+        // Don't release the singleton model here - it's managed at class level
     }
 
     override val providerModel: String
@@ -209,33 +279,110 @@ class RunanywhereProvider(
 
         val modelPath = getModelPath(modelName)
         
-        // Try to use native SDK if available
+        // Build the prompt from chat history
+        val prompt = buildPrompt(message, chatHistory)
+        _inputTokenCount = prompt.length / 4
+        
+        // Try to use native SDK
         try {
-            // This would be the actual SDK call when integrated
-            // For now, provide a helpful message about SDK integration
-            emit("""
-                |
-                |[Runanywhere SDK Integration]
-                |
-                |Model: $modelName
-                |Path: $modelPath
-                |Thread Count: $threadCount
-                |Context Size: $contextSize
-                |
-                |The model is downloaded and ready for inference.
-                |To enable full SDK functionality, ensure the Runanywhere SDK
-                |is properly integrated in the build configuration.
-                |
-                |Model files are located at:
-                |$modelPath
-                |
-            """.trimMargin())
+            val model = getOrCreateModel(modelName, modelPath!!, threadCount, contextSize)
+            
+            if (model != null) {
+                // Use streaming completion
+                streamWithSdk(model, prompt, onTokensUpdated, onNonFatalError)
+            } else {
+                // SDK not available, show helpful message
+                emit("""
+                    |
+                    |[Runanywhere SDK Integration]
+                    |
+                    |Model: $modelName
+                    |Path: $modelPath
+                    |Thread Count: $threadCount
+                    |Context Size: $contextSize
+                    |
+                    |The model is downloaded and ready for inference.
+                    |To enable full SDK functionality, ensure the Runanywhere SDK
+                    |is properly integrated in the build configuration.
+                    |
+                    |Model files are located at:
+                    |$modelPath
+                    |
+                """.trimMargin())
+            }
             
         } catch (e: Exception) {
             AppLogger.e(TAG, "Error during inference: ${e.message}", e)
             onNonFatalError("Inference error: ${e.message}")
             emit("\n[Error] ${e.message}\n")
         }
+    }
+    
+    private suspend fun Stream<String>.streamWithSdk(
+        model: Any,
+        prompt: String,
+        onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
+        onNonFatalError: suspend (error: String) -> Unit
+    ) {
+        try {
+            // Try to use streaming completion via reflection
+            val streamMethod = model.javaClass.getDeclaredMethod(
+                "streamComplete",
+                String::class.java,
+                kotlin.jvm.functions.Function1::class.java
+            )
+            
+            val outputTokens = StringBuilder()
+            val callback = { token: String ->
+                outputTokens.append(token)
+                _outputTokenCount = outputTokens.length / 4
+            }
+            
+            streamMethod.invoke(model, prompt, callback)
+            
+            // Emit the complete response
+            emit(outputTokens.toString())
+            
+            onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+            
+        } catch (e: NoSuchMethodException) {
+            // Fall back to non-streaming completion
+            try {
+                val completeMethod = model.javaClass.getDeclaredMethod("complete", String::class.java)
+                val result = completeMethod.invoke(model, prompt) as? String ?: ""
+                
+                _outputTokenCount = result.length / 4
+                emit(result)
+                
+                onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+            } catch (e2: Exception) {
+                AppLogger.e(TAG, "Error in fallback completion: ${e2.message}", e2)
+                onNonFatalError("Completion error: ${e2.message}")
+                emit("\n[Error] ${e2.message}\n")
+            }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Error in streaming: ${e.message}", e)
+            onNonFatalError("Streaming error: ${e.message}")
+            emit("\n[Error] ${e.message}\n")
+        }
+    }
+    
+    private fun buildPrompt(message: String, chatHistory: List<Pair<String, String>>): String {
+        val sb = StringBuilder()
+        
+        // Add chat history
+        for ((role, content) in chatHistory) {
+            when (role.lowercase()) {
+                "user", "human" -> sb.append("<|user|>\n$content<|end|>\n")
+                "assistant", "ai" -> sb.append("<|assistant|)\n$content<|end|>\n")
+                "system" -> sb.append("<|system|>\n$content<|end|>\n")
+            }
+        }
+        
+        // Add current message
+        sb.append("<|user|>\n$message<|end|>\n<|assistant|)\n")
+        
+        return sb.toString()
     }
 
     private fun formatBytes(bytes: Long): String {
@@ -247,51 +394,3 @@ class RunanywhereProvider(
         }
     }
 }
-
-/*
-// SDK Integration Code (uncomment when SDK is available):
-// 
-// Add to build.gradle.kts:
-// implementation("io.github.sanchitmonga22:runanywhere-sdk-android:0.16.1")
-// implementation("io.github.sanchitmonga22:runanywhere-llamacpp-android:0.16.1")
-//
-// SDK Imports:
-// import com.runanywhere.sdk.public.RunAnywhere
-// import com.runanywhere.sdk.public.extensions.registerModel
-// import com.runanywhere.sdk.public.extensions.availableModels
-// import com.runanywhere.sdk.public.extensions.downloadModel
-// import com.runanywhere.sdk.public.extensions.Models.ModelCategory
-// import com.runanywhere.sdk.public.LlamaCPP
-// import com.runanywhere.sdk.core.types.InferenceFramework
-//
-// Initialization (in Application class):
-// RunAnywhere.initialize(environment = SDKEnvironment.DEVELOPMENT)
-// LlamaCPP.register()
-//
-// Model Registration:
-// RunAnywhere.registerModel(
-//     id = "smollm2-360m-instruct-q8_0",
-//     name = "SmolLM2 360M Instruct Q8_0",
-//     url = "https://huggingface.co/...",
-//     framework = InferenceFramework.LLAMA_CPP,
-//     modality = ModelCategory.LANGUAGE,
-//     memoryRequirement = 400_000_000
-// )
-//
-// List Models:
-// val models = RunAnywhere.availableModels()
-//
-// Download Model:
-// RunAnywhere.downloadModel(modelId)
-//     .collect { progress ->
-//         when (progress.state) {
-//             DownloadState.DOWNLOADING -> updateProgress(progress.progress)
-//             DownloadState.COMPLETED -> onDownloadComplete()
-//             DownloadState.FAILED -> onError(progress.error)
-//         }
-//     }
-//
-// Inference:
-// val model = RunAnywhere.loadModel(modelId)
-// val result = model.complete(prompt)
-*/

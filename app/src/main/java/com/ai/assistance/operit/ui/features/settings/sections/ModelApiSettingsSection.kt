@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Api
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Refresh
@@ -40,6 +41,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -2122,11 +2124,17 @@ fun SdkModelDownloadDialog(
     var isLoading by remember { mutableStateOf(true) }
     var downloadingModelId by remember { mutableStateOf<String?>(null) }
     var downloadProgress by remember { mutableStateOf(0f) }
+    var showDeleteConfirmFor by remember { mutableStateOf<String?>(null) }
+    
+    // Function to refresh models
+    fun refreshModels() {
+        models = SdkModelManager.getAvailableModels(context, providerName)
+    }
     
     // Load models on init
     LaunchedEffect(providerType) {
         isLoading = true
-        models = SdkModelManager.getAvailableModels(context, providerName)
+        refreshModels()
         isLoading = false
     }
     
@@ -2212,21 +2220,38 @@ fun SdkModelDownloadDialog(
                                         }
                                         
                                         if (model.isDownloaded) {
-                                            // Use button
-                                            Button(
-                                                onClick = {
-                                                    onModelSelected(model.id)
-                                                    onDismiss()
-                                                },
-                                                modifier = Modifier.height(36.dp)
-                                            ) {
-                                                Icon(
-                                                    Icons.Default.Check,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(16.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(4.dp))
-                                                Text("Use")
+                                            // Downloaded model - show Use and Delete buttons
+                                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                                // Delete button
+                                                IconButton(
+                                                    onClick = {
+                                                        showDeleteConfirmFor = model.id
+                                                    },
+                                                    modifier = Modifier.size(36.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Delete,
+                                                        contentDescription = "Delete model",
+                                                        tint = MaterialTheme.colorScheme.error,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                }
+                                                // Use button
+                                                Button(
+                                                    onClick = {
+                                                        onModelSelected(model.id)
+                                                        onDismiss()
+                                                    },
+                                                    modifier = Modifier.height(36.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Use")
+                                                }
                                             }
                                         } else if (isDownloading) {
                                             // Download progress
@@ -2244,33 +2269,39 @@ fun SdkModelDownloadDialog(
                                                 )
                                             }
                                         } else {
-                                            // Download button
+                                            // Download button - always enabled when not downloading
                                             OutlinedButton(
                                                 onClick = {
                                                     scope.launch {
                                                         downloadingModelId = model.id
                                                         downloadProgress = 0f
                                                         
-                                                        SdkModelManager.downloadModel(context, providerName, model.id)
-                                                            .collect { progress ->
-                                                                downloadProgress = progress.progress
-                                                                
-                                                                when (progress.state) {
-                                                                    SdkModelManager.DownloadState.COMPLETED -> {
-                                                                        showNotification("Model ${model.name} downloaded successfully!")
-                                                                        downloadingModelId = null
-                                                                        // Refresh models
-                                                                        models = SdkModelManager.getAvailableModels(context, providerName)
+                                                        try {
+                                                            SdkModelManager.downloadModel(context, providerName, model.id)
+                                                                .collect { progress ->
+                                                                    downloadProgress = progress.progress
+                                                                    
+                                                                    when (progress.state) {
+                                                                        SdkModelManager.DownloadState.COMPLETED -> {
+                                                                            showNotification("Model ${model.name} downloaded successfully!")
+                                                                            downloadingModelId = null
+                                                                            // Refresh models list
+                                                                            refreshModels()
+                                                                        }
+                                                                        SdkModelManager.DownloadState.FAILED -> {
+                                                                            showNotification("Download failed: ${progress.error}")
+                                                                            downloadingModelId = null
+                                                                        }
+                                                                        else -> {}
                                                                     }
-                                                                    SdkModelManager.DownloadState.FAILED -> {
-                                                                        showNotification("Download failed: ${progress.error}")
-                                                                        downloadingModelId = null
-                                                                    }
-                                                                    else -> {}
                                                                 }
-                                                            }
+                                                        } catch (e: Exception) {
+                                                            showNotification("Download error: ${e.message}")
+                                                            downloadingModelId = null
+                                                        }
                                                     }
                                                 },
+                                                enabled = downloadingModelId == null,
                                                 modifier = Modifier.height(36.dp)
                                             ) {
                                                 Icon(
@@ -2279,7 +2310,7 @@ fun SdkModelDownloadDialog(
                                                     modifier = Modifier.size(16.dp)
                                                 )
                                                 Spacer(modifier = Modifier.width(4.dp))
-                                                Text("Download")
+                                                Text("Get")
                                             }
                                         }
                                     }
@@ -2300,6 +2331,44 @@ fun SdkModelDownloadDialog(
                 }
             }
         }
+    }
+    
+    // Delete confirmation dialog
+    if (showDeleteConfirmFor != null) {
+        val modelToDelete = models.find { it.id == showDeleteConfirmFor }
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmFor = null },
+            title = { Text("Delete Model") },
+            text = { 
+                Text("Are you sure you want to delete '${modelToDelete?.name ?: showDeleteConfirmFor}'?\n\nThis will remove the model from your device and free up storage space.") 
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteConfirmFor?.let { modelId ->
+                            val deleted = SdkModelManager.deleteModel(providerName, modelId)
+                            if (deleted) {
+                                showNotification("Model deleted successfully")
+                                refreshModels()
+                            } else {
+                                showNotification("Failed to delete model")
+                            }
+                        }
+                        showDeleteConfirmFor = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmFor = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 
