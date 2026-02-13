@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Api
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Refresh
@@ -51,6 +52,7 @@ import com.ai.assistance.operit.api.chat.EnhancedAIService
 import com.ai.assistance.operit.api.chat.llmprovider.CactusProvider
 import com.ai.assistance.operit.api.chat.llmprovider.RunanywhereProvider
 import com.ai.assistance.operit.api.chat.llmprovider.ModelListFetcher
+import com.ai.assistance.operit.api.chat.llmprovider.SdkModelManager
 import com.ai.assistance.operit.data.model.ApiProviderType
 import com.ai.assistance.operit.data.model.ModelConfigData
 import com.ai.assistance.operit.data.model.ModelOption
@@ -64,6 +66,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
@@ -686,7 +689,37 @@ fun ModelApiSettingsSection(
                                      showNotification(gettingModelsText)
 
                             scope.launch {
-                                if (apiEndpointInput.isNotBlank() &&
+                                // Handle SDK providers (CACTUS and RUNANYWHERE) differently
+                                if (selectedApiProvider == ApiProviderType.CACTUS || 
+                                    selectedApiProvider == ApiProviderType.RUNANYWHERE) {
+                                    // SDK providers don't need API endpoint/key
+                                    isLoadingModels = true
+                                    modelLoadError = null
+                                    AppLogger.d(TAG, "获取SDK模型列表: ${selectedApiProvider.name}")
+                                    
+                                    try {
+                                        val result = ModelListFetcher.getSdkProviderModels(context, selectedApiProvider)
+                                        if (result.isSuccess) {
+                                            val models = result.getOrThrow()
+                                            AppLogger.d(TAG, "SDK模型列表获取成功，共 ${models.size} 个模型")
+                                            modelsList = models
+                                            showModelsDialog = true
+                                            showNotification(modelsListSuccessText.format(models.size))
+                                        } else {
+                                            val errorMsg = result.exceptionOrNull()?.message ?: unknownErrorText
+                                            AppLogger.e(TAG, "SDK模型列表获取失败: $errorMsg")
+                                            modelLoadError = getModelsFailedText.format(errorMsg)
+                                            showNotification(modelLoadError ?: getModelsFailedText.format(""))
+                                        }
+                                    } catch (e: Exception) {
+                                        AppLogger.e(TAG, "获取SDK模型列表发生异常", e)
+                                        modelLoadError = getModelsFailedText.format(e.message ?: "")
+                                        showNotification(modelLoadError ?: getModelsFailedText.format(""))
+                                    } finally {
+                                        isLoadingModels = false
+                                        AppLogger.d(TAG, "SDK模型列表获取流程完成")
+                                    }
+                                } else if (apiEndpointInput.isNotBlank() &&
                                                 apiKeyInput.isNotBlank() &&
                                                 !isUsingDefaultApiKey
                                 ) {
@@ -739,7 +772,10 @@ fun ModelApiSettingsSection(
                             colors = IconButtonDefaults.iconButtonColors(
                                 contentColor = MaterialTheme.colorScheme.primary
                             ),
-                            enabled = !isUsingDefaultApiKey
+                            // SDK providers are always enabled, others need API key
+                            enabled = !isUsingDefaultApiKey || 
+                                      selectedApiProvider == ApiProviderType.CACTUS || 
+                                      selectedApiProvider == ApiProviderType.RUNANYWHERE
                         ) {
                             if (isLoadingModels) {
                                 CircularProgressIndicator(
@@ -750,7 +786,9 @@ fun ModelApiSettingsSection(
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.FormatListBulleted,
                                     contentDescription = stringResource(R.string.get_models_list),
-                                    tint = if (isUsingDefaultApiKey)
+                                    tint = if (isUsingDefaultApiKey && 
+                                               selectedApiProvider != ApiProviderType.CACTUS && 
+                                               selectedApiProvider != ApiProviderType.RUNANYWHERE)
                                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                                     else MaterialTheme.colorScheme.primary
                                 )
@@ -819,9 +857,30 @@ fun ModelApiSettingsSection(
                 }
                 showModelsDialog = false
             },
+            sdkProviderType = selectedApiProvider,
             onRefreshModels = {
                 scope.launch {
-                    if (apiEndpointInput.isNotBlank() &&
+                    // Handle SDK providers (CACTUS and RUNANYWHERE) differently
+                    if (selectedApiProvider == ApiProviderType.CACTUS || 
+                        selectedApiProvider == ApiProviderType.RUNANYWHERE) {
+                        isLoadingModels = true
+                        try {
+                            val result = ModelListFetcher.getSdkProviderModels(context, selectedApiProvider)
+                            if (result.isSuccess) {
+                                modelsList = result.getOrThrow()
+                            } else {
+                                val errorMsg = result.exceptionOrNull()?.message ?: unknownErrorText
+                                modelLoadError = refreshModelsListFailedText.format(errorMsg)
+                                showNotification(modelLoadError ?: refreshModelsFailedText)
+                            }
+                        } catch (e: Exception) {
+                            val errorMsg = e.message ?: unknownErrorText
+                            modelLoadError = refreshModelsListFailedText.format(errorMsg)
+                            showNotification(modelLoadError ?: refreshModelsFailedText)
+                        } finally {
+                            isLoadingModels = false
+                        }
+                    } else if (apiEndpointInput.isNotBlank() &&
                         apiKeyInput.isNotBlank() &&
                         !isUsingDefaultApiKey
                     ) {
@@ -864,14 +923,33 @@ fun ModelListDialog(
     onModelsSelected: (Set<String>) -> Unit,
     onRefreshModels: () -> Unit,
     isLoadingModels: Boolean,
-    modelLoadError: String?
+    modelLoadError: String?,
+    // SDK provider support
+    sdkProviderType: ApiProviderType? = null,
+    onDownloadModel: ((String) -> Unit)? = null,
+    downloadingModelId: String? = null,
+    downloadProgress: Float = 0f
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
     val selectedModels = remember { mutableStateOf(initialSelectedModels) }
+    
+    // Track download states
+    var currentDownloadingId by remember { mutableStateOf<String?>(null) }
+    var currentDownloadProgress by remember { mutableStateOf(0f) }
     
     val filteredModelsList = remember(searchQuery, modelsList) {
         if (searchQuery.isEmpty()) modelsList
         else modelsList.filter { it.id.contains(searchQuery, ignoreCase = true) }
+    }
+    
+    // Check if this is an SDK provider
+    val isSdkProvider = sdkProviderType == ApiProviderType.CACTUS || sdkProviderType == ApiProviderType.RUNANYWHERE
+    val providerName = when (sdkProviderType) {
+        ApiProviderType.CACTUS -> "cactus"
+        ApiProviderType.RUNANYWHERE -> "runanywhere"
+        else -> ""
     }
 
     Dialog(onDismissRequest = onDismiss) {
@@ -913,6 +991,33 @@ fun ModelListDialog(
                                 Icons.Default.Refresh,
                                 contentDescription = stringResource(R.string.refresh_models_list),
                                 modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+                
+                // SDK provider info banner
+                if (isSdkProvider) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Select a model to download. Downloaded models work offline.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -987,43 +1092,138 @@ fun ModelListDialog(
                             val model = filteredModelsList[index]
                             val isSelected = selectedModels.value.contains(model.id)
                             
-                            Row(
-                                modifier = Modifier.fillMaxWidth()
-                                    .clickable {
-                                        val newSelection = selectedModels.value.toMutableSet()
-                                        if (isSelected) {
-                                            newSelection.remove(model.id)
-                                        } else {
-                                            newSelection.add(model.id)
-                                        }
-                                        selectedModels.value = newSelection
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            // For SDK providers, check if model is downloaded
+                            val isDownloaded = if (isSdkProvider && providerName.isNotEmpty()) {
+                                SdkModelManager.isModelDownloaded(context, providerName, model.id)
+                            } else false
+                            
+                            val isDownloading = currentDownloadingId == model.id
+
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isDownloaded)
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                                    else
+                                        MaterialTheme.colorScheme.surface
+                                )
                             ) {
-                                Checkbox(
-                                    checked = isSelected,
-                                    onCheckedChange = { checked ->
-                                        val newSelection = selectedModels.value.toMutableSet()
-                                        if (checked) {
-                                            newSelection.add(model.id)
-                                        } else {
-                                            newSelection.remove(model.id)
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(enabled = !isSdkProvider || isDownloaded) {
+                                            if (!isSdkProvider) {
+                                                val newSelection = selectedModels.value.toMutableSet()
+                                                if (isSelected) {
+                                                    newSelection.remove(model.id)
+                                                } else {
+                                                    newSelection.add(model.id)
+                                                }
+                                                selectedModels.value = newSelection
+                                            } else if (isDownloaded) {
+                                                // For SDK providers, select downloaded model directly
+                                                onModelsSelected(setOf(model.id))
+                                                onDismiss()
+                                            }
                                         }
-                                        selectedModels.value = newSelection
-                                    },
-                                    colors = CheckboxDefaults.colors(
-                                        checkedColor = MaterialTheme.colorScheme.primary
-                                    )
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = model.name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.weight(1f),
-                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                                )
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (!isSdkProvider) {
+                                        // Regular provider: show checkbox
+                                        Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = { checked ->
+                                                val newSelection = selectedModels.value.toMutableSet()
+                                                if (checked) {
+                                                    newSelection.add(model.id)
+                                                } else {
+                                                    newSelection.remove(model.id)
+                                                }
+                                                selectedModels.value = newSelection
+                                            },
+                                            colors = CheckboxDefaults.colors(
+                                                checkedColor = MaterialTheme.colorScheme.primary
+                                            )
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = model.name,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (isSelected || isDownloaded) FontWeight.SemiBold else FontWeight.Normal,
+                                            color = if (isSelected || isDownloaded) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (isSdkProvider) {
+                                            Text(
+                                                text = if (isDownloaded) "✓ Downloaded" else "Tap to download",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = if (isDownloaded) 
+                                                    MaterialTheme.colorScheme.primary 
+                                                else 
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                    
+                                    // SDK provider: show download button or progress
+                                    if (isSdkProvider) {
+                                        when {
+                                            isDownloaded -> {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = "Downloaded",
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(24.dp)
+                                                )
+                                            }
+                                            isDownloading -> {
+                                                CircularProgressIndicator(
+                                                    progress = currentDownloadProgress,
+                                                    modifier = Modifier.size(24.dp),
+                                                    strokeWidth = 2.dp
+                                                )
+                                            }
+                                            else -> {
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        scope.launch {
+                                                            currentDownloadingId = model.id
+                                                            currentDownloadProgress = 0f
+                                                            
+                                                            SdkModelManager.downloadModel(context, providerName, model.id)
+                                                                .collect { progress ->
+                                                                    currentDownloadProgress = progress.progress
+                                                                    
+                                                                    if (progress.state == SdkModelManager.DownloadState.COMPLETED) {
+                                                                        currentDownloadingId = null
+                                                                        // Refresh the list
+                                                                        onRefreshModels()
+                                                                    } else if (progress.state == SdkModelManager.DownloadState.FAILED) {
+                                                                        currentDownloadingId = null
+                                                                    }
+                                                                }
+                                                        }
+                                                    },
+                                                    modifier = Modifier.height(32.dp)
+                                                ) {
+                                                    Icon(
+                                                        Icons.Default.Download,
+                                                        contentDescription = "Download",
+                                                        modifier = Modifier.size(16.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Get", fontSize = 12.sp)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             if (index < filteredModelsList.size - 1) {
@@ -1038,7 +1238,7 @@ fun ModelListDialog(
                 }
 
                 // 底部信息
-                if (filteredModelsList.isNotEmpty()) {
+                if (filteredModelsList.isNotEmpty() && !isSdkProvider) {
                     Text(
                         text = stringResource(R.string.models_displayed, filteredModelsList.size) +
                             (if (searchQuery.isNotEmpty()) stringResource(R.string.models_displayed_filtered) else "") +
@@ -1060,16 +1260,18 @@ fun ModelListDialog(
                         modifier = Modifier.height(36.dp)
                     ) { Text(stringResource(R.string.close), fontSize = 14.sp) }
                     
-                    Button(
-                        onClick = { onModelsSelected(selectedModels.value) },
-                        modifier = Modifier.height(36.dp),
-                        enabled = selectedModels.value.isNotEmpty()
-                    ) { 
-                        Text(
-                            stringResource(R.string.confirm_action) + 
-                                if (selectedModels.value.isNotEmpty()) " (${selectedModels.value.size})" else "",
-                            fontSize = 14.sp
-                        ) 
+                    if (!isSdkProvider) {
+                        Button(
+                            onClick = { onModelsSelected(selectedModels.value) },
+                            modifier = Modifier.height(36.dp),
+                            enabled = selectedModels.value.isNotEmpty()
+                        ) { 
+                            Text(
+                                stringResource(R.string.confirm_action) + 
+                                    if (selectedModels.value.isNotEmpty()) " (${selectedModels.value.size})" else "",
+                                fontSize = 14.sp
+                            ) 
+                        }
                     }
                 }
             }
@@ -1843,5 +2045,219 @@ private fun getProviderColor(provider: ApiProviderType): androidx.compose.ui.gra
         ApiProviderType.RUNANYWHERE -> MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
         ApiProviderType.PPINFRA -> MaterialTheme.colorScheme.primaryContainer
         ApiProviderType.OTHER -> MaterialTheme.colorScheme.surfaceVariant
+    }
+}
+
+/**
+ * SDK Model Download Dialog - Specialized dialog for downloading SDK models
+ * Shows all available models with download status and allows downloading
+ */
+@Composable
+fun SdkModelDownloadDialog(
+    providerType: ApiProviderType,
+    onDismiss: () -> Unit,
+    onModelSelected: (String) -> Unit,
+    showNotification: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
+    val providerName = when (providerType) {
+        ApiProviderType.CACTUS -> "cactus"
+        ApiProviderType.RUNANYWHERE -> "runanywhere"
+        else -> ""
+    }
+    
+    var models by remember { mutableStateOf<List<SdkModelManager.SdkModel>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var downloadingModelId by remember { mutableStateOf<String?>(null) }
+    var downloadProgress by remember { mutableStateOf(0f) }
+    
+    // Load models on init
+    LaunchedEffect(providerType) {
+        isLoading = true
+        models = SdkModelManager.getAvailableModels(context, providerName)
+        isLoading = false
+    }
+    
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().heightIn(max = 600.dp),
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+            shadowElevation = 8.dp
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Title
+                Text(
+                    text = "SDK Models - ${getProviderDisplayName(providerType, context)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "Select a model to download or use. Downloaded models can be used offline.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                if (isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    ) {
+                        items(models.size) { index ->
+                            val model = models[index]
+                            val isDownloading = downloadingModelId == model.id
+                            
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (model.isDownloaded) 
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                    else 
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                )
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = model.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                            Text(
+                                                text = formatBytes(model.sizeBytes),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                            if (model.description.isNotEmpty()) {
+                                                Text(
+                                                    text = model.description,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                                    maxLines = 2
+                                                )
+                                            }
+                                        }
+                                        
+                                        if (model.isDownloaded) {
+                                            // Use button
+                                            Button(
+                                                onClick = {
+                                                    onModelSelected(model.id)
+                                                    onDismiss()
+                                                },
+                                                modifier = Modifier.height(36.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Check,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Use")
+                                            }
+                                        } else if (isDownloading) {
+                                            // Download progress
+                                            Column(
+                                                horizontalAlignment = Alignment.End
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    progress = downloadProgress,
+                                                    modifier = Modifier.size(36.dp),
+                                                    strokeWidth = 3.dp
+                                                )
+                                                Text(
+                                                    text = "${(downloadProgress * 100).toInt()}%",
+                                                    style = MaterialTheme.typography.labelSmall
+                                                )
+                                            }
+                                        } else {
+                                            // Download button
+                                            OutlinedButton(
+                                                onClick = {
+                                                    scope.launch {
+                                                        downloadingModelId = model.id
+                                                        downloadProgress = 0f
+                                                        
+                                                        SdkModelManager.downloadModel(context, providerName, model.id)
+                                                            .collect { progress ->
+                                                                downloadProgress = progress.progress
+                                                                
+                                                                when (progress.state) {
+                                                                    SdkModelManager.DownloadState.COMPLETED -> {
+                                                                        showNotification("Model ${model.name} downloaded successfully!")
+                                                                        downloadingModelId = null
+                                                                        // Refresh models
+                                                                        models = SdkModelManager.getAvailableModels(context, providerName)
+                                                                    }
+                                                                    SdkModelManager.DownloadState.FAILED -> {
+                                                                        showNotification("Download failed: ${progress.error}")
+                                                                        downloadingModelId = null
+                                                                    }
+                                                                    else -> {}
+                                                                }
+                                                            }
+                                                    }
+                                                },
+                                                modifier = Modifier.height(36.dp)
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Download,
+                                                    contentDescription = null,
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Download")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Bottom buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Close")
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatBytes(bytes: Long): String {
+    return when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        bytes < 1024 * 1024 * 1024 -> "${bytes / (1024 * 1024)} MB"
+        else -> String.format("%.1f GB", bytes / (1024.0 * 1024 * 1024))
     }
 }

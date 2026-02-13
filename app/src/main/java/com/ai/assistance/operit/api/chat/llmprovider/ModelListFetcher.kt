@@ -570,4 +570,51 @@ object ModelListFetcher {
             else -> String.format("%.2f GB", sizeBytes / (1024.0 * 1024.0 * 1024.0))
         }
     }
+
+    /**
+     * Get models for Cactus SDK provider
+     * Returns all available models with download status
+     */
+    suspend fun getCactusModels(context: Context): Result<List<ModelOption>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                AppLogger.d(TAG, "Getting Cactus SDK models")
+                val models = SdkModelManager.getModelOptions(context, "cactus")
+                AppLogger.d(TAG, "Found ${models.size} Cactus models")
+                Result.success(models)
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Failed to get Cactus models: ${e.message}", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    /**
+     * Get models for Runanywhere SDK provider
+     * Returns all available models with download status
+     */
+    suspend fun getRunanywhereModels(context: Context): Result<List<ModelOption>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                AppLogger.d(TAG, "Getting Runanywhere SDK models")
+                val models = SdkModelManager.getModelOptions(context, "runanywhere")
+                AppLogger.d(TAG, "Found ${models.size} Runanywhere models")
+                Result.success(models)
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Failed to get Runanywhere models: ${e.message}", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    /**
+     * Get SDK provider models (handles both CACTUS and RUNANYWHERE)
+     */
+    suspend fun getSdkProviderModels(context: Context, providerType: ApiProviderType): Result<List<ModelOption>> {
+        return when (providerType) {
+            ApiProviderType.CACTUS -> getCactusModels(context)
+            ApiProviderType.RUNANYWHERE -> getRunanywhereModels(context)
+            else -> Result.failure(IllegalArgumentException("Not an SDK provider: $providerType"))
+        }
+    }
 }
