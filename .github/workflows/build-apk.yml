@@ -88,16 +88,29 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
       
-      - name: Verify libcactus.so
+      - name: Verify and Find libcactus.so
         run: |
+          echo "=== Checking for build output ==="
           ls -la cactus/android/
-          file cactus/android/libcactus.so
+          # Check both possible locations
+          if [ -f "cactus/android/libcactus.so" ]; then
+            echo "Found at cactus/android/libcactus.so"
+            echo "FILE_PATH=cactus/android/libcactus.so" >> $GITHUB_ENV
+          elif [ -f "cactus/android/build/lib/libcactus.so" ]; then
+            echo "Found at cactus/android/build/lib/libcactus.so"
+            echo "FILE_PATH=cactus/android/build/lib/libcactus.so" >> $GITHUB_ENV
+          else
+            echo "ERROR: libcactus.so not found!"
+            ls -la cactus/android/build/ 2>/dev/null || true
+            exit 1
+          fi
+          file "${{ env.FILE_PATH }}"
       
       - name: Upload libcactus.so
         uses: actions/upload-artifact@v4
         with:
           name: libcactus-so
-          path: cactus/android/libcactus.so
+          path: ${{ env.FILE_PATH }}
           retention-days: 30
 
   build:
