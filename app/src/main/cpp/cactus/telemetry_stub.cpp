@@ -5,10 +5,11 @@
 #include <cstddef>
 #include <cstring>
 
+// Define CompletionMetrics if not already defined by cactus
+#ifndef CACTUS_COMPLETION_METRICS_DEFINED
 namespace cactus {
 namespace telemetry {
 
-// Forward declaration of CompletionMetrics struct (based on usage in the codebase)
 struct CompletionMetrics {
     double prompt_tokens;
     double completion_tokens;
@@ -20,6 +21,14 @@ struct CompletionMetrics {
     double time_per_output_token;
     double event_timestamp;
 };
+
+} // namespace telemetry
+} // namespace cactus
+#define CACTUS_COMPLETION_METRICS_DEFINED
+#endif
+
+namespace cactus {
+namespace telemetry {
 
 // Stub implementations
 
