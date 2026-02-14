@@ -28,7 +28,7 @@ jobs:
         run: |
           cp -r main/app/src/main/cpp/cactus/* cactus/cactus/
           ls -la cactus/cactus/telemetry_stub.cpp
-          
+            
       - name: Verify Telemetry Stub Exists
         run: |
           echo "=== Verifying telemetry_stub.cpp ==="
@@ -41,34 +41,44 @@ jobs:
           echo "=== Current directory ==="
           pwd
           
-          # Check if cactus already has telemetry.h (newer versions have it)
+          # Check if cactus has telemetry.h (declares functions but no implementation)
           if [ -f "cactus/cactus/telemetry/telemetry.h" ]; then
-            echo "=== Cactus provides telemetry.h - checking ==="
+            echo "=== Cactus provides telemetry.h header (declaring functions) ==="
             ls -la cactus/cactus/telemetry/
-            
-            # Skip stub completely - cactus provides telemetry
-            echo "=== SKIPPING STUB - Cactus provides telemetry.h ==="
-          else
-            echo "=== Cactus does NOT have telemetry.h - using stub ==="
-            cp main/app/src/main/cpp/cactus/telemetry_stub.cpp cactus/cactus/telemetry_stub.cpp
-            TARGET_FILE="cactus/cactus/ffi/cactus_init.cpp"
-            if ! grep -q "telemetry_stub.cpp" "$TARGET_FILE"; then
-              cat cactus/cactus/telemetry_stub.cpp >> "$TARGET_FILE"
-              echo "=== Stub appended ==="
-            fi
+            echo "=== We need stub for IMPLEMENTATIONS ==="
           fi
           
-          echo "=== Verification ==="
-          ls -la cactus/cactus/
-      
+          # The stub provides IMPLEMENTATIONS that cactus needs but doesn't have
+          # We need to add it to the CMake build so it gets compiled
+          echo "=== Adding telemetry_stub.cpp to CMake build ==="
+          
+          # Check current CMakeLists.txt structure
+          echo "=== Current CMakeLists.txt sources ==="
+          grep -n "CACTUS_SOURCES\|set(CACTUS" cactus/android/CMakeLists.txt | head -20
+          
+          # Add stub to CMakeLists.txt
+          if ! grep -q "telemetry_stub.cpp" cactus/android/CMakeLists.txt; then
+            # Find the line with .cpp sources and add our stub
+            sed -i 's|\.cpp"|.cpp" \\\n    ${CACTUS_SOURCE_DIR}/telemetry_stub.cpp|' cactus/android/CMakeLists.txt
+            echo "=== Added telemetry_stub.cpp to CMakeLists.txt ==="
+          else
+            echo "=== telemetry_stub.cpp already in CMakeLists.txt ==="
+          fi
+          
+          # Verify
+          echo "=== Verifying stub in CMakeLists.txt ==="
+          grep -n "telemetry_stub" cactus/android/CMakeLists.txt || echo "Warning: stub not found"
+          echo "=== Stub file exists ==="
+          ls -la cactus/cactus/telemetry_stub.cpp
+       
       - name: Setup Android NDK
         uses: android-actions/setup-android@v3
-      
+       
       - name: Clean Old Build
         run: |
           rm -rf cactus/android/build cactus/android/libcactus.so cactus/android/libcactus.a || true
           echo "Cleaned old build artifacts"
-      
+       
       - name: Cache Cactus Build
         uses: actions/cache@v4
         with:
@@ -76,10 +86,10 @@ jobs:
             cactus/android/build
             cactus/android/libcactus.so
             cactus/android/libcactus.a
-          key: ${{ runner.os }}-cactus-v2-${{ hashFiles('cactus/android/CMakeLists.txt', 'cactus/cactus/**', 'main/app/src/main/cpp/cactus/telemetry_stub.cpp') }}
+          key: ${{ runner.os }}-cactus-v3-${{ hashFiles('cactus/android/CMakeLists.txt', 'cactus/cactus/**', 'main/app/src/main/cpp/cactus/telemetry_stub.cpp') }}
           restore-keys: |
-            ${{ runner.os }}-cactus-v2-
-      
+            ${{ runner.os }}-cactus-v3-
+       
       - name: Build libcactus.so
         run: |
           cd cactus/android
@@ -87,7 +97,7 @@ jobs:
           ./build.sh
         env:
           ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
-      
+       
       - name: Verify and Find libcactus.so
         run: |
           echo "=== Checking for build output ==="
