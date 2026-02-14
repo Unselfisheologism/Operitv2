@@ -38,19 +38,25 @@ jobs:
       
       - name: Patch Cactus
         run: |
-          cd cactus/android
-          chmod +x build.sh
-          # Show the relevant part of CMakeLists.txt first to debug
-          grep -n "cactus_complete\|cactus_index" CMakeLists.txt || echo "Pattern not found, checking full file..."
-          head -100 CMakeLists.txt
-          # Add telemetry_stub.cpp to the build if not already present
-          if ! grep -q "telemetry_stub.cpp" CMakeLists.txt; then
-            # Try different patterns
-            sed -i 's/cactus_complete\.cpp/cactus_complete.cpp telemetry_stub.cpp/g' CMakeLists.txt || true
-            sed -i 's/cactus_index\.cpp/cactus_index.cpp telemetry_stub.cpp/g' CMakeLists.txt || true
-          fi
-          echo "--- After patch ---"
-          grep -n "telemetry_stub" CMakeLists.txt || echo "Stub not added!"
+          cd cactus
+          
+          # Show directory structure
+          echo "=== Checking cactus structure ==="
+          ls -la
+          ls -la cactus/ | head -20
+          
+          # Show CMakeLists.txt in android folder
+          echo "=== Android CMakeLists.txt ==="
+          cat android/CMakeLists.txt
+          
+          # Add telemetry stub to the build
+          echo "" >> android/CMakeLists.txt
+          echo "# Telemetry stub - added by Operit" >> android/CMakeLists.txt
+          echo "set(TELEMETRY_SOURCES \${CMAKE_SOURCE_DIR}/cactus/telemetry_stub.cpp)" >> android/CMakeLists.txt
+          echo "list(APPEND CACTUS_SOURCES \${TELEMETRY_SOURCES})" >> android/CMakeLists.txt
+          
+          echo "=== Modified CMakeLists.txt ==="
+          tail -10 android/CMakeLists.txt
       
       - name: Setup Android NDK
         uses: android-actions/setup-android@v3
