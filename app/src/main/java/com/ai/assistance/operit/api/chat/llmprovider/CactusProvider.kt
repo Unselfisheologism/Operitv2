@@ -81,7 +81,93 @@ class CactusProvider(
         
         private fun createCactusModel(modelId: String, modelPath: String, threadCount: Int, contextSize: Int): Any? {
             return try {
-                // Use reflection to call SDK to avoid compile-time dependency issues
+                // Try to use CactusLM class (Kotlin Multiplatform)
+                val cactusClass = Class.forName("com.cactus.CactusLM")
+                
+                // Create a new instance
+                val constructor = cactusClass.getDeclaredConstructor()
+                val instance = constructor.newInstance()
+                
+                // Extract the model slug from modelId (e.g., "Qwen/Qwen2.5-0.5B-Instruct" -> "qwen2.5-0.5")
+                val modelSlug = extractCactusModelSlug(modelId)
+                
+                // Get the CactusInitParams class and create params
+                val initParamsClass = Class.forName("com.cactus.CactusInitParams")
+                val paramsConstructor = initParamsClass.getDeclaredConstructor(String::class.java, Int::class.java)
+                val params = paramsConstructor.newInstance(modelSlug, contextSize)
+                
+                // Call initializeModel method
+                val initializeMethod = cactusClass.getDeclaredMethod("initializeModel", initParamsClass)
+                initializeMethod.invoke(instance, params)
+                
+                AppLogger.d(TAG, "CactusLM model initialized with slug: $modelSlug")
+                instance
+            } catch (e: ClassNotFoundException) {
+                // Try fallback to older Cactus class
+                tryFallbackCactus(modelId, modelPath, threadCount, contextSize)
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Error creating Cactus model: ${e.message}", e)
+                null
+            }
+        }
+        
+        /**
+         * Extract the Cactus model slug from modelId.
+         * e.g., "Qwen/Qwen2.5-0.5B-Instruct" -> "qwen2.5-0.5"
+         *      "Qwen/Qwen2.5-1.5B-Instruct" -> "qwen2.5-1.5"
+         */
+        private fun extractCactusModelSlug(modelId: String): String {
+            val lowerModelId = modelId.lowercase()
+            return when {
+                // Qwen2.5 models
+                lowerModelId.contains("qwen2.5") && lowerModelId.contains("0.5b") -> "qwen2.5-0.5"
+                lowerModelId.contains("qwen2.5") && lowerModelId.contains("1.5b") -> "qwen2.5-1.5"
+                lowerModelId.contains("qwen2.5") && lowerModelId.contains("3b") -> "qwen2.5-3b"
+                lowerModelId.contains("qwen2.5") && lowerModelId.contains("7b") -> "qwen2.5-7b"
+                lowerModelId.contains("qwen2.5") && lowerModelId.contains("14b") -> "qwen2.5-14b"
+                // Qwen3 models
+                lowerModelId.contains("qwen3") && lowerModelId.contains("0.6b") -> "qwen3-0.6"
+                lowerModelId.contains("qwen3") && lowerModelId.contains("1.7b") -> "qwen3-1.7"
+                lowerModelId.contains("qwen3") && lowerModelId.contains("4b") -> "qwen3-4b"
+                lowerModelId.contains("qwen3") && lowerModelId.contains("8b") -> "qwen3-8b"
+                lowerModelId.contains("qwen3") && lowerModelId.contains("14b") -> "qwen3-14b"
+                // Gemma3 models
+                lowerModelId.contains("gemma3") && lowerModelId.contains("270m") -> "gemma3-270m"
+                lowerModelId.contains("gemma3") && lowerModelId.contains("1b") -> "gemma3-1b"
+                lowerModelId.contains("gemma3") && lowerModelId.contains("4b") -> "gemma3-4b"
+                // Gemma2 models
+                lowerModelId.contains("gemma2") && lowerModelId.contains("2b") -> "gemma2-2b"
+                lowerModelId.contains("gemma2") && lowerModelId.contains("9b") -> "gemma2-9b"
+                // Phi models
+                lowerModelId.contains("phi") && lowerModelId.contains("3.5") -> "phi3.5-mini"
+                lowerModelId.contains("phi4") -> "phi4-mini"
+                // Llama models
+                lowerModelId.contains("llama") && lowerModelId.contains("3.2") && lowerModelId.contains("1b") -> "llama3.2-1b"
+                lowerModelId.contains("llama") && lowerModelId.contains("3.2") && lowerModelId.contains("3b") -> "llama3.2-3b"
+                // LFM models
+                lowerModelId.contains("lfm") && lowerModelId.contains("2.5") && lowerModelId.contains("1.2b") -> "lfm2.5-1.2b"
+                lowerModelId.contains("lfm") && lowerModelId.contains("2") && lowerModelId.contains("350m") -> "lfm2-350m"
+                lowerModelId.contains("lfm") && lowerModelId.contains("2") && lowerModelId.contains("700m") -> "lfm2-700m"
+                // Default: try to extract from the model name
+                else -> {
+                    // Try to extract version number pattern
+                    val regex = Regex("(\\d+\\.\\d+[bB]?)")
+                    val match = regex.find(modelId)
+                    if (match != null) {
+                        val version = match.groupValues[1].lowercase().replace("b", "")
+                        val baseName = modelId.substringBefore("/").lowercase()
+                        "$baseName-$version"
+                    } else {
+                        // Default to a common model
+                        "qwen2.5-0.5"
+                    }
+                }
+            }
+        }
+        
+        private fun tryFallbackCactus(modelId: String, modelPath: String, threadCount: Int, contextSize: Int): Any? {
+            return try {
+                // Fallback to older com.cactus.Cactus class
                 val cactusClass = Class.forName("com.cactus.Cactus")
                 
                 // Create model config
@@ -106,7 +192,7 @@ class CactusProvider(
                 AppLogger.w(TAG, "Cactus SDK not available: ${e.message}")
                 null
             } catch (e: Exception) {
-                AppLogger.e(TAG, "Error creating Cactus model: ${e.message}", e)
+                AppLogger.e(TAG, "Error creating Cactus model (fallback): ${e.message}", e)
                 null
             }
         }
@@ -179,6 +265,36 @@ class CactusProvider(
                 releaseModel()
             }
             return SdkModelManager.deleteModel("cactus", modelId)
+        }
+        
+        /**
+         * Check if Cactus SDK is available and can be used
+         */
+        fun isSdkAvailable(): Boolean {
+            return try {
+                Class.forName("com.cactus.CactusLM")
+                true
+            } catch (e: ClassNotFoundException) {
+                try {
+                    Class.forName("com.cactus.Cactus")
+                    true
+                } catch (e2: Exception) {
+                    false
+                }
+            } catch (e: Exception) {
+                false
+            }
+        }
+        
+        /**
+         * Get SDK status message for display
+         */
+        fun getSdkStatus(): String {
+            return if (isSdkAvailable()) {
+                "Cactus SDK is available"
+            } else {
+                "Cactus SDK is not available. Ensure it is properly integrated in the build configuration."
+            }
         }
     }
 
@@ -306,6 +422,7 @@ class CactusProvider(
                 emit(result)
             } else {
                 // SDK not available, show helpful message
+                val sdkStatus = getSdkStatus()
                 emit("""
                     |
                     |[Cactus SDK Integration]
@@ -317,8 +434,7 @@ class CactusProvider(
                     |Inference Mode: $inferenceMode
                     |
                     |The model is downloaded and ready for inference.
-                    |To enable full SDK functionality, ensure the Cactus SDK
-                    |is properly integrated in the build configuration.
+                    |$sdkStatus
                     |
                     |Model files are located at:
                     |$modelPath
@@ -340,8 +456,16 @@ class CactusProvider(
         onNonFatalError: suspend (error: String) -> Unit
     ): String {
         try {
+            val modelClass = model.javaClass
+            
+            // Try CactusLM API first (newer Kotlin Multiplatform SDK)
+            if (modelClass.name.contains("CactusLM")) {
+                return streamWithCactusLM(model, prompt, onTokensUpdated, onNonFatalError)
+            }
+            
+            // Fall back to older Cactus API
             // Try to use streaming completion via reflection
-            val streamMethod = model.javaClass.getDeclaredMethod(
+            val streamMethod = modelClass.getDeclaredMethod(
                 "streamComplete",
                 String::class.java,
                 kotlin.jvm.functions.Function1::class.java
@@ -377,6 +501,91 @@ class CactusProvider(
         } catch (e: Exception) {
             AppLogger.e(TAG, "Error in streaming: ${e.message}", e)
             onNonFatalError("Streaming error: ${e.message}")
+            return "\n[Error] ${e.message}\n"
+        }
+    }
+    
+    private suspend fun streamWithCactusLM(
+        model: Any,
+        prompt: String,
+        onTokensUpdated: suspend (input: Int, cachedInput: Int, output: Int) -> Unit,
+        onNonFatalError: suspend (error: String) -> Unit
+    ): String {
+        try {
+            val cactusLmClass = model.javaClass
+            
+            // Try to get the ChatMessage class and create messages
+            val chatMessageClass = Class.forName("com.cactus.ChatMessage")
+            val chatMessageConstructor = chatMessageClass.getDeclaredConstructor(
+                String::class.java, // content
+                String::class.java  // role
+            )
+            
+            // Create user message
+            val userMessage = chatMessageConstructor.newInstance(prompt, "user")
+            
+            // Create messages list
+            val messagesList = java.util.ArrayList<Any>()
+            messagesList.add(userMessage)
+            
+            // Get CactusCompletionParams class
+            val completionParamsClass = Class.forName("com.cactus.CactusCompletionParams")
+            val completionConstructor = completionParamsClass.getDeclaredConstructor()
+            val params = completionConstructor.newInstance()
+            
+            // Try streaming completion with callback
+            try {
+                val streamMethod = cactusLmClass.getDeclaredMethod(
+                    "generateCompletion",
+                    List::class.java,
+                    completionParamsClass,
+                    kotlin.jvm.functions.Function1::class.java
+                )
+                
+                val outputTokens = StringBuilder()
+                val callback = { result: Any ->
+                    // Extract response from CactusCompletionResult
+                    try {
+                        val resultClass = result.javaClass
+                        val responseField = resultClass.getDeclaredField("response")
+                        val response = responseField.get(result) as? String
+                        if (response != null) {
+                            outputTokens.append(response)
+                            _outputTokenCount = outputTokens.length / 4
+                        }
+                    } catch (e: Exception) {
+                        // Try to convert result to string directly
+                        outputTokens.append(result.toString())
+                        _outputTokenCount = outputTokens.length / 4
+                    }
+                }
+                
+                streamMethod.invoke(model, messagesList, params, callback)
+                
+                onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+                return outputTokens.toString()
+            } catch (e: NoSuchMethodException) {
+                // Try non-streaming version
+                val completeMethod = cactusLmClass.getDeclaredMethod(
+                    "generateCompletion",
+                    List::class.java,
+                    completionParamsClass
+                )
+                
+                val result = completeMethod.invoke(model, messagesList, params)
+                
+                // Extract response from result
+                val resultClass = result.javaClass
+                val responseField = resultClass.getDeclaredField("response")
+                val response = responseField.get(result) as? String ?: ""
+                
+                _outputTokenCount = response.length / 4
+                onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+                return response
+            }
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Error in CactusLM streaming: ${e.message}", e)
+            onNonFatalError("CactusLM streaming error: ${e.message}")
             return "\n[Error] ${e.message}\n"
         }
     }

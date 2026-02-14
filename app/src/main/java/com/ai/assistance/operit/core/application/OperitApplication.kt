@@ -61,6 +61,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.delay
 
 /** Application class for Operit */
 class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.Provider {
@@ -288,6 +289,9 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
             }
         }
 
+        // Initialize Runanywhere SDK for on-device AI
+        initializeRunanywhereSdk()
+
         val totalTime = System.currentTimeMillis() - startTime
         AppLogger.d(TAG, "【启动计时】应用启动全部完成 - 总耗时: ${totalTime}ms")
     }
@@ -317,6 +321,73 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
                 WorkManager.initialize(applicationContext, workManagerConfiguration)
             } catch (_: IllegalStateException) {
 
+            }
+        }
+    }
+
+    /**
+     * Initialize Runanywhere SDK for on-device AI (LLM, STT, TTS).
+     * This uses reflection to avoid compile-time dependency issues.
+     */
+    private fun initializeRunanywhereSdk() {
+        applicationScope.launch {
+            try {
+                // Try to initialize Runanywhere SDK via reflection
+                val runAnywhereClass = Class.forName("com.runanywhere.sdk.public.RunAnywhere")
+                val sdkEnvironmentClass = Class.forName("com.runanywhere.sdk.public.SDKEnvironment")
+                
+                // Get SDKEnvironment.DEVELOPMENT
+                val developmentEnv = sdkEnvironmentClass.getField("DEVELOPMENT").get(null)
+                
+                // Call RunAnywhere.initialize(environment)
+                val initializeMethod = runAnywhereClass.getMethod("initialize", sdkEnvironmentClass)
+                initializeMethod.invoke(null, developmentEnv)
+                
+                AppLogger.d(TAG, "Runanywhere SDK initialized successfully")
+                
+                // Try to register LlamaCPP backend
+                try {
+                    val llamaCppClass = Class.forName("com.runanywhere.sdk.public.extensions.LlamaCPP")
+                    val registerMethod = llamaCppClass.getMethod("register")
+                    registerMethod.invoke(null)
+                    AppLogger.d(TAG, "Runanywhere LlamaCPP backend registered")
+                } catch (e: Exception) {
+                    AppLogger.w(TAG, "Failed to register LlamaCPP backend: ${e.message}")
+                }
+            } catch (e: ClassNotFoundException) {
+                AppLogger.d(TAG, "Runanywhere SDK not available: ${e.message}")
+            } catch (e: Exception) {
+                AppLogger.w(TAG, "Failed to initialize Runanywhere SDK: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Check if Runanywhere SDK is available and initialized.
+     */
+    fun isRunanywhereSdkAvailable(): Boolean {
+        return try {
+            val runAnywhereClass = Class.forName("com.runanywhere.sdk.public.RunAnywhere")
+            val isInitializedMethod = runAnywhereClass.getMethod("isInitialized")
+            isInitializedMethod.invoke(null) as? Boolean == true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Check if Cactus SDK is available.
+     */
+    fun isCactusSdkAvailable(): Boolean {
+        return try {
+            Class.forName("com.cactus.CactusLM")
+            true
+        } catch (e: ClassNotFoundException) {
+            try {
+                Class.forName("com.cactus.Cactus")
+                true
+            } catch (e2: Exception) {
+                false
             }
         }
     }

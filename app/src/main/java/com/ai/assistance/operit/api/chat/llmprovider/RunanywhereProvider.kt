@@ -77,18 +77,41 @@ class RunanywhereProvider(
         
         private fun createLlamaModel(modelId: String, modelPath: String, threadCount: Int, contextSize: Int): Any? {
             return try {
-                // Use reflection to call SDK to avoid compile-time dependency issues
+                // First check if SDK is initialized
                 val sdkClass = Class.forName("com.runanywhere.sdk.public.RunAnywhere")
-                val llamaCppClass = Class.forName("com.runanywhere.sdk.public.extensions.LlamaCPP")
                 
-                // Try to load model using LlamaCPP backend
-                val loadModelMethod = llamaCppClass.getDeclaredMethod(
-                    "loadModel",
-                    String::class.java,
-                    Int::class.java,
-                    Int::class.java
+                // Check if initialized
+                val isInitializedMethod = sdkClass.getMethod("isInitialized")
+                val isInitialized = isInitializedMethod.invoke(null) as? Boolean ?: false
+                
+                if (!isInitialized) {
+                    // Try to initialize
+                    val sdkEnvClass = Class.forName("com.runanywhere.sdk.public.SDKEnvironment")
+                    val devEnv = sdkEnvClass.getField("DEVELOPMENT").get(null)
+                    val initMethod = sdkClass.getMethod("initialize", sdkEnvClass)
+                    initMethod.invoke(null, devEnv)
+                }
+                
+                // Try to register LlamaCPP backend
+                try {
+                    val llamaCppClass = Class.forName("com.runanywhere.sdk.public.extensions.LlamaCPP")
+                    val registerMethod = llamaCppClass.getMethod("register")
+                    registerMethod.invoke(null)
+                } catch (e: Exception) {
+                    AppLogger.w(TAG, "LlamaCPP may already be registered: ${e.message}")
+                }
+                
+                // Try to load the model using RunAnywhere API
+                val loadModelMethod = sdkClass.getDeclaredMethod(
+                    "loadLLMModel",
+                    String::class.java
                 )
-                loadModelMethod.invoke(null, modelPath, threadCount, contextSize)
+                loadModelMethod.invoke(null, modelId)
+                
+                // Get the loaded model instance
+                val getModelMethod = sdkClass.getDeclaredMethod("getLLMModel", String::class.java)
+                getModelMethod.invoke(null, modelId)
+                
             } catch (e: ClassNotFoundException) {
                 AppLogger.w(TAG, "Runanywhere SDK not available: ${e.message}")
                 null
@@ -166,6 +189,30 @@ class RunanywhereProvider(
                 releaseModel()
             }
             return SdkModelManager.deleteModel("runanywhere", modelId)
+        }
+        
+        /**
+         * Check if Runanywhere SDK is available and initialized
+         */
+        fun isSdkAvailable(): Boolean {
+            return try {
+                val sdkClass = Class.forName("com.runanywhere.sdk.public.RunAnywhere")
+                val isInitializedMethod = sdkClass.getMethod("isInitialized")
+                isInitializedMethod.invoke(null) as? Boolean == true
+            } catch (e: Exception) {
+                false
+            }
+        }
+        
+        /**
+         * Get SDK status message for display
+         */
+        fun getSdkStatus(): String {
+            return if (isSdkAvailable()) {
+                "Runanywhere SDK is available and initialized"
+            } else {
+                "Runanywhere SDK is not available. Ensure it is properly integrated in the build configuration."
+            }
         }
     }
 
@@ -293,6 +340,7 @@ class RunanywhereProvider(
                 emit(result)
             } else {
                 // SDK not available, show helpful message
+                val sdkStatus = getSdkStatus()
                 emit("""
                     |
                     |[Runanywhere SDK Integration]
@@ -303,8 +351,7 @@ class RunanywhereProvider(
                     |Context Size: $contextSize
                     |
                     |The model is downloaded and ready for inference.
-                    |To enable full SDK functionality, ensure the Runanywhere SDK
-                    |is properly integrated in the build configuration.
+                    |$sdkStatus
                     |
                     |Model files are located at:
                     |$modelPath

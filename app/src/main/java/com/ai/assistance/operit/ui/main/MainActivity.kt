@@ -231,6 +231,9 @@ class MainActivity : ComponentActivity() {
         lastOrientation = resources.configuration.orientation
         AppLogger.d(TAG, "onCreate: Android SDK version: ${Build.VERSION.SDK_INT}")
 
+        // Initialize Cactus SDK for on-device AI
+        initializeCactusSdk()
+
         // Set window background to solid color to prevent system theme leaking through
         window.setBackgroundDrawableResource(android.R.color.black)
 
@@ -576,6 +579,24 @@ class MainActivity : ComponentActivity() {
 
         // 初始化数据迁移管理器
         migrationManager = ChatHistoryMigrationManager(this)
+    }
+
+    /**
+     * Initialize Cactus SDK for on-device AI (LLM, STT, Vision, Embeddings).
+     * This uses reflection to avoid compile-time dependency issues.
+     */
+    private fun initializeCactusSdk() {
+        try {
+            // Try to initialize Cactus SDK via reflection
+            val initializerClass = Class.forName("com.cactus.CactusContextInitializer")
+            val initializeMethod = initializerClass.getDeclaredMethod("initialize", android.content.Context::class.java)
+            initializeMethod.invoke(null, this)
+            AppLogger.d(TAG, "Cactus SDK initialized successfully")
+        } catch (e: ClassNotFoundException) {
+            AppLogger.d(TAG, "Cactus SDK not available: ${e.message}")
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "Failed to initialize Cactus SDK: ${e.message}")
+        }
     }
 
     // ======== 检查通知权限 ========
