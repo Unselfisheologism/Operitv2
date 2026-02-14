@@ -38,23 +38,42 @@ jobs:
       
       - name: Patch Cactus - Apply Telemetry Stub
         run: |
+          echo "=== Current directory ==="
+          pwd
+          
           # The cactus repo is checked out to 'cactus' directory
           # The cactus source code is in cactus/cactus/
           
-          # Run the patch script from main repo
-          echo "=== Running patch script ==="
-          # Pass the cactus repo directory (which contains cactus/cactus/ source)
-          bash main/app/src/main/cpp/cactus/patch_cactus.sh cactus
-          
-          # Verify the patch was applied
-          echo "=== Verifying telemetry_stub.cpp exists ==="
+          echo "=== Copying telemetry_stub.cpp ==="
+          cp main/app/src/main/cpp/cactus/telemetry_stub.cpp cactus/cactus/telemetry_stub.cpp
           ls -la cactus/cactus/telemetry_stub.cpp
           
-          echo "=== Verifying CMakeLists.txt includes stub ==="
-          grep -i "telemetry_stub" cactus/android/CMakeLists.txt || echo "WARNING: Stub not found in CMakeLists.txt"
+          # Look at what files are in ffi/ directory
+          echo "=== Files in ffi directory ==="
+          ls -la cactus/cactus/ffi/
           
-          echo "=== Full cactus/cactus directory ==="
-          ls -la cactus/cactus/
+          # Check what CMakeLists.txt compiles
+          echo "=== CMakeLists.txt source files ==="
+          grep -E "\.cpp" cactus/android/CMakeLists.txt | head -30
+          
+          # Append the stub to cactus_init.cpp instead - it's definitely compiled!
+          # (we saw it in the error logs: cactus_init.cpp:24, cactus_init.cpp:370, etc.)
+          TARGET_FILE="cactus/cactus/ffi/cactus_init.cpp"
+          STUB_FILE="cactus/cactus/telemetry_stub.cpp"
+          
+          echo "=== Appending stub to $TARGET_FILE ==="
+          
+          # Check if already appended (by checking for a marker)
+          if grep -q "telemetry_stub.cpp" "$TARGET_FILE"; then
+            echo "Stub already appended to $TARGET_FILE"
+          else
+            cat "$STUB_FILE" >> "$TARGET_FILE"
+            echo "Stub appended successfully"
+            tail -10 "$TARGET_FILE"
+          fi
+          
+          echo "=== Verification ==="
+          grep -c "void init(" cactus/cactus/ffi/cactus_init.cpp
       
       - name: Setup Android NDK
         uses: android-actions/setup-android@v3
