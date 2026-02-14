@@ -30,7 +30,7 @@ struct CompletionMetrics {
 namespace cactus {
 namespace telemetry {
 
-// Stub implementations
+// Stub implementations - ALWAYS provide these
 
 void init(const char* api_key, const char* endpoint, const char* model) {
     // No-op stub - telemetry initialization

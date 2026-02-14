@@ -41,35 +41,39 @@ jobs:
           echo "=== Current directory ==="
           pwd
           
-          # Check if cactus has telemetry.h (declares functions but no implementation)
-          if [ -f "cactus/cactus/telemetry/telemetry.h" ]; then
-            echo "=== Cactus provides telemetry.h header (declaring functions) ==="
-            ls -la cactus/cactus/telemetry/
-            echo "=== We need stub for IMPLEMENTATIONS ==="
-          fi
-          
           # The stub provides IMPLEMENTATIONS that cactus needs but doesn't have
-          # We need to add it to the CMake build so it gets compiled
-          echo "=== Adding telemetry_stub.cpp to CMake build ==="
+          # Append stub to a source file that gets compiled
+          echo "=== Appending stub to cactus_init.cpp ==="
           
-          # Check current CMakeLists.txt structure
-          echo "=== Current CMakeLists.txt sources ==="
-          head -30 cactus/android/CMakeLists.txt
+          # First copy the stub file
+          cp main/app/src/main/cpp/cactus/telemetry_stub.cpp cactus/cactus/telemetry_stub.cpp
           
-          # Use a different approach - insert after the last .cpp file in the list
-          # Find a good insertion point and add the stub
-          if ! grep -q "telemetry_stub.cpp" cactus/android/CMakeLists.txt; then
-            # Insert the stub file using awk
-            awk '{print} /\.cpp"$/ && !done {print "    ${CACTUS_SOURCE_DIR}/telemetry_stub.cpp"; done=1}' cactus/android/CMakeLists.txt > tmp && mv tmp cactus/android/CMakeLists.txt
-            echo "=== Added telemetry_stub.cpp to CMakeLists.txt ==="
-          else
-            echo "=== telemetry_stub.cpp already in CMakeLists.txt ==="
+          # Check if cactus has telemetry.h
+          if [ -f "cactus/cactus/telemetry/telemetry.h" ]; then
+            echo "=== Cactus provides telemetry.h header ==="
           fi
           
-          # Verify
-          echo "=== Verifying stub in CMakeLists.txt ==="
-          grep -n "telemetry_stub" cactus/android/CMakeLists.txt || echo "Warning: stub not found"
-          echo "=== Stub file exists ==="
+          # Check if already appended - remove old append if exists and re-append
+          # Find the line number where stub would start (after last #endif or closing brace)
+          if grep -q "telemetry_stub.cpp" cactus/cactus/ffi/cactus_init.cpp; then
+            echo "=== Stub already in cactus_init.cpp - removing old append ==="
+            # Remove the appended portion (everything after a reasonable line)
+            head -n 500 cactus/cactus/ffi/cactus_init.cpp > temp.cpp
+            mv temp.cpp cactus/cactus/ffi/cactus_init.cpp
+          fi
+          
+          # Append stub content to cactus_init.cpp - this ensures it's compiled
+          cat cactus/cactus/telemetry_stub.cpp >> cactus/cactus/ffi/cactus_init.cpp
+          echo "=== Stub appended to cactus_init.cpp ==="
+          
+          # Verify the stub functions are in the file
+          echo "=== Verifying stub functions in cactus_init.cpp ==="
+          grep -n "void init\|void recordCompletion\|void recordTranscription" cactus/cactus/ffi/cactus_init.cpp || echo "ERROR: Stub functions not found!"
+          
+          echo "=== Last 20 lines of cactus_init.cpp ==="
+          tail -20 cactus/cactus/ffi/cactus_init.cpp
+          
+          echo "=== Stub file ==="
           ls -la cactus/cactus/telemetry_stub.cpp
        
       - name: Setup Android NDK
@@ -87,9 +91,9 @@ jobs:
             cactus/android/build
             cactus/android/libcactus.so
             cactus/android/libcactus.a
-          key: ${{ runner.os }}-cactus-v3-${{ hashFiles('cactus/android/CMakeLists.txt', 'cactus/cactus/**', 'main/app/src/main/cpp/cactus/telemetry_stub.cpp') }}
+          key: ${{ runner.os }}-cactus-v4-${{ hashFiles('cactus/android/CMakeLists.txt', 'cactus/cactus/**', 'main/app/src/main/cpp/cactus/telemetry_stub.cpp') }}
           restore-keys: |
-            ${{ runner.os }}-cactus-v3-
+            ${{ runner.os }}-cactus-v4-
        
       - name: Build libcactus.so
         run: |
