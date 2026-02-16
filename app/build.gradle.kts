@@ -146,6 +146,12 @@ android {
         
         jniLibs {
             useLegacyPackaging = true
+            // Handle duplicate native libraries by picking the first one found
+            // This resolves conflicts between Runanywhere ONNX module and direct ONNX Runtime dependency
+            pickFirsts += "lib/arm64-v8a/libonnxruntime.so"
+            pickFirsts += "lib/armeabi-v7a/libonnxruntime.so"
+            pickFirsts += "lib/x86/libonnxruntime.so"
+            pickFirsts += "lib/x86_64/libonnxruntime.so"
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -172,9 +178,6 @@ android {
             // Fix for duplicate Netty files
             excludes += "META-INF/io.netty.versions.properties"
             excludes += "META-INF/INDEX.LIST"
-            
-            // Fix for any other potential duplicate files
-            pickFirsts += "**/*.so"
         }
     }
 //    aaptOptions {

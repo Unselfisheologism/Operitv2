@@ -184,22 +184,87 @@ jobs:
           chmod +x ./gradlew
           dos2unix ./gradlew || true
 
+      # Refresh Gradle dependencies to ensure SDK changes are picked up
+      - name: Refresh Gradle Dependencies
+        run: |
+          echo "=== Refreshing Gradle dependencies ==="
+          ./gradlew --refresh-dependencies --stacktrace 2>&1 | tee refresh_output.txt
+          echo "=== Dependency refresh complete ==="
+
+      # Verify SDK dependencies are resolved correctly
+      - name: Verify SDK Dependencies
+        run: |
+          echo "=== Checking SDK dependencies ==="
+          ./gradlew :app:dependencies --configuration debugRuntimeClasspath | grep -E "cactus|runanywhere" | tee sdk_dependencies.txt || echo "Note: Some SDKs may not be found in dependencies list"
+          echo ""
+          echo "=== Expected dependencies ==="
+          echo "- com.cactuscompute:cactus:1.2.0-beta"
+          echo "- io.github.sanchitmonga22:runanywhere-sdk-android:0.16.1"
+          echo "- io.github.sanchitmonga22:runanywhere-llamacpp-android:0.16.1"
+          echo "- io.github.sanchitmonga22:runanywhere-onnx-android:0.16.1"
+
       # Clean and compile the apk
       - name: Clean and Generate Debug APK with Info
+        id: build_apk
+        continue-on-error: true
         run: |
+          echo "=== Starting clean build ==="
           ./gradlew clean assembleDebug --stacktrace --info 2>&1 | tee gradle_output.txt
+          BUILD_STATUS=$?
+          echo "=== Build complete with status: $BUILD_STATUS ==="
+          
+          if [ $BUILD_STATUS -ne 0 ]; then
+            echo ""
+            echo "=== BUILD FAILED - Checking for common issues ==="
+            
+            # Check for native library conflicts
+            if grep -q "files found with path.*\.so" gradle_output.txt; then
+              echo "ISSUE: Native library conflict detected!"
+              echo "Check gradle_output.txt for details about duplicate .so files"
+              grep "files found with path" gradle_output.txt || true
+            fi
+            
+            # Check for dependency resolution issues
+            if grep -q "Could not resolve.*cactus\|Could not resolve.*runanywhere" gradle_output.txt; then
+              echo "ISSUE: SDK dependency resolution failed!"
+              echo "Check that Maven Central is accessible and artifact names are correct"
+              grep "Could not resolve" gradle_output.txt || true
+            fi
+            
+            # Check for SDK initialization issues
+            if grep -q "UnsatisfiedLinkError\|ClassNotFoundException" gradle_output.txt; then
+              echo "ISSUE: Native library or class loading error detected!"
+              grep -E "UnsatisfiedLinkError|ClassNotFoundException" gradle_output.txt || true
+            fi
+            
+            echo ""
+            echo "=== End of diagnostic output ==="
+          fi
+          
+          exit $BUILD_STATUS
       
       - name: Upload Gradle Output
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: gradle-output
-          path: gradle_output.txt
+          path: |
+            refresh_output.txt
+            sdk_dependencies.txt
+            gradle_output.txt
           retention-days: 7
 
       # Upload the action artifact
       - name: Upload Debug APK (artifact)
-        if: success()
+        if: steps.build_apk.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+      
+      # Fail the workflow if build failed
+      - name: Check Build Status
+        if: steps.build_apk.outcome != 'success'
+        run: |
+          echo "❌ Build failed. Check the gradle-output artifact for details."
+          exit 1

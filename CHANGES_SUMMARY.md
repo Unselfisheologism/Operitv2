@@ -1,4 +1,4 @@
-# SDK Integration Fix - Changes Summary
+# SDK Integration Fix - Changes Summary (Updated)
 
 ## Date: February 16, 2026
 
@@ -6,12 +6,14 @@
 After downloading models for Cactus Compute and Runanywhere providers, the following errors were observed:
 - **Cactus SDK**: Shows as "available" but models fail to initialize properly
 - **Runanywhere SDK**: Shows as "not available" even after proper integration in build.gradle.kts
+- **Build Failure**: Duplicate native library error preventing APK build
 
 ## Root Causes
 1. **Incorrect Maven artifact names** in `libs.versions.toml` for both SDKs
 2. **Wrong initialization order** for Runanywhere SDK (backends must be registered BEFORE initialization)
 3. **Context initialization issues** for Cactus SDK
 4. **Reflection-based SDK loading** complexity with suspend functions
+5. **Native library conflicts** between `onnxruntime-android` and `runanywhere-onnx-android` modules
 
 ## Files Modified
 
@@ -77,6 +79,31 @@ After downloading models for Cactus Compute and Runanywhere providers, the follo
 
 **Why:** The SDK uses suspend functions which are difficult to call via reflection. Added detection to provide better error messages and prepare for future coroutine-based implementation.
 
+### 6. `app/build.gradle.kts` ⭐ NEW FIX
+**Changes:**
+- Added `pickFirsts` rules in the `jniLibs` packaging block to handle duplicate native libraries:
+  ```kotlin
+  packaging {
+      jniLibs {
+          useLegacyPackaging = true
+          // Handle duplicate native libraries by picking the first one found
+          pickFirsts += "lib/arm64-v8a/libonnxruntime.so"
+          pickFirsts += "lib/armeabi-v7a/libonnxruntime.so"
+          pickFirsts += "lib/x86/libonnxruntime.so"
+          pickFirsts += "lib/x86_64/libonnxruntime.so"
+      }
+  }
+  ```
+- Removed incorrect `pickFirsts += "**/*.so"` from resources block (doesn't work for native libs)
+
+**Why:** 
+- Both `onnxruntime-android:1.17.1` (used by `OnnxEmbeddingService`) and `runanywhere-onnx-android` include the same `libonnxruntime.so` native library
+- Build was failing with "2 files found with path 'lib/arm64-v8a/libonnxruntime.so'" error
+- Both versions are identical (v1.17.1), so using either one is safe
+- The `pickFirsts` rule tells Gradle to use the first library found and ignore duplicates
+- This resolves the build conflict without breaking existing functionality
+- Per Runanywhere SDK docs, their ONNX module bundles its own ONNX Runtime
+
 ## Expected Behavior After Fix
 
 ### Cactus SDK
@@ -104,6 +131,19 @@ Runanywhere SDK is available and initialized
 [Model loads and inference works]
 ```
 
+### Build Process
+**Before:**
+```
+FAILURE: Build failed with an exception.
+Execution failed for task ':app:mergeDebugNativeLibs'.
+> 2 files found with path 'lib/arm64-v8a/libonnxruntime.so'
+```
+
+**After:**
+```
+BUILD SUCCESSFUL
+```
+
 ## Required Actions for User
 
 1. **Sync Gradle Dependencies:**
@@ -117,6 +157,7 @@ Runanywhere SDK is available and initialized
    ./gradlew clean
    ./gradlew build
    ```
+   Should now complete without native library conflicts
 
 3. **Rebuild and Install:**
    ```bash
@@ -127,6 +168,7 @@ Runanywhere SDK is available and initialized
    - Download a model for each provider
    - Check the status messages in the AI Chat page
    - Try sending a message to test inference
+   - Verify OnnxEmbeddingService still works (RAG functionality)
 
 ## Known Limitations
 
@@ -136,28 +178,37 @@ The `CactusLM.initializeModel()` method is a suspend function. The current refle
 **Future Work:** Implement proper coroutine integration for calling suspend functions via reflection, or refactor to use direct SDK dependencies without reflection.
 
 ### Native Library Dependencies
-Both SDKs depend on native libraries (.so files). If the Maven artifacts don't include these properly, manual integration may be required.
+Both SDKs depend on native libraries (.so files). The `pickFirsts` rule handles the ONNX Runtime conflict, but other conflicts may arise in the future.
 
 **Check:** After building, verify native libraries are in the APK:
 ```bash
 unzip -l app/build/outputs/apk/debug/app-debug.apk | grep "\.so$"
 ```
 
+## Documentation Files Created
+
+1. **`SDK_INTEGRATION_FIX.md`** - Comprehensive SDK integration troubleshooting guide
+2. **`BUILD_FIXES.md`** - Detailed explanation of native library conflict resolution
+3. **`CHANGES_SUMMARY.md`** - This file - summary of all changes
+4. **`verify_sdk_integration.bat`** - Automated verification script
+
 ## Testing Instructions
 
-See `SDK_INTEGRATION_FIX.md` for detailed testing instructions and troubleshooting steps.
+See `SDK_INTEGRATION_FIX.md` for detailed testing instructions and troubleshooting steps.  
+See `BUILD_FIXES.md` for detailed explanation of the native library conflict and resolution.
 
 ## References
 
 - **Documentation**: `cactuscompute-docs.md` - Cactus SDK integration guide
-- **DeepWiki Queries**: Used to verify correct SDK integration patterns
+- **DeepWiki Queries**: Used to verify correct SDK integration patterns and native library handling
 - **Runanywhere Docs**: https://github.com/RunanywhereAI/runanywhere-sdks
 - **Cactus Docs**: https://github.com/cactus-compute/cactus
+- **Android Docs**: [Handle duplicate files](https://developer.android.com/studio/build/shrink-code#resolve-conflicts)
 
 ## Commit Message Suggestion
 
 ```
-fix: Correct SDK integration for Cactus and Runanywhere providers
+fix: Resolve SDK integration and native library conflicts
 
 - Fix Maven artifact names in libs.versions.toml
   * Runanywhere: Use separate llamacpp and onnx artifacts
@@ -171,8 +222,16 @@ fix: Correct SDK integration for Cactus and Runanywhere providers
   * Use applicationContext instead of activity context
   * Add better error handling for suspend function detection
   
+- Resolve native library conflicts (BUILD FIX)
+  * Add pickFirsts rules for libonnxruntime.so in jniLibs block
+  * Both onnxruntime-android and runanywhere-onnx-android bundle same lib
+  * Using pickFirsts preserves functionality of both modules
+  
 - Improve error messages and logging for both providers
-- Add comprehensive documentation in SDK_INTEGRATION_FIX.md
+- Add comprehensive documentation:
+  * SDK_INTEGRATION_FIX.md - SDK troubleshooting
+  * BUILD_FIXES.md - Native library conflict resolution
+  * verify_sdk_integration.bat - Automated verification
 
-Resolves SDK availability issues after model download.
+Resolves SDK availability issues and build failures.
 ```

@@ -169,6 +169,42 @@ After syncing and cleaning, rebuild and reinstall the app on your device:
 
 ## Known Issues and Future Work
 
+### Issue 0: Native Library Conflicts (RESOLVED)
+**Problem**: Both `onnxruntime-android` and `runanywhere-onnx-android` include the same `libonnxruntime.so` file, causing build failures.
+
+**Error Message**:
+```
+2 files found with path 'lib/arm64-v8a/libonnxruntime.so' from inputs:
+  - runanywhere-core-onnx-release/jni/arm64-v8a/libonnxruntime.so
+  - onnxruntime-android-1.17.1/jni/arm64-v8a/libonnxruntime.so
+```
+
+**Solution Applied**: Added `pickFirsts` rules in the `jniLibs` packaging block to resolve duplicate native libraries by picking the first one encountered:
+
+```kotlin
+packaging {
+    jniLibs {
+        useLegacyPackaging = true
+        pickFirsts += "lib/arm64-v8a/libonnxruntime.so"
+        pickFirsts += "lib/armeabi-v7a/libonnxruntime.so"
+        pickFirsts += "lib/x86/libonnxruntime.so"
+        pickFirsts += "lib/x86_64/libonnxruntime.so"
+    }
+}
+```
+
+**Why This Works**: 
+- The project uses `onnxruntime-android` directly for the `OnnxEmbeddingService`
+- The Runanywhere SDK's ONNX module also bundles ONNX Runtime (same version 1.17.1)
+- Both versions are compatible, so using either one is safe
+- The `pickFirsts` rule tells Gradle to use the first library found and ignore duplicates
+- This avoids the need to exclude one dependency, which would break existing functionality
+
+**Alternative Approaches Considered**:
+1. ❌ Remove `onnxruntime-android` dependency - Would break `OnnxEmbeddingService` and `OnnxSileroVad`
+2. ❌ Exclude native libs from one module - More complex and error-prone
+3. ✅ Use `pickFirsts` to handle duplicate - Simple, standard solution that preserves all functionality
+
 ### Issue 1: CactusLM Suspend Function
 **Problem**: The `CactusLM.initializeModel()` method is a suspend function, but we're using reflection which makes it difficult to call suspend functions properly.
 

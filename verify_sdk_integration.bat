@@ -86,6 +86,23 @@ if %errorlevel%==0 (
 )
 
 echo.
+echo [4.5/5] Checking native library conflict resolution...
+echo.
+findstr /C:"pickFirsts" app\build.gradle.kts >nul
+if %errorlevel%==0 (
+    echo [OK] pickFirsts rule found for native library conflicts
+) else (
+    echo [WARNING] pickFirsts rule not found - may have duplicate .so file issues
+)
+
+findstr /C:"libonnxruntime.so" app\build.gradle.kts >nul
+if %errorlevel%==0 (
+    echo [OK] ONNX Runtime conflict handling configured
+) else (
+    echo [WARNING] ONNX Runtime conflict not specifically handled
+)
+
+echo.
 echo [5/5] Build and Installation Instructions
 echo.
 echo To apply these changes and test:
