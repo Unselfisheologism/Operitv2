@@ -85,20 +85,29 @@ class RunanywhereProvider(
                 val isInitialized = isInitializedMethod.invoke(null) as? Boolean ?: false
                 
                 if (!isInitialized) {
-                    // Try to initialize
-                    val sdkEnvClass = Class.forName("com.runanywhere.sdk.public.SDKEnvironment")
-                    val devEnv = sdkEnvClass.getField("DEVELOPMENT").get(null)
-                    val initMethod = sdkClass.getMethod("initialize", sdkEnvClass)
-                    initMethod.invoke(null, devEnv)
-                }
-                
-                // Try to register LlamaCPP backend
-                try {
-                    val llamaCppClass = Class.forName("com.runanywhere.sdk.public.extensions.LlamaCPP")
-                    val registerMethod = llamaCppClass.getMethod("register")
-                    registerMethod.invoke(null)
-                } catch (e: Exception) {
-                    AppLogger.w(TAG, "LlamaCPP may already be registered: ${e.message}")
+                    AppLogger.w(TAG, "Runanywhere SDK is not initialized. Attempting to initialize...")
+                    // Try to register LlamaCPP backend FIRST
+                    try {
+                        val llamaCppClass = Class.forName("com.runanywhere.sdk.public.extensions.LlamaCPP")
+                        val registerMethod = llamaCppClass.getMethod("register")
+                        registerMethod.invoke(null)
+                        AppLogger.d(TAG, "LlamaCPP backend registered before initialization")
+                    } catch (e: Exception) {
+                        AppLogger.w(TAG, "Failed to register LlamaCPP backend: ${e.message}")
+                        return null
+                    }
+                    
+                    // Now initialize SDK
+                    try {
+                        val sdkEnvClass = Class.forName("com.runanywhere.sdk.public.SDKEnvironment")
+                        val devEnv = sdkEnvClass.getField("DEVELOPMENT").get(null)
+                        val initMethod = sdkClass.getMethod("initialize", sdkEnvClass)
+                        initMethod.invoke(null, devEnv)
+                        AppLogger.d(TAG, "Runanywhere SDK initialized from provider")
+                    } catch (e: Exception) {
+                        AppLogger.e(TAG, "Failed to initialize SDK: ${e.message}")
+                        return null
+                    }
                 }
                 
                 // Try to load the model using RunAnywhere API
@@ -106,11 +115,17 @@ class RunanywhereProvider(
                     "loadLLMModel",
                     String::class.java
                 )
-                loadModelMethod.invoke(null, modelId)
+                loadModelMethod.invoke(null, modelPath)
                 
                 // Get the loaded model instance
                 val getModelMethod = sdkClass.getDeclaredMethod("getLLMModel", String::class.java)
-                getModelMethod.invoke(null, modelId)
+                val model = getModelMethod.invoke(null, modelId)
+                
+                if (model == null) {
+                    AppLogger.w(TAG, "Failed to get model instance for: $modelId")
+                }
+                
+                model
                 
             } catch (e: ClassNotFoundException) {
                 AppLogger.w(TAG, "Runanywhere SDK not available: ${e.message}")

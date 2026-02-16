@@ -328,11 +328,23 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
     /**
      * Initialize Runanywhere SDK for on-device AI (LLM, STT, TTS).
      * This uses reflection to avoid compile-time dependency issues.
+     * 
+     * IMPORTANT: Backend modules must be registered BEFORE calling RunAnywhere.initialize()
      */
     private fun initializeRunanywhereSdk() {
         applicationScope.launch {
             try {
-                // Try to initialize Runanywhere SDK via reflection
+                // Step 1: Register backend modules FIRST (before initialization)
+                try {
+                    val llamaCppClass = Class.forName("com.runanywhere.sdk.public.extensions.LlamaCPP")
+                    val registerMethod = llamaCppClass.getMethod("register")
+                    registerMethod.invoke(null)
+                    AppLogger.d(TAG, "Runanywhere LlamaCPP backend registered")
+                } catch (e: Exception) {
+                    AppLogger.w(TAG, "Failed to register LlamaCPP backend: ${e.message}")
+                }
+                
+                // Step 2: Initialize the SDK (AFTER registering backends)
                 val runAnywhereClass = Class.forName("com.runanywhere.sdk.public.RunAnywhere")
                 val sdkEnvironmentClass = Class.forName("com.runanywhere.sdk.public.SDKEnvironment")
                 
@@ -344,16 +356,6 @@ class OperitApplication : Application(), ImageLoaderFactory, WorkConfiguration.P
                 initializeMethod.invoke(null, developmentEnv)
                 
                 AppLogger.d(TAG, "Runanywhere SDK initialized successfully")
-                
-                // Try to register LlamaCPP backend
-                try {
-                    val llamaCppClass = Class.forName("com.runanywhere.sdk.public.extensions.LlamaCPP")
-                    val registerMethod = llamaCppClass.getMethod("register")
-                    registerMethod.invoke(null)
-                    AppLogger.d(TAG, "Runanywhere LlamaCPP backend registered")
-                } catch (e: Exception) {
-                    AppLogger.w(TAG, "Failed to register LlamaCPP backend: ${e.message}")
-                }
             } catch (e: ClassNotFoundException) {
                 AppLogger.d(TAG, "Runanywhere SDK not available: ${e.message}")
             } catch (e: Exception) {

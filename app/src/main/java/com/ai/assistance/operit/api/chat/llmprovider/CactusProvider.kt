@@ -91,19 +91,37 @@ class CactusProvider(
                 // Extract the model slug from modelId (e.g., "Qwen/Qwen2.5-0.5B-Instruct" -> "qwen2.5-0.5")
                 val modelSlug = extractCactusModelSlug(modelId)
                 
+                AppLogger.d(TAG, "Initializing CactusLM model with slug: $modelSlug, context: $contextSize")
+                
                 // Get the CactusInitParams class and create params
+                // Constructor signature: CactusInitParams(model: String?, contextSize: Int?)
                 val initParamsClass = Class.forName("com.cactus.CactusInitParams")
-                val paramsConstructor = initParamsClass.getDeclaredConstructor(String::class.java, Int::class.java)
+                val paramsConstructor = initParamsClass.getDeclaredConstructor(
+                    String::class.java,    // model
+                    Int::class.javaObjectType  // contextSize (nullable Int)
+                )
                 val params = paramsConstructor.newInstance(modelSlug, contextSize)
                 
-                // Call initializeModel method
-                val initializeMethod = cactusClass.getDeclaredMethod("initializeModel", initParamsClass)
-                initializeMethod.invoke(instance, params)
+                // Call initializeModel method (suspend function)
+                // Need to check if it returns Boolean
+                val initializeMethod = cactusClass.getDeclaredMethod("initializeModel", initParamsClass, kotlin.coroutines.Continuation::class.java)
                 
-                AppLogger.d(TAG, "CactusLM model initialized with slug: $modelSlug")
+                // For non-suspend version, try this
+                try {
+                    val initMethodSimple = cactusClass.getDeclaredMethod("initializeModel", initParamsClass)
+                    val result = initMethodSimple.invoke(instance, params)
+                    AppLogger.d(TAG, "CactusLM model initialized successfully. Result: $result")
+                } catch (e: NoSuchMethodException) {
+                    AppLogger.w(TAG, "initializeModel appears to be a suspend function. Using blocking call.")
+                    // For suspend functions, we'd need kotlinx.coroutines integration
+                    // For now, log the issue
+                    throw IllegalStateException("CactusLM.initializeModel is a suspend function and requires coroutine context")
+                }
+                
                 instance
             } catch (e: ClassNotFoundException) {
                 // Try fallback to older Cactus class
+                AppLogger.d(TAG, "CactusLM not found, trying fallback Cactus class")
                 tryFallbackCactus(modelId, modelPath, threadCount, contextSize)
             } catch (e: Exception) {
                 AppLogger.e(TAG, "Error creating Cactus model: ${e.message}", e)
