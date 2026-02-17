@@ -409,14 +409,22 @@ class CactusProvider(
                         if (!isCancelled) {
                             output.append(token)
                             _outputTokenCount = output.length / 4
-                            onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
+                            // Note: onTokensUpdated is a suspend function and cannot be called from here
+                            // Token updates will be sent after completion
                         }
                     }
                 )?.let { result ->
-                    if (result.success && result.response != null) {
-                        emit(result.response)
+                    val responseText = result.response
+                    if (result.success && responseText != null) {
+                        emit(responseText)
                     } else if (!result.success) {
-                        emit("\n[Error] ${result.response ?: "Unknown error"}\n")
+                        emit("\n[Error] ${responseText ?: "Unknown error"}\n")
+                    }
+                    // Update token counts after streaming completes
+                    if (result.success) {
+                        _inputTokenCount = (result.prefillTokens ?: 0)
+                        _outputTokenCount = (result.decodeTokens ?: output.length / 4)
+                        onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
                     }
                 }
             } else {
@@ -426,13 +434,14 @@ class CactusProvider(
                     params = completionParams
                 )
                 
-                if (result != null && result.success && result.response != null) {
+                val responseText = result?.response
+                if (result != null && result.success && responseText != null) {
                     _inputTokenCount = (result.prefillTokens ?: 0)
                     _outputTokenCount = (result.decodeTokens ?: 0)
                     onTokensUpdated(_inputTokenCount, _cachedInputTokenCount, _outputTokenCount)
-                    emit(result.response)
+                    emit(responseText)
                 } else {
-                    emit("\n[Error] ${result?.response ?: "Failed to generate completion"}\n")
+                    emit("\n[Error] ${responseText ?: "Failed to generate completion"}\n")
                 }
             }
             
@@ -492,13 +501,13 @@ class CactusProvider(
         var topP: Double? = null
         var topK: Int? = null
         
-        // Extract parameters
+                // Extract parameters
         for (param in modelParameters) {
             when (param.name.lowercase()) {
-                "temperature" -> temperature = (param.value as? Number)?.toDouble()
-                "max_tokens", "maxtokens" -> maxTokens = (param.value as? Number)?.toInt() ?: 512
-                "top_p", "topp" -> topP = (param.value as? Number)?.toDouble()
-                "top_k", "topk" -> topK = (param.value as? Number)?.toInt()
+                "temperature" -> temperature = (param.currentValue as? Number)?.toDouble()
+                "max_tokens", "maxtokens" -> maxTokens = (param.currentValue as? Number)?.toInt() ?: 512
+                "top_p", "topp" -> topP = (param.currentValue as? Number)?.toDouble()
+                "top_k", "topk" -> topK = (param.currentValue as? Number)?.toInt()
             }
         }
         
