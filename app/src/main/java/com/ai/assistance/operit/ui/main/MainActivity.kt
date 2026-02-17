@@ -583,7 +583,7 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Initialize Cactus SDK for on-device AI (LLM, STT, Vision, Embeddings).
-     * This uses reflection to avoid compile-time dependency issues.
+     * This must be called in Activity.onCreate() before using any Cactus SDK functionality.
      * 
      * According to Cactus SDK documentation:
      * "Before using any Cactus SDK functionality, you must initialize the context 
@@ -591,16 +591,9 @@ class MainActivity : ComponentActivity() {
      */
     private fun initializeCactusSdk() {
         try {
-            // Try to initialize Cactus SDK using CactusContextInitializer
-            val initializerClass = Class.forName("com.cactus.CactusContextInitializer")
-            val initializeMethod = initializerClass.getDeclaredMethod("initialize", android.content.Context::class.java)
-            initializeMethod.invoke(null, this.applicationContext)
+            // Initialize Cactus SDK context using the proper API
+            com.cactus.CactusContextInitializer.initialize(this)
             AppLogger.d(TAG, "Cactus SDK context initialized successfully")
-        } catch (e: ClassNotFoundException) {
-            AppLogger.d(TAG, "Cactus SDK CactusContextInitializer not found: ${e.message}")
-            // This is expected if the SDK is not included in the build
-        } catch (e: NoSuchMethodException) {
-            AppLogger.w(TAG, "CactusContextInitializer.initialize method not found: ${e.message}")
         } catch (e: Exception) {
             AppLogger.e(TAG, "Failed to initialize Cactus SDK context: ${e.message}", e)
         }

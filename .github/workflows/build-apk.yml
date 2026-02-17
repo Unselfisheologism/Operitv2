@@ -8,129 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-cactus:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout Main Repo
-        uses: actions/checkout@v4
-        with:
-          path: main
-      
-      - name: Checkout Cactus
-        uses: actions/checkout@v4
-        with:
-          repository: cactus-compute/cactus
-          path: cactus
-          clean: true
-      
-      - name: Copy Telemetry Stub
-        run: |
-          cp -r main/app/src/main/cpp/cactus/* cactus/cactus/
-          ls -la cactus/cactus/telemetry_stub.cpp
-            
-      - name: Verify Telemetry Stub Exists
-        run: |
-          echo "=== Verifying telemetry_stub.cpp ==="
-          ls -la cactus/cactus/telemetry_stub.cpp
-          echo "=== Contents of cactus/cactus/ ==="
-          ls -la cactus/cactus/ | head -20
-      
-      - name: Patch Cactus - Apply Telemetry Stub
-        run: |
-          echo "=== Current directory ==="
-          pwd
-          
-          # The stub provides IMPLEMENTATIONS that cactus needs but doesn't have
-          # Append stub to a source file that gets compiled
-          echo "=== Appending stub to cactus_init.cpp ==="
-          
-          # First copy the stub file
-          cp main/app/src/main/cpp/cactus/telemetry_stub.cpp cactus/cactus/telemetry_stub.cpp
-          
-          # Check if cactus has telemetry.h
-          if [ -f "cactus/cactus/telemetry/telemetry.h" ]; then
-            echo "=== Cactus provides telemetry.h header ==="
-          fi
-          
-          # Check if already appended - remove old append if exists and re-append
-          # Find the line number where stub would start (after last #endif or closing brace)
-          if grep -q "telemetry_stub.cpp" cactus/cactus/ffi/cactus_init.cpp; then
-            echo "=== Stub already in cactus_init.cpp - removing old append ==="
-            # Remove the appended portion (everything after a reasonable line)
-            head -n 500 cactus/cactus/ffi/cactus_init.cpp > temp.cpp
-            mv temp.cpp cactus/cactus/ffi/cactus_init.cpp
-          fi
-          
-          # Append stub content to cactus_init.cpp - this ensures it's compiled
-          cat cactus/cactus/telemetry_stub.cpp >> cactus/cactus/ffi/cactus_init.cpp
-          echo "=== Stub appended to cactus_init.cpp ==="
-          
-          # Verify the stub functions are in the file
-          echo "=== Verifying stub functions in cactus_init.cpp ==="
-          grep -n "void init\|void recordCompletion\|void recordTranscription" cactus/cactus/ffi/cactus_init.cpp || echo "ERROR: Stub functions not found!"
-          
-          echo "=== Last 20 lines of cactus_init.cpp ==="
-          tail -20 cactus/cactus/ffi/cactus_init.cpp
-          
-          echo "=== Stub file ==="
-          ls -la cactus/cactus/telemetry_stub.cpp
-       
-      - name: Setup Android NDK
-        uses: android-actions/setup-android@v3
-       
-      - name: Clean Old Build
-        run: |
-          rm -rf cactus/android/build cactus/android/libcactus.so cactus/android/libcactus.a || true
-          echo "Cleaned old build artifacts"
-       
-      - name: Cache Cactus Build
-        uses: actions/cache@v4
-        with:
-          path: |
-            cactus/android/build
-            cactus/android/libcactus.so
-            cactus/android/libcactus.a
-          key: ${{ runner.os }}-cactus-v5-${{ hashFiles('cactus/android/CMakeLists.txt', 'cactus/cactus/**', 'main/app/src/main/cpp/cactus/telemetry_stub.cpp') }}
-          restore-keys: |
-            ${{ runner.os }}-cactus-v5-
-       
-      - name: Build libcactus.so
-        run: |
-          cd cactus/android
-          chmod +x build.sh
-          ./build.sh
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_NDK_ROOT }}
-       
-      - name: Verify and Find libcactus.so
-        run: |
-          echo "=== Checking for build output ==="
-          ls -la cactus/android/
-          # Check both possible locations
-          if [ -f "cactus/android/libcactus.so" ]; then
-            echo "Found at cactus/android/libcactus.so"
-            echo "FILE_PATH=cactus/android/libcactus.so" >> $GITHUB_ENV
-          elif [ -f "cactus/android/build/lib/libcactus.so" ]; then
-            echo "Found at cactus/android/build/lib/libcactus.so"
-            echo "FILE_PATH=cactus/android/build/lib/libcactus.so" >> $GITHUB_ENV
-          else
-            echo "ERROR: libcactus.so not found!"
-            ls -la cactus/android/build/ 2>/dev/null || true
-            exit 1
-          fi
-          file "${{ env.FILE_PATH }}"
-      
-      - name: Upload libcactus.so
-        uses: actions/upload-artifact@v4
-        with:
-          name: libcactus-so
-          path: ${{ env.FILE_PATH }}
-          retention-days: 30
-
   build:
     runs-on: ubuntu-latest
-    needs: build-cactus
     steps:
       - name: Setup Gradle Cache
         uses: actions/cache@v4
@@ -166,17 +45,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # Download libcactus.so from build-cactus job
-      - name: Download libcactus.so
-        uses: actions/download-artifact@v4
-        with:
-          name: libcactus-so
-          path: app/src/main/jniLibs/arm64-v8a/
-
-      - name: Verify libcactus.so
-        run: |
-          ls -la app/src/main/jniLibs/arm64-v8a/
-          file app/src/main/jniLibs/arm64-v8a/libcactus.so
+      # NOTE: Cactus SDK native libraries are included in the Maven dependency
+      # com.cactuscompute:cactus:1.2.1-beta includes prebuilt libcactus.so
+      # No need to build separately or copy to jniLibs
 
       # Make gradlew executable and fix line endings
       - name: Fix gradlew permissions and line endings
@@ -198,7 +69,7 @@ jobs:
           ./gradlew :app:dependencies --configuration debugRuntimeClasspath | grep -E "cactus|runanywhere" | tee sdk_dependencies.txt || echo "Note: Some SDKs may not be found in dependencies list"
           echo ""
           echo "=== Expected dependencies ==="
-          echo "- com.cactuscompute:cactus:1.2.0-beta"
+          echo "- com.cactuscompute:cactus:1.2.1-beta"
           echo "- io.github.sanchitmonga22:runanywhere-sdk-android:0.16.1"
           echo "- io.github.sanchitmonga22:runanywhere-llamacpp-android:0.16.1"
           echo "- io.github.sanchitmonga22:runanywhere-onnx-android:0.16.1"

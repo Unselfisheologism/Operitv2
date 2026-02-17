@@ -78,7 +78,7 @@ ui = "1.10.1"
 animation = "1.10.1"
 # Runanywhere SDK versions - Using correct Maven coordinates
 runanywhereSdk = "0.16.1"
-cactusSdk = "1.2.0-beta"
+cactusSdk = "1.2.1-beta"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
