@@ -341,6 +341,9 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.sse)
     implementation(libs.jsoup)
+    
+    // Ktor client resources - Required for HttpTimeout plugin (Supabase compatibility)
+    implementation(libs.ktor.client.resources)
 
     // DataStore dependencies
     implementation(libs.datastore.preferences)

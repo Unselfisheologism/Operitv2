@@ -79,6 +79,7 @@ animation = "1.10.1"
 # Runanywhere SDK versions - Using correct Maven coordinates
 runanywhereSdk = "0.16.1"
 cactusSdk = "1.2.1-beta"
+ktor = "2.3.5"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -198,6 +199,7 @@ shizuku-provider = { group = "dev.rikka.shizuku", name = "provider", version.ref
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-sse = { group = "com.squareup.okhttp3", name = "okhttp-sse", version.ref = "okhttp" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+ktor-client-resources = { group = "io.ktor", name = "ktor-client-resources", version.ref = "ktor" }
 
 # DataStore
 datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
