@@ -44,6 +44,7 @@ import com.ai.assistance.operit.data.model.LogicNode
 import com.ai.assistance.operit.data.model.LogicOperator
 import com.ai.assistance.operit.data.model.ExtractNode
 import com.ai.assistance.operit.data.model.ExtractMode
+import com.ai.assistance.operit.data.model.MCPNode
 import com.ai.assistance.operit.data.model.ParameterValue
 import com.ai.assistance.operit.data.model.ToolParameterSchema
 import com.ai.assistance.operit.ui.components.CustomScaffold
@@ -533,6 +534,7 @@ fun NodeDialog(
         is ConditionNode -> "condition"
         is LogicNode -> "logic"
         is ExtractNode -> "extract"
+        is MCPNode -> "mcp"
         else -> "trigger"
     }
     
@@ -696,6 +698,102 @@ fun NodeDialog(
         }
     }
 
+    // MCP节点：当服务器或工具改变时，加载可用的工具列表
+    LaunchedEffect(mcpServerName, nodeType) {
+        if (nodeType != "mcp") {
+            mcpAvailableTools = emptyList()
+            mcpToolSchemas = emptyList()
+            mcpParameters = emptyList()
+            return@LaunchedEffect
+        }
+
+        if (mcpServerName.isBlank()) {
+            mcpAvailableTools = emptyList()
+            mcpToolSchemas = emptyList()
+            mcpParameters = emptyList()
+            return@LaunchedEffect
+        }
+
+        // 获取该MCP服务器的可用工具
+        withContext(Dispatchers.IO) {
+            try {
+                val client = mcpManager.getOrCreateClient(mcpServerName)
+                if (client != null && client.isActive()) {
+                    val tools = client.getTools()
+                    mcpAvailableTools = tools.map { it.optString("name", "") }.filter { it.isNotBlank() }
+                } else {
+                    mcpAvailableTools = emptyList()
+                }
+            } catch (e: Exception) {
+                mcpAvailableTools = emptyList()
+            }
+        }
+    }
+
+    // MCP节点：当工具改变时，加载工具的参数schema
+    LaunchedEffect(mcpToolName, mcpAvailableTools, nodeType) {
+        if (nodeType != "mcp" || mcpToolName.isBlank() || mcpServerName.isBlank()) {
+            mcpToolSchemas = emptyList()
+            mcpParameters = emptyList()
+            return@LaunchedEffect
+        }
+
+        // 获取工具的参数schema
+        withContext(Dispatchers.IO) {
+            try {
+                val client = mcpManager.getOrCreateClient(mcpServerName)
+                if (client != null && client.isActive()) {
+                    val tools = client.getTools()
+                    val tool = tools.find { it.optString("name") == mcpToolName }
+                    val inputSchema = tool?.optJSONObject("inputSchema")
+                    val properties = inputSchema?.optJSONObject("properties")
+                    val requiredArray = inputSchema?.optJSONArray("required")
+                    val required = (0 until requiredArray?.length() ?: 0).map { requiredArray.optString(it) }.toSet()
+
+                    val schemas = mutableListOf<ToolParameterSchema>()
+                    properties?.keys()?.forEach { key ->
+                        val prop = properties.optJSONObject(key)
+                        if (prop != null) {
+                            schemas.add(
+                                ToolParameterSchema(
+                                    name = key,
+                                    type = prop.optString("type", "string"),
+                                    description = prop.optString("description", ""),
+                                    required = required.contains(key),
+                                    default = null
+                                )
+                            )
+                        }
+                    }
+                    mcpToolSchemas = schemas
+
+                    // 构建参数配置列表
+                    val existingParams = mcpParameters.toList()
+                    val existingByKey = existingParams.filter { it.key.isNotBlank() }.associateBy { it.key }
+                    val schemaKeys = schemas.map { it.name }.toSet()
+
+                    val merged = mutableListOf<ParameterConfig>()
+                    schemas.forEach { schema ->
+                        val existing = existingByKey[schema.name]
+                        merged.add(
+                            ParameterConfig(
+                                key = schema.name,
+                                isReference = existing?.isReference ?: false,
+                                value = existing?.value ?: ""
+                            )
+                        )
+                    }
+                    existingParams.filter { it.key.isNotBlank() && !schemaKeys.contains(it.key) }.forEach { merged.add(it) }
+                    existingParams.filter { it.key.isBlank() }.forEach { merged.add(it) }
+                    mcpParameters = merged
+                }
+            } catch (e: Exception) {
+                mcpToolSchemas = emptyList()
+                mcpParameters = emptyList()
+            }
+        }
+    }
+
     val availableReferenceNodes = if (node != null) {
         workflow.nodes.filter { it.id != node.id }
     } else {
@@ -783,6 +881,20 @@ fun NodeDialog(
     var extractUseFixed by remember { mutableStateOf(if (node is ExtractNode) node.useFixed else false) }
     var extractFixedValue by remember { mutableStateOf(if (node is ExtractNode) node.fixedValue else "") }
     
+    // MCP节点配置
+    var mcpServerName by remember { mutableStateOf(if (node is MCPNode) node.serverName else "") }
+    var mcpServerExpanded by remember { mutableStateOf(false) }
+    var mcpToolName by remember { mutableStateOf(if (node is MCPNode) node.toolName else "") }
+    var mcpToolExpanded by remember { mutableStateOf(false) }
+    var mcpAvailableTools by remember { mutableStateOf<List<String>>(emptyList()) }
+    var mcpToolSchemas by remember { mutableStateOf<List<ToolParameterSchema>>(emptyList()) }
+    var mcpParameters by remember { mutableStateOf<List<ParameterConfig>>(emptyList()) }
+    
+    // 获取已注册的MCP服务器列表
+    val context = LocalContext.current
+    val mcpManager = remember(context) { com.ai.assistance.operit.core.tools.mcp.MCPManager.getInstance(context) }
+    val availableMCPServers = remember(context) { mcpManager.getRegisteredServers() }
+    
     // 定时配置对话框状态
     var showScheduleDialog by remember { mutableStateOf(false) }
 
@@ -791,7 +903,8 @@ fun NodeDialog(
         "execute" to stringResource(R.string.workflow_node_type_execute),
         "condition" to stringResource(R.string.workflow_node_type_condition),
         "logic" to stringResource(R.string.workflow_node_type_logic),
-        "extract" to stringResource(R.string.workflow_node_type_extract)
+        "extract" to stringResource(R.string.workflow_node_type_extract),
+        "mcp" to stringResource(R.string.workflow_node_type_mcp)
     )
 
     val triggerTypes = mapOf(
@@ -1703,6 +1816,211 @@ fun NodeDialog(
                             }
                         }
                     }
+                    "mcp" -> {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                        Text(
+                            text = stringResource(R.string.workflow_mcp_config_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+
+                        // MCP服务器选择
+                        ExposedDropdownMenuBox(
+                            expanded = mcpServerExpanded,
+                            onExpandedChange = { mcpServerExpanded = !mcpServerExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = mcpServerName,
+                                onValueChange = {
+                                    mcpServerName = it
+                                    mcpToolName = ""
+                                    mcpToolSchemas = emptyList()
+                                    mcpParameters = emptyList()
+                                },
+                                label = { Text(stringResource(R.string.workflow_mcp_server_label)) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                singleLine = true,
+                                placeholder = { Text(stringResource(R.string.workflow_mcp_server_placeholder)) },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                        expanded = mcpServerExpanded
+                                    )
+                                }
+                            )
+                            ExposedDropdownMenu(
+                                expanded = mcpServerExpanded,
+                                onDismissRequest = { mcpServerExpanded = false },
+                                modifier = Modifier.heightIn(max = 320.dp)
+                            ) {
+                                availableMCPServers.keys.forEach { serverName ->
+                                    DropdownMenuItem(
+                                        text = { Text(serverName) },
+                                        onClick = {
+                                            mcpServerName = serverName
+                                            mcpToolName = ""
+                                            mcpToolSchemas = emptyList()
+                                            mcpParameters = emptyList()
+                                            mcpServerExpanded = false
+                                        }
+                                    )
+                                }
+                                if (availableMCPServers.isEmpty()) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.workflow_mcp_no_servers)) },
+                                        onClick = { mcpServerExpanded = false },
+                                        enabled = false
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // MCP工具选择
+                        ExposedDropdownMenuBox(
+                            expanded = mcpToolExpanded,
+                            onExpandedChange = { mcpToolExpanded = !mcpToolExpanded }
+                        ) {
+                            OutlinedTextField(
+                                value = mcpToolName,
+                                onValueChange = {
+                                    mcpToolName = it
+                                    mcpToolExpanded = true
+                                },
+                                label = { Text(stringResource(R.string.workflow_mcp_tool_label)) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor(),
+                                singleLine = true,
+                                placeholder = { Text(stringResource(R.string.workflow_mcp_tool_placeholder)) },
+                                trailingIcon = {
+                                    ExposedDropdownMenuDefaults.TrailingIcon(
+                                        expanded = mcpToolExpanded
+                                    )
+                                }
+                            )
+                            ExposedDropdownMenu(
+                                expanded = mcpToolExpanded,
+                                onDismissRequest = { mcpToolExpanded = false },
+                                modifier = Modifier.heightIn(max = 320.dp)
+                            ) {
+                                mcpAvailableTools.forEach { toolName ->
+                                    DropdownMenuItem(
+                                        text = { Text(toolName) },
+                                        onClick = {
+                                            mcpToolName = toolName
+                                            mcpToolExpanded = false
+                                        }
+                                    )
+                                }
+                                if (mcpAvailableTools.isEmpty() && mcpServerName.isNotBlank()) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.workflow_mcp_no_tools)) },
+                                        onClick = { mcpToolExpanded = false },
+                                        enabled = false
+                                    )
+                                }
+                            }
+                        }
+
+                        // MCP工具参数配置
+                        if (mcpToolSchemas.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = stringResource(R.string.workflow_tool_params_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            mcpParameters.forEachIndexed { index, param ->
+                                Column(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = param.key,
+                                            onValueChange = { newKey ->
+                                                val newList = mcpParameters.toMutableList()
+                                                newList[index] = param.copy(key = newKey)
+                                                mcpParameters = newList
+                                            },
+                                            label = { Text(stringResource(R.string.workflow_param_name_label)) },
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        OutlinedTextField(
+                                            value = if (param.isReference) {
+                                                workflow.nodes.find { it.id == param.value }?.name
+                                                    ?: stringResource(R.string.workflow_unknown_node)
+                                            } else {
+                                                param.value
+                                            },
+                                            onValueChange = { newValue ->
+                                                if (!param.isReference) {
+                                                    val newList = mcpParameters.toMutableList()
+                                                    newList[index] = param.copy(value = newValue)
+                                                    mcpParameters = newList
+                                                }
+                                            },
+                                            label = { Text(stringResource(R.string.workflow_param_value_label)) },
+                                            modifier = Modifier.weight(1f),
+                                            readOnly = param.isReference,
+                                            enabled = !param.isReference
+                                        )
+
+                                        var showNodeSelector by remember { mutableStateOf(false) }
+                                        IconButton(
+                                            onClick = { showNodeSelector = true },
+                                            enabled = availableReferenceNodes.isNotEmpty()
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Call,
+                                                contentDescription = stringResource(R.string.workflow_select_predecessor_node)
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showNodeSelector,
+                                            onDismissRequest = { showNodeSelector = false }
+                                        ) {
+                                            if (param.isReference) {
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.workflow_use_static_value)) },
+                                                    onClick = {
+                                                        val newList = mcpParameters.toMutableList()
+                                                        newList[index] = param.copy(isReference = false, value = "")
+                                                        mcpParameters = newList
+                                                        showNodeSelector = false
+                                                    }
+                                                )
+                                                HorizontalDivider()
+                                            }
+                                            availableReferenceNodes.forEach { predecessorNode ->
+                                                DropdownMenuItem(
+                                                    text = { Text(predecessorNode.name) },
+                                                    onClick = {
+                                                        val newList = mcpParameters.toMutableList()
+                                                        newList[index] = param.copy(isReference = true, value = predecessorNode.id)
+                                                        mcpParameters = newList
+                                                        showNodeSelector = false
+                                                    }
+                                                )
+                                            }
+                                            if (availableReferenceNodes.isEmpty()) {
+                                                DropdownMenuItem(
+                                                    text = { Text(stringResource(R.string.workflow_no_available_predecessor_nodes)) },
+                                                    onClick = { showNodeSelector = false },
+                                                    enabled = false
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                     "trigger" -> {
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         Text(
@@ -1899,6 +2217,21 @@ fun NodeDialog(
                                 useFixed = extractUseFixed,
                                 fixedValue = extractFixedValue
                             )
+                            is MCPNode -> node.copy(
+                                name = nodeName,
+                                description = description,
+                                serverName = mcpServerName,
+                                toolName = mcpToolName,
+                                parameters = mcpParameters
+                                    .filter { it.key.isNotBlank() }
+                                    .associate { param ->
+                                        param.key to if (param.isReference) {
+                                            ParameterValue.NodeReference(param.value)
+                                        } else {
+                                            ParameterValue.StaticValue(param.value)
+                                        }
+                                    }
+                            )
                             else -> node
                         }
                     } else {
@@ -1981,6 +2314,21 @@ fun NodeDialog(
                                 randomStringCharset = extractRandomStringCharset,
                                 useFixed = extractUseFixed,
                                 fixedValue = extractFixedValue
+                            )
+                            "mcp" -> MCPNode(
+                                name = nodeName,
+                                description = description,
+                                serverName = mcpServerName,
+                                toolName = mcpToolName,
+                                parameters = mcpParameters
+                                    .filter { it.key.isNotBlank() }
+                                    .associate { param ->
+                                        param.key to if (param.isReference) {
+                                            ParameterValue.NodeReference(param.value)
+                                        } else {
+                                            ParameterValue.StaticValue(param.value)
+                                        }
+                                    }
                             )
                             else -> TriggerNode(name = nodeName, description = description)
                         }

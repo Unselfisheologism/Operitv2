@@ -12,6 +12,7 @@ import com.ai.assistance.operit.data.model.ExtractMode
 import com.ai.assistance.operit.data.model.ExtractNode
 import com.ai.assistance.operit.data.model.LogicNode
 import com.ai.assistance.operit.data.model.LogicOperator
+import com.ai.assistance.operit.data.model.MCPNode
 import com.ai.assistance.operit.data.model.ParameterValue
 import com.ai.assistance.operit.data.model.ToolParameter
 import com.ai.assistance.operit.data.model.TriggerNode
@@ -412,6 +413,13 @@ class WorkflowExecutor(private val context: Context) {
                     node.others.forEach { other ->
                         if (other is ParameterValue.NodeReference) {
                             addDependency(other.nodeId, node.id)
+                        }
+                    }
+                }
+                is MCPNode -> {
+                    node.parameters.values.forEach { value ->
+                        if (value is ParameterValue.NodeReference) {
+                            addDependency(value.nodeId, node.id)
                         }
                     }
                 }
@@ -970,6 +978,104 @@ class WorkflowExecutor(private val context: Context) {
                 nodeResults[node.id] = NodeExecutionState.Success(extracted)
                 onNodeStateChange(node.id, NodeExecutionState.Success(extracted))
                 true
+            } catch (e: Exception) {
+                val errorMsg = context.getString(R.string.workflow_node_execution_exception, e.message ?: "")
+                nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
+                onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
+                false
+            }
+        }
+
+        // MCP节点执行
+        if (node is MCPNode) {
+            nodeResults[node.id] = NodeExecutionState.Running
+            onNodeStateChange(node.id, NodeExecutionState.Running)
+
+            return try {
+                // 验证服务器名称和工具名称
+                if (node.serverName.isBlank()) {
+                    val errorMsg = context.getString(R.string.workflow_mcp_node_no_server)
+                    nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
+                    onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
+                    return false
+                }
+
+                if (node.toolName.isBlank()) {
+                    val errorMsg = context.getString(R.string.workflow_mcp_node_no_tool)
+                    nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
+                    onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
+                    return false
+                }
+
+                // 解析参数
+                val parameters = mutableMapOf<String, String>()
+                node.parameters.forEach { (key, paramValue) ->
+                    val resolvedValue = resolveParameterValue(paramValue, nodeResults, triggerExtras)
+                    parameters[key] = resolvedValue
+                }
+
+                // 获取MCP管理器并调用工具
+                val mcpManager = com.ai.assistance.operit.core.tools.mcp.MCPManager.getInstance(context)
+                val mcpClient = mcpManager.getOrCreateClient(node.serverName)
+
+                if (mcpClient == null) {
+                    val errorMsg = context.getString(R.string.workflow_mcp_node_cannot_connect, node.serverName)
+                    nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
+                    onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
+                    return false
+                }
+
+                // 检查服务是否激活
+                val isActive = mcpClient.isActive()
+                if (!isActive) {
+                    val errorMsg = context.getString(R.string.workflow_mcp_node_not_active, node.serverName)
+                    nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
+                    onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
+                    return false
+                }
+
+                AppLogger.d(TAG, "调用MCP工具: ${node.serverName}:${node.toolName}")
+
+                // 调用工具
+                val response = mcpClient.callToolSync(node.toolName, parameters)
+
+                if (response == null) {
+                    val errorMsg = context.getString(R.string.workflow_mcp_node_empty_response)
+                    nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
+                    onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
+                    return false
+                }
+
+                val success = response.optBoolean("success", false)
+                if (success) {
+                    val resultData = response.optJSONObject("result")
+                    val contentArray = resultData?.optJSONArray("content")
+                    val resultText = if (contentArray != null && contentArray.length() > 0) {
+                        val sb = StringBuilder()
+                        for (i in 0 until contentArray.length()) {
+                            val item = contentArray.optJSONObject(i)
+                            if (item != null) {
+                                val contentType = item.optString("type", "text")
+                                if (contentType == "text") {
+                                    sb.append(item.optString("text", ""))
+                                }
+                            }
+                        }
+                        sb.toString()
+                    } else {
+                        resultData?.toString() ?: ""
+                    }
+
+                    nodeResults[node.id] = NodeExecutionState.Success(resultText)
+                    onNodeStateChange(node.id, NodeExecutionState.Success(resultText))
+                    true
+                } else {
+                    val errorObj = response.optJSONObject("error")
+                    val errorMsg = errorObj?.optString("message") ?: context.getString(R.string.workflow_unknown_error)
+                    nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)
+                    onNodeStateChange(node.id, NodeExecutionState.Failed(errorMsg))
+                    false
+                }
             } catch (e: Exception) {
                 val errorMsg = context.getString(R.string.workflow_node_execution_exception, e.message ?: "")
                 nodeResults[node.id] = NodeExecutionState.Failed(errorMsg)

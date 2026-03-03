@@ -35,6 +35,7 @@ import com.ai.assistance.operit.data.model.ExecuteNode
 import com.ai.assistance.operit.data.model.ConditionNode
 import com.ai.assistance.operit.data.model.LogicNode
 import com.ai.assistance.operit.data.model.ExtractNode
+import com.ai.assistance.operit.data.model.MCPNode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -102,6 +103,13 @@ fun DraggableNodeCard(
             borderColor = Color(0xFF4DB6AC),
             icon = Icons.Default.Settings,
             label = stringResource(R.string.workflow_node_label_extract)
+        )
+        is MCPNode -> NodeStyle(
+            primaryColor = Color(0xFF9C27B0),
+            backgroundColor = Color(0xFFF3E5F5),
+            borderColor = Color(0xFFCE93D8),
+            icon = Icons.Default.Settings,
+            label = stringResource(R.string.workflow_node_label_mcp)
         )
         else -> NodeStyle(
             primaryColor = Color(0xFF9E9E9E),

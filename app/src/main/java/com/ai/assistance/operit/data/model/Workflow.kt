@@ -4,6 +4,17 @@ import kotlinx.serialization.Serializable
 import java.util.UUID
 
 /**
+ * MCP工具信息
+ * 用于在MCP节点中存储可用的工具信息
+ */
+@Serializable
+data class MCPToolInfo(
+    val name: String,
+    val description: String = "",
+    val inputSchema: Map<String, Map<String, Any>> = emptyMap()
+)
+
+/**
  * 工作流模型
  * 代表一个完整的自动化工作流程
  */
@@ -151,6 +162,23 @@ data class ExtractNode(
     var randomStringCharset: String = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
     var useFixed: Boolean = false,
     var fixedValue: String = ""
+) : WorkflowNode()
+
+/**
+ * MCP服务器节点
+ * 允许在工作流中调用已配置的MCP服务器的工具
+ */
+@Serializable
+data class MCPNode(
+    override val id: String = UUID.randomUUID().toString(),
+    override val type: String = "mcp",
+    override var name: String = "",
+    override var description: String = "",
+    override var position: NodePosition = NodePosition(0f, 0f),
+    var serverName: String = "", // MCP服务器名称
+    var toolName: String = "", // 要调用的工具名称
+    var toolDescription: String = "", // 工具描述（可选，用于显示）
+    var parameters: Map<String, ParameterValue> = emptyMap() // 工具参数：支持静态值或节点引用
 ) : WorkflowNode()
 
 /**
