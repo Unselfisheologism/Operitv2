@@ -11,7 +11,7 @@ import java.util.UUID
 data class MCPToolInfo(
     val name: String,
     val description: String = "",
-    val inputSchema: Map<String, Map<String, Any>> = emptyMap()
+    val inputSchema: Map<String, Map<String, String>> = emptyMap()
 )
 
 /**

@@ -1324,6 +1324,14 @@ data class WorkflowDetailResultData(
                         sb.appendLine("    Description: ${node.description}")
                     }
                 }
+                is com.ai.assistance.operit.data.model.MCPNode -> {
+                    sb.appendLine("  - [MCP] ${node.name} (${node.id})")
+                    sb.appendLine("    Server: ${node.serverName}")
+                    sb.appendLine("    Tool: ${node.toolName}")
+                    if (node.description.isNotBlank()) {
+                        sb.appendLine("    Description: ${node.description}")
+                    }
+                }
             }
         }
         sb.appendLine()

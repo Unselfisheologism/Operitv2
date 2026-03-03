@@ -571,6 +571,22 @@ class StandardWorkflowTools(private val context: Context) {
                             fixedValue = fixedValue
                         )
                     }
+                    is MCPNode -> {
+                        val serverName = if (patchObj.has("serverName")) patchObj.optString("serverName", existingNode.serverName) else existingNode.serverName
+                        val toolName = if (patchObj.has("toolName")) patchObj.optString("toolName", existingNode.toolName) else existingNode.toolName
+                        val toolDescription = if (patchObj.has("toolDescription")) patchObj.optString("toolDescription", existingNode.toolDescription) else existingNode.toolDescription
+                        val parameters = mergeParameterValueMap(existingNode.parameters, patchObj.optJSONObject("parameters"))
+
+                        existingNode.copy(
+                            name = name,
+                            description = description,
+                            position = position,
+                            serverName = serverName,
+                            toolName = toolName,
+                            toolDescription = toolDescription,
+                            parameters = parameters
+                        )
+                    }
                 }
             }
 

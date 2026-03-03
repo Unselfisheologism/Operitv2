@@ -698,8 +698,7 @@ fun NodeDialog(
         }
     }
 
-    // MCP节点：当服务器或工具改变时，加载可用的工具列表
-    LaunchedEffect(mcpServerName, nodeType) {
+    val availableReferenceNodes
         if (nodeType != "mcp") {
             mcpAvailableTools = emptyList()
             mcpToolSchemas = emptyList()
@@ -730,8 +729,7 @@ fun NodeDialog(
         }
     }
 
-    // MCP节点：当工具改变时，加载工具的参数schema
-    LaunchedEffect(mcpToolName, mcpAvailableTools, nodeType) {
+    val availableReferenceNodes
         if (nodeType != "mcp" || mcpToolName.isBlank() || mcpServerName.isBlank()) {
             mcpToolSchemas = emptyList()
             mcpParameters = emptyList()
@@ -891,9 +889,108 @@ fun NodeDialog(
     var mcpParameters by remember { mutableStateOf<List<ParameterConfig>>(emptyList()) }
     
     // 获取已注册的MCP服务器列表
-    val context = LocalContext.current
     val mcpManager = remember(context) { com.ai.assistance.operit.core.tools.mcp.MCPManager.getInstance(context) }
     val availableMCPServers = remember(context) { mcpManager.getRegisteredServers() }
+    
+    // MCP节点：当服务器或工具改变时，加载可用的工具列表
+    LaunchedEffect(mcpServerName, nodeType) {
+        if (nodeType != "mcp") {
+            mcpAvailableTools = emptyList()
+            mcpToolSchemas = emptyList()
+            mcpParameters = emptyList()
+            return@LaunchedEffect
+        }
+
+        if (mcpServerName.isBlank()) {
+            mcpAvailableTools = emptyList()
+            mcpToolSchemas = emptyList()
+            mcpParameters = emptyList()
+            return@LaunchedEffect
+        }
+
+        // 获取该MCP服务器的可用工具
+        withContext(Dispatchers.IO) {
+            try {
+                val client = mcpManager.getOrCreateClient(mcpServerName)
+                if (client != null && client.isActive()) {
+                    val tools = client.getTools()
+                    mcpAvailableTools = tools.map { it.optString("name", "") }.filter { it.isNotBlank() }
+                } else {
+                    mcpAvailableTools = emptyList()
+                }
+            } catch (e: Exception) {
+                mcpAvailableTools = emptyList()
+            }
+        }
+    }
+
+    // MCP节点：当工具改变时，加载工具的参数schema
+    LaunchedEffect(mcpToolName, mcpAvailableTools, nodeType) {
+        if (nodeType != "mcp" || mcpToolName.isBlank() || mcpServerName.isBlank()) {
+            mcpToolSchemas = emptyList()
+            mcpParameters = emptyList()
+            return@LaunchedEffect
+        }
+
+        // 获取工具的参数schema
+        withContext(Dispatchers.IO) {
+            try {
+                val client = mcpManager.getOrCreateClient(mcpServerName)
+                if (client != null && client.isActive()) {
+                    val tools = client.getTools()
+                    val tool = tools.find { it.optString("name") == mcpToolName }
+                    val inputSchema = tool?.optJSONObject("inputSchema")
+                    val properties = inputSchema?.optJSONObject("properties")
+                    val requiredArray = inputSchema?.optJSONArray("required")
+                    val required = (0 until (requiredArray?.length() ?: 0)).map { i -> requiredArray.optString(i) }.toSet()
+
+                    val schemas = mutableListOf<ToolParameterSchema>()
+                    properties?.let { props ->
+                        props.keys().forEach { key ->
+                            val prop = props.optJSONObject(key as String)
+                            if (prop != null) {
+                                schemas.add(
+                                    ToolParameterSchema(
+                                        name = key as String,
+                                        type = prop.optString("type", "string"),
+                                        description = prop.optString("description", ""),
+                                        required = required.contains(key),
+                                        default = null
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    mcpToolSchemas = schemas
+
+                    // 构建参数配置列表
+                    val existingParams = mcpParameters.toList()
+                    val existingByKey = existingParams.filter { it.key.isNotBlank() }.associateBy { it.key }
+                    val schemaKeys = schemas.map { it.name }.toSet()
+
+                    val merged = mutableListOf<ParameterConfig>()
+                    schemas.forEach { schema ->
+                        val existing = existingByKey[schema.name]
+                        merged.add(
+                            ParameterConfig(
+                                key = schema.name,
+                                value = existing?.value ?: schema.default ?: "",
+                                useReference = existing?.useReference ?: false,
+                                referenceNodeId = existing?.referenceNodeId ?: "",
+                                referenceNodeOutput = existing?.referenceNodeOutput ?: ""
+                            )
+                        )
+                    }
+                    existingParams.filter { it.key.isNotBlank() && !schemaKeys.contains(it.key) }.forEach { merged.add(it) }
+                    existingParams.filter { it.key.isBlank() }.forEach { merged.add(it) }
+                    mcpParameters = merged
+                }
+            } catch (e: Exception) {
+                mcpToolSchemas = emptyList()
+                mcpParameters = emptyList()
+            }
+        }
+    }
     
     // 定时配置对话框状态
     var showScheduleDialog by remember { mutableStateOf(false) }
