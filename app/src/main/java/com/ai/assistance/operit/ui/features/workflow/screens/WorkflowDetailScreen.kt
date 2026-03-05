@@ -881,25 +881,32 @@ fun NodeDialog(
                         }
                         mcpToolSchemas = schemas
 
-                    // 构建参数配置列表
-                    val existingParams = mcpParameters.toList()
-                    val existingByKey = existingParams.filter { it.key.isNotBlank() }.associateBy { it.key }
-                    val schemaKeys = schemas.map { it.name }.toSet()
+                        // 构建参数配置列表
+                        val existingParams = mcpParameters.toList()
+                        val existingByKey = existingParams.filter { it.key.isNotBlank() }.associateBy { it.key }
+                        val schemaKeys = schemas.map { it.name }.toSet()
 
-                    val merged = mutableListOf<ParameterConfig>()
-                    schemas.forEach { schema ->
-                        val existing = existingByKey[schema.name]
-                        merged.add(
-                            ParameterConfig(
-                                key = schema.name,
-                                isReference = existing?.isReference ?: false,
-                                value = existing?.value ?: schema.default ?: ""
+                        val merged = mutableListOf<ParameterConfig>()
+                        schemas.forEach { schema ->
+                            val existing = existingByKey[schema.name]
+                            merged.add(
+                                ParameterConfig(
+                                    key = schema.name,
+                                    isReference = existing?.isReference ?: false,
+                                    value = existing?.value ?: schema.default ?: ""
+                                )
                             )
-                        )
+                        }
+                        existingParams.filter { it.key.isNotBlank() && !schemaKeys.contains(it.key) }.forEach { merged.add(it) }
+                        existingParams.filter { it.key.isBlank() }.forEach { merged.add(it) }
+                        mcpParameters = merged
+                    } else {
+                        mcpToolSchemas = emptyList()
+                        mcpParameters = emptyList()
                     }
-                    existingParams.filter { it.key.isNotBlank() && !schemaKeys.contains(it.key) }.forEach { merged.add(it) }
-                    existingParams.filter { it.key.isBlank() }.forEach { merged.add(it) }
-                    mcpParameters = merged
+                } else {
+                    mcpToolSchemas = emptyList()
+                    mcpParameters = emptyList()
                 }
             } catch (e: Exception) {
                 mcpToolSchemas = emptyList()
