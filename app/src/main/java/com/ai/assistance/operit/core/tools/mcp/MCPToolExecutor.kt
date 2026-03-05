@@ -473,6 +473,34 @@ class MCPManager(private val context: Context) {
         val serverConfig = serverConfigCache[serverName] ?: return null
 
         try {
+            // 获取MCPBridge实例
+            val bridge = com.ai.assistance.operit.data.mcp.plugins.MCPBridge.getInstance(context)
+
+            // 根据传输类型注册服务（如果是STDIO，需要先用bridge注册）
+            if (serverConfig.transportType == MCSTransportType.STDIO) {
+                // STDIO模式：先注册服务到bridge
+                AppLogger.d(TAG, "注册STDIO服务到bridge: $serverName, command=${serverConfig.command}, args=${serverConfig.args}")
+                kotlinx.coroutines.runBlocking {
+                    bridge.registerMcpService(
+                        name = serverName,
+                        command = serverConfig.command,
+                        args = serverConfig.args,
+                        description = serverConfig.description
+                    )
+                }
+            } else {
+                // 远程模式：注册远程服务到bridge
+                AppLogger.d(TAG, "注册远程服务到bridge: $serverName, endpoint=${serverConfig.endpoint}")
+                kotlinx.coroutines.runBlocking {
+                    bridge.registerMcpService(
+                        name = serverName,
+                        type = "remote",
+                        endpoint = serverConfig.endpoint,
+                        description = serverConfig.description
+                    )
+                }
+            }
+
             // 创建新的桥接客户端
             val client =
                     com.ai.assistance.operit.data.mcp.plugins.MCPBridgeClient(context, serverName)
@@ -514,7 +542,7 @@ class MCPManager(private val context: Context) {
     }
 
     /**
-     * 注册MCP服务器（简化版）
+     * 注册MCP服务器（简化版 - 远程HTTP端点）
      *
      * @param serverName 服务器名称
      * @param endpoint 服务器端点URL
@@ -527,7 +555,31 @@ class MCPManager(private val context: Context) {
                         endpoint = endpoint,
                         description = description,
                         capabilities = listOf("tools"),
-                        extraData = emptyMap()
+                        extraData = emptyMap(),
+                        transportType = MCSTransportType.REMOTE
+                )
+        registerServer(serverName, serverConfig)
+    }
+
+    /**
+     * 注册MCP服务器（STDIO模式）
+     *
+     * @param serverName 服务器名称
+     * @param command 命令（如 "npx", "node", "python"）
+     * @param args 命令参数列表
+     * @param description 服务器描述
+     */
+    fun registerStdioServer(serverName: String, command: String, args: List<String>, description: String = "") {
+        val serverConfig =
+                MCPServerConfig(
+                        name = serverName,
+                        endpoint = "",
+                        description = description,
+                        capabilities = listOf("tools"),
+                        extraData = emptyMap(),
+                        transportType = MCSTransportType.STDIO,
+                        command = command,
+                        args = args
                 )
         registerServer(serverName, serverConfig)
     }

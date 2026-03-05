@@ -820,9 +820,15 @@ fun NodeDialog(
         withContext(Dispatchers.IO) {
             try {
                 val client = mcpManager.getOrCreateClient(mcpServerName)
-                if (client != null && client.isActive()) {
-                    val tools = client.getTools()
-                    mcpAvailableTools = tools.map { it.optString("name", "") }.filter { it.isNotBlank() }
+                if (client != null) {
+                    // 检查服务是否活跃 - 需要在协程中调用
+                    val isActive = client.isActive()
+                    if (isActive) {
+                        val tools = client.getTools()
+                        mcpAvailableTools = tools.map { it.optString("name", "") }.filter { it.isNotBlank() }
+                    } else {
+                        mcpAvailableTools = emptyList()
+                    }
                 } else {
                     mcpAvailableTools = emptyList()
                 }
@@ -844,34 +850,36 @@ fun NodeDialog(
         withContext(Dispatchers.IO) {
             try {
                 val client = mcpManager.getOrCreateClient(mcpServerName)
-                if (client != null && client.isActive()) {
-                    val tools = client.getTools()
-                    val tool = tools.find { it.optString("name") == mcpToolName }
-                    val inputSchema = tool?.optJSONObject("inputSchema")
-                    val properties = inputSchema?.optJSONObject("properties")
-                    val requiredArray = inputSchema?.optJSONArray("required")
-                    val required = requiredArray?.let { arr ->
-                        (0 until arr.length()).map { i -> arr.optString(i) }.toSet()
-                    } ?: emptySet()
+                if (client != null) {
+                    val isActive = client.isActive()
+                    if (isActive) {
+                        val tools = client.getTools()
+                        val tool = tools.find { it.optString("name") == mcpToolName }
+                        val inputSchema = tool?.optJSONObject("inputSchema")
+                        val properties = inputSchema?.optJSONObject("properties")
+                        val requiredArray = inputSchema?.optJSONArray("required")
+                        val required = requiredArray?.let { arr ->
+                            (0 until arr.length()).map { i -> arr.optString(i) }.toSet()
+                        } ?: emptySet()
 
-                    val schemas = mutableListOf<ToolParameterSchema>()
-                    properties?.let { props ->
-                        props.keys().forEach { key ->
-                            val prop = props.optJSONObject(key as String)
-                            if (prop != null) {
-                                schemas.add(
-                                    ToolParameterSchema(
-                                        name = key as String,
-                                        type = prop.optString("type", "string"),
-                                        description = prop.optString("description", ""),
-                                        required = required.contains(key),
-                                        default = null
+                        val schemas = mutableListOf<ToolParameterSchema>()
+                        properties?.let { props ->
+                            props.keys().forEach { key ->
+                                val prop = props.optJSONObject(key as String)
+                                if (prop != null) {
+                                    schemas.add(
+                                        ToolParameterSchema(
+                                            name = key as String,
+                                            type = prop.optString("type", "string"),
+                                            description = prop.optString("description", ""),
+                                            required = required.contains(key),
+                                            default = null
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
-                    }
-                    mcpToolSchemas = schemas
+                        mcpToolSchemas = schemas
 
                     // 构建参数配置列表
                     val existingParams = mcpParameters.toList()
@@ -2370,10 +2378,21 @@ fun NodeDialog(
     if (showAddMCPServerDialog) {
         AddMCPServerDialog(
             onDismiss = { showAddMCPServerDialog = false },
-            onConfirm = { serverName, endpoint ->
+            onConfirm = { serverName, transportType, endpoint, command, args ->
                 try {
-                    // 注册到MCPManager
-                    mcpManager.registerServer(serverName, endpoint, "MCP Server")
+                    // 根据传输类型注册到MCPManager
+                    if (transportType == com.ai.assistance.operit.core.tools.mcp.MCSTransportType.STDIO) {
+                        // STDIO模式：解析args参数
+                        val argsList = if (args.isNotBlank()) {
+                            args.split(" ").filter { it.isNotBlank() }
+                        } else {
+                            emptyList()
+                        }
+                        mcpManager.registerStdioServer(serverName, command, argsList, "MCP Server")
+                    } else {
+                        // 远程模式
+                        mcpManager.registerServer(serverName, endpoint, "MCP Server")
+                    }
                     // 刷新服务器列表
                     mcpServerName = serverName
                     mcpToolName = ""

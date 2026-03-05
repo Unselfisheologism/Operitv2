@@ -237,6 +237,13 @@
     <string name="workflow_mcp_server_type">Connection Type</string>
     <string name="workflow_mcp_server_type_remote">Remote (HTTP/SSE)</string>
     <string name="workflow_mcp_server_type_stdio">Local (Stdio)</string>
+    <string name="workflow_mcp_transport_type">Transport Type</string>
+    <string name="workflow_mcp_transport_stdio">Stdio (Local)</string>
+    <string name="workflow_mcp_transport_remote">HTTP/SSE (Remote)</string>
+    <string name="workflow_mcp_command">Command</string>
+    <string name="workflow_mcp_command_hint">e.g.: npx, node, python</string>
+    <string name="workflow_mcp_args">Arguments</string>
+    <string name="workflow_mcp_args_hint">e.g.: -y @modelcontextprotocol/server-filesystem /path</string>
     <string name="workflow_mcp_add_success">MCP server added successfully</string>
     <string name="workflow_mcp_add_error">Failed to add MCP server: %1$s</string>
     <string name="workflow_mcp_no_tools">No tools available for this server</string>
