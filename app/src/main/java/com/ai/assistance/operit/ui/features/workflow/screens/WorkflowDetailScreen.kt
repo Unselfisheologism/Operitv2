@@ -819,9 +819,10 @@ fun NodeDialog(
         // 获取该MCP服务器的可用工具
         withContext(Dispatchers.IO) {
             try {
+                // 获取或创建MCP客户端 - 这会注册服务并连接
                 val client = mcpManager.getOrCreateClient(mcpServerName)
                 if (client != null) {
-                    // 检查服务是否活跃 - 需要在协程中调用
+                    // 检查服务是否活跃
                     val isActive = client.isActive()
                     if (isActive) {
                         val tools = client.getTools()
