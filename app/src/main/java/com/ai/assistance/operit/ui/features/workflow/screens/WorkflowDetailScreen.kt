@@ -47,6 +47,9 @@ import com.ai.assistance.operit.data.model.ExtractMode
 import com.ai.assistance.operit.data.model.MCPNode
 import com.ai.assistance.operit.data.model.ParameterValue
 import com.ai.assistance.operit.data.model.ToolParameterSchema
+import com.ai.assistance.operit.data.mcp.MCPRepository
+import com.ai.assistance.operit.data.mcp.MCPLocalServer
+import com.ai.assistance.operit.data.mcp.plugins.MCPBridgeClient
 import com.ai.assistance.operit.ui.components.CustomScaffold
 import com.ai.assistance.operit.ui.features.workflow.viewmodel.WorkflowViewModel
 import com.ai.assistance.operit.ui.features.workflow.components.GridWorkflowCanvas
@@ -789,19 +792,24 @@ fun NodeDialog(
     // MCP节点配置
     var mcpServerName by remember { mutableStateOf(if (node is MCPNode) node.serverName else "") }
     var mcpServerExpanded by remember { mutableStateOf(false) }
-    var showAddMCPServerDialog by remember { mutableStateOf(false) }
     var mcpToolName by remember { mutableStateOf(if (node is MCPNode) node.toolName else "") }
     var mcpToolExpanded by remember { mutableStateOf(false) }
     var mcpAvailableTools by remember { mutableStateOf<List<String>>(emptyList()) }
     var mcpToolSchemas by remember { mutableStateOf<List<ToolParameterSchema>>(emptyList()) }
     var mcpParameters by remember { mutableStateOf<List<ParameterConfig>>(emptyList()) }
     
-    // 获取已注册的MCP服务器列表
-    val mcpManager = remember(context) { com.ai.assistance.operit.core.tools.mcp.MCPManager.getInstance(context) }
-    val availableMCPServers = remember(context, showAddMCPServerDialog) { mcpManager.getRegisteredServers() }
+    // 获取已安装的MCP服务器列表 (从Packages页面的MCP配置)
+    val mcpRepository = remember { MCPRepository(context) }
+    val mcpLocalServer = remember { MCPLocalServer.getInstance(context) }
+    val installedMCPServers = mcpRepository.mcpServers.collectAsState(initial = emptyList()).value
+    // 只显示已启用的MCP服务器
+    val enabledMCPServers = remember(installedMCPServers) {
+        installedMCPServers.filter { mcpLocalServer.isServerEnabled(it.id) }
+    }
+    val installedMCPToolsMap = remember { mutableStateMapOf<String, List<String>>() }
     
     // MCP节点：当服务器或工具改变时，加载可用的工具列表
-    LaunchedEffect(mcpServerName, nodeType) {
+    LaunchedEffect(mcpServerName, nodeType, installedMCPServers) {
         if (nodeType != "mcp") {
             mcpAvailableTools = emptyList()
             mcpToolSchemas = emptyList()
@@ -816,26 +824,24 @@ fun NodeDialog(
             return@LaunchedEffect
         }
 
-        // 获取该MCP服务器的可用工具
-        withContext(Dispatchers.IO) {
-            try {
-                // 获取或创建MCP客户端 - 这会注册服务并连接
-                val client = mcpManager.getOrCreateClient(mcpServerName)
-                if (client != null) {
-                    // 检查服务是否活跃
-                    val isActive = client.isActive()
-                    if (isActive) {
-                        val tools = client.getTools()
-                        mcpAvailableTools = tools.map { it.optString("name", "") }.filter { it.isNotBlank() }
-                    } else {
-                        mcpAvailableTools = emptyList()
-                    }
-                } else {
-                    mcpAvailableTools = emptyList()
-                }
-            } catch (e: Exception) {
+        // 先检查是否已有缓存的工具
+        if (installedMCPToolsMap.containsKey(mcpServerName)) {
+            mcpAvailableTools = installedMCPToolsMap[mcpServerName] ?: emptyList()
+            return@LaunchedEffect
+        }
+
+        // 获取该MCP服务器的可用工具 (使用MCPBridgeClient直接连接)
+        try {
+            val client = MCPBridgeClient(context, mcpServerName)
+            val serviceInfo = client.getServiceInfo()
+            if (serviceInfo != null && serviceInfo.toolNames.isNotEmpty()) {
+                mcpAvailableTools = serviceInfo.toolNames
+                installedMCPToolsMap[mcpServerName] = serviceInfo.toolNames
+            } else {
                 mcpAvailableTools = emptyList()
             }
+        } catch (e: Exception) {
+            mcpAvailableTools = emptyList()
         }
     }
 
@@ -848,71 +854,56 @@ fun NodeDialog(
         }
 
         // 获取工具的参数schema
-        withContext(Dispatchers.IO) {
-            try {
-                val client = mcpManager.getOrCreateClient(mcpServerName)
-                if (client != null) {
-                    val isActive = client.isActive()
-                    if (isActive) {
-                        val tools = client.getTools()
-                        val tool = tools.find { it.optString("name") == mcpToolName }
-                        val inputSchema = tool?.optJSONObject("inputSchema")
-                        val properties = inputSchema?.optJSONObject("properties")
-                        val requiredArray = inputSchema?.optJSONArray("required")
-                        val required = requiredArray?.let { arr ->
-                            (0 until arr.length()).map { i -> arr.optString(i) }.toSet()
-                        } ?: emptySet()
+        try {
+            val client = MCPBridgeClient(context, mcpServerName)
+            val serviceInfo = client.getServiceInfo()
+            if (serviceInfo != null) {
+                // 查找选中的工具
+                val tool = serviceInfo.tools.find { it.name == mcpToolName }
+                val inputSchema = tool?.inputSchema
+                val properties = inputSchema?.properties
+                val required = inputSchema?.required ?: emptyList()
 
-                        val schemas = mutableListOf<ToolParameterSchema>()
-                        properties?.let { props ->
-                            props.keys().forEach { key ->
-                                val prop = props.optJSONObject(key as String)
-                                if (prop != null) {
-                                    schemas.add(
-                                        ToolParameterSchema(
-                                            name = key as String,
-                                            type = prop.optString("type", "string"),
-                                            description = prop.optString("description", ""),
-                                            required = required.contains(key),
-                                            default = null
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                        mcpToolSchemas = schemas
-
-                        // 构建参数配置列表
-                        val existingParams = mcpParameters.toList()
-                        val existingByKey = existingParams.filter { it.key.isNotBlank() }.associateBy { it.key }
-                        val schemaKeys = schemas.map { it.name }.toSet()
-
-                        val merged = mutableListOf<ParameterConfig>()
-                        schemas.forEach { schema ->
-                            val existing = existingByKey[schema.name]
-                            merged.add(
-                                ParameterConfig(
-                                    key = schema.name,
-                                    isReference = existing?.isReference ?: false,
-                                    value = existing?.value ?: schema.default ?: ""
-                                )
-                            )
-                        }
-                        existingParams.filter { it.key.isNotBlank() && !schemaKeys.contains(it.key) }.forEach { merged.add(it) }
-                        existingParams.filter { it.key.isBlank() }.forEach { merged.add(it) }
-                        mcpParameters = merged
-                    } else {
-                        mcpToolSchemas = emptyList()
-                        mcpParameters = emptyList()
-                    }
-                } else {
-                    mcpToolSchemas = emptyList()
-                    mcpParameters = emptyList()
+                val schemas = mutableListOf<ToolParameterSchema>()
+                properties?.forEach { (key, prop) ->
+                    schemas.add(
+                        ToolParameterSchema(
+                            name = key,
+                            type = prop.type ?: "string",
+                            description = prop.description ?: "",
+                            required = required.contains(key),
+                            default = null
+                        )
+                    )
                 }
-            } catch (e: Exception) {
+                mcpToolSchemas = schemas
+
+                // 构建参数配置列表
+                val existingParams = mcpParameters.toList()
+                val existingByKey = existingParams.filter { it.key.isNotBlank() }.associateBy { it.key }
+                val schemaKeys = schemas.map { it.name }.toSet()
+
+                val merged = mutableListOf<ParameterConfig>()
+                schemas.forEach { schema ->
+                    val existing = existingByKey[schema.name]
+                    merged.add(
+                        ParameterConfig(
+                            key = schema.name,
+                            isReference = existing?.isReference ?: false,
+                            value = existing?.value ?: schema.default ?: ""
+                        )
+                    )
+                }
+                existingParams.filter { it.key.isNotBlank() && !schemaKeys.contains(it.key) }.forEach { merged.add(it) }
+                existingParams.filter { it.key.isBlank() }.forEach { merged.add(it) }
+                mcpParameters = merged
+            } else {
                 mcpToolSchemas = emptyList()
                 mcpParameters = emptyList()
             }
+        } catch (e: Exception) {
+            mcpToolSchemas = emptyList()
+            mcpParameters = emptyList()
         }
     }
     
@@ -1873,11 +1864,11 @@ fun NodeDialog(
                                 onDismissRequest = { mcpServerExpanded = false },
                                 modifier = Modifier.heightIn(max = 320.dp)
                             ) {
-                                availableMCPServers.keys.forEach { serverName ->
+                                enabledMCPServers.forEach { server ->
                                     DropdownMenuItem(
-                                        text = { Text(serverName) },
+                                        text = { Text(server.name.ifBlank { server.id }) },
                                         onClick = {
-                                            mcpServerName = serverName
+                                            mcpServerName = server.id
                                             mcpToolName = ""
                                             mcpToolSchemas = emptyList()
                                             mcpParameters = emptyList()
@@ -1885,22 +1876,7 @@ fun NodeDialog(
                                         }
                                     )
                                 }
-                                // Add "Add new server" option
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.workflow_mcp_add_server)) },
-                                    onClick = {
-                                        mcpServerExpanded = false
-                                        showAddMCPServerDialog = true
-                                    },
-                                    leadingIcon = {
-                                        Icon(
-                                            imageVector = Icons.Default.Add,
-                                            contentDescription = null
-                                        )
-                                    }
-                                )
-                                if (availableMCPServers.isEmpty()) {
+                                if (enabledMCPServers.isEmpty()) {
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.workflow_mcp_no_servers)) },
                                         onClick = { mcpServerExpanded = false },
@@ -2381,38 +2357,6 @@ fun NodeDialog(
             }
         }
     )
-    
-    // 添加MCP服务器对话框
-    if (showAddMCPServerDialog) {
-        AddMCPServerDialog(
-            onDismiss = { showAddMCPServerDialog = false },
-            onConfirm = { serverName, transportType, endpoint, command, args ->
-                try {
-                    // 根据传输类型注册到MCPManager
-                    if (transportType == com.ai.assistance.operit.core.tools.mcp.MCSTransportType.STDIO) {
-                        // STDIO模式：解析args参数
-                        val argsList = if (args.isNotBlank()) {
-                            args.split(" ").filter { it.isNotBlank() }
-                        } else {
-                            emptyList()
-                        }
-                        mcpManager.registerStdioServer(serverName, command, argsList, "MCP Server")
-                    } else {
-                        // 远程模式
-                        mcpManager.registerServer(serverName, endpoint, "MCP Server")
-                    }
-                    // 刷新服务器列表
-                    mcpServerName = serverName
-                    mcpToolName = ""
-                    mcpToolSchemas = emptyList()
-                    mcpParameters = emptyList()
-                    showAddMCPServerDialog = false
-                } catch (e: Exception) {
-                    // Handle error - could show a snackbar or error message
-                }
-            }
-        )
-    }
     
     // 定时配置对话框
     if (showScheduleDialog) {
