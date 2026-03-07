@@ -36,6 +36,7 @@ import com.ai.assistance.operit.core.config.SystemToolPrompts
 import com.ai.assistance.operit.core.tools.AIToolHandler
 import com.ai.assistance.operit.data.model.Workflow
 import com.ai.assistance.operit.data.model.WorkflowNode
+import com.ai.assistance.operit.data.model.NodePosition
 import com.ai.assistance.operit.data.model.TriggerNode
 import com.ai.assistance.operit.data.model.ExecuteNode
 import com.ai.assistance.operit.data.model.ConditionNode
@@ -57,9 +58,77 @@ import com.ai.assistance.operit.ui.features.workflow.components.ConnectionMenuDi
 import com.ai.assistance.operit.ui.features.workflow.components.AddMCPServerDialog
 import com.ai.assistance.operit.ui.features.workflow.components.NodeActionMenuDialog
 import com.ai.assistance.operit.ui.features.workflow.components.ScheduleConfigDialog
+import com.ai.assistance.operit.core.workflow.NodeExecutionState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
+
+// Grid configuration constants (matching GridWorkflowCanvas)
+private val GRID_CELL_SIZE = 40f  // Grid cell size in pixels
+private val NODE_WIDTH = 120f     // Node width in pixels
+private val NODE_HEIGHT = 80f     // Node height in pixels
+private val NODE_SPACING = 40f    // Minimum spacing between nodes
+
+/**
+ * Calculate a smart position for a new node on the canvas.
+ * Finds the first available position that doesn't overlap with existing nodes.
+ * @param existingNodes List of existing nodes to avoid overlapping with
+ * @return NodePosition with calculated x, y coordinates
+ */
+private fun calculateSmartNodePosition(existingNodes: List<WorkflowNode>): NodePosition {
+    if (existingNodes.isEmpty()) {
+        // First node: place at a visible position (center-left area)
+        return NodePosition(2f * GRID_CELL_SIZE, 2f * GRID_CELL_SIZE)
+    }
+    
+    // Find occupied positions
+    val occupiedPositions = existingNodes.map { 
+        Pair(it.position.x, it.position.y) 
+    }.toMutableSet()
+    
+    // Try to find a position below existing nodes first
+    // Find the rightmost node x position
+    val maxX = existingNodes.maxOfOrNull { it.position.x } ?: 0f
+    val minY = existingNodes.minOfOrNull { it.position.y } ?: 0f
+    val maxY = existingNodes.maxOfOrNull { it.position.y } ?: 0f
+    
+    // Strategy 1: Try to place below the node with the highest x (to the right)
+    val preferredX = maxX + NODE_WIDTH + NODE_SPACING
+    var testY = minY
+    
+    // Check if there's space to the right of the rightmost node
+    while (testY <= maxY + NODE_HEIGHT) {
+        val testPos = Pair(preferredX, testY)
+        if (!occupiedPositions.contains(testPos)) {
+            // Round to grid cells
+            val gridX = ((preferredX / GRID_CELL_SIZE).toInt() * GRID_CELL_SIZE).toFloat()
+            val gridY = ((testY / GRID_CELL_SIZE).toInt() * GRID_CELL_SIZE).toFloat()
+            return NodePosition(gridX, gridY)
+        }
+        testY += NODE_HEIGHT + NODE_SPACING
+    }
+    
+    // Strategy 2: Find the first available position scanning from top-left
+    var scanY = minY
+    val startX = 2f * GRID_CELL_SIZE  // Start from column 2
+    
+    while (scanY < maxY + 10 * (NODE_HEIGHT + NODE_SPACING)) {  // Scan a reasonable area
+        var scanX = startX
+        while (scanX < maxX + 5 * (NODE_WIDTH + NODE_SPACING)) {
+            val testPos = Pair(scanX, scanY)
+            if (!occupiedPositions.contains(testPos)) {
+                val gridX = ((scanX / GRID_CELL_SIZE).toInt() * GRID_CELL_SIZE).toFloat()
+                val gridY = ((scanY / GRID_CELL_SIZE).toInt() * GRID_CELL_SIZE).toFloat()
+                return NodePosition(gridX, gridY)
+            }
+            scanX += NODE_WIDTH + NODE_SPACING
+        }
+        scanY += NODE_HEIGHT + NODE_SPACING
+    }
+    
+    // Fallback: Place below all nodes at the leftmost available column
+    return NodePosition(startX, maxY + NODE_HEIGHT + NODE_SPACING)
+}
 
 @Composable
 private fun ConditionOperator.toDisplayText(): String {
@@ -328,12 +397,144 @@ fun WorkflowDetailScreen(
                 )
             }
 
-            // 触发结果提示
+            // 触发结果提示 - 显示详细执行结果
             showTriggerResult?.let { result ->
+                val successfulNodes = nodeExecutionStates.filter { 
+                    it.value is NodeExecutionState.Success 
+                }
+                val failedNodes = nodeExecutionStates.filter { 
+                    it.value is NodeExecutionState.Failed 
+                }
+                val skippedNodes = nodeExecutionStates.filter { 
+                    it.value is NodeExecutionState.Skipped 
+                }
+                
                 AlertDialog(
                     onDismissRequest = { showTriggerResult = null },
                     title = { Text(stringResource(R.string.workflow_execution_result_title)) },
-                    text = { Text(result) },
+                    text = {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            // 主结果消息
+                            Text(
+                                text = result,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (result.contains("success", ignoreCase = true) || result.contains("成功", ignoreCase = true)) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                }
+                            )
+                            
+                            // 如果有节点结果，显示详细信息
+                            if (nodeExecutionStates.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalDivider()
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                Text(
+                                    text = stringResource(R.string.workflow_node_results_title, nodeExecutionStates.size),
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                                
+                                // 显示每个节点的结果
+                                nodeExecutionStates.forEach { (nodeId, state) ->
+                                    val nodeName = workflow?.nodes?.find { it.id == nodeId }?.name ?: nodeId
+                                    
+                                    when (state) {
+                                        is NodeExecutionState.Success -> {
+                                            Card(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                                                )
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "✓ $nodeName",
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        color = MaterialTheme.colorScheme.primary
+                                                    )
+                                                    if (state.result.isNotBlank()) {
+                                                        Text(
+                                                            text = state.result.take(200) + if (state.result.length > 200) "..." else "",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            modifier = Modifier.padding(top = 4.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        is NodeExecutionState.Failed -> {
+                                            Card(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                                                )
+                                            ) {
+                                                Column(
+                                                    modifier = Modifier.padding(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "✗ $nodeName",
+                                                        style = MaterialTheme.typography.labelMedium,
+                                                        color = MaterialTheme.colorScheme.error
+                                                    )
+                                                    Text(
+                                                        text = state.error.take(200) + if (state.error.length > 200) "..." else "",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        modifier = Modifier.padding(top = 4.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        is NodeExecutionState.Skipped -> {
+                                            Card(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(vertical = 4.dp),
+                                                colors = CardDefaults.cardColors(
+                                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                                )
+                                            ) {
+                                                Text(
+                                                    text = "⊘ $nodeName: ${state.reason}",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    modifier = Modifier.padding(8.dp)
+                                                )
+                                            }
+                                        }
+                                        is NodeExecutionState.Running -> {
+                                            Text(
+                                                text = "⟳ $nodeName: Running...",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.tertiary,
+                                                modifier = Modifier.padding(vertical = 2.dp)
+                                            )
+                                        }
+                                        is NodeExecutionState.Pending -> {
+                                            Text(
+                                                text = "○ $nodeName: Pending",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                modifier = Modifier.padding(vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     confirmButton = {
                         TextButton(onClick = { showTriggerResult = null }) {
                             Text(stringResource(R.string.confirm))
@@ -2259,6 +2460,9 @@ fun NodeDialog(
                         }
                     } else {
                         // 创建模式：创建新节点
+                        // 计算智能位置以避免与现有节点重叠
+                        val smartPosition = calculateSmartNodePosition(workflow.nodes)
+                        
                         when (nodeType) {
                             "trigger" -> TriggerNode(
                                 name = nodeName,
@@ -2272,7 +2476,8 @@ fun NodeDialog(
                                     } catch (e: Exception) {
                                         emptyMap()
                                     }
-                                } else emptyMap()
+                                } else emptyMap(),
+                                position = smartPosition
                             )
                             "execute" -> ExecuteNode(
                                 name = nodeName,
@@ -2286,7 +2491,8 @@ fun NodeDialog(
                                         } else {
                                             ParameterValue.StaticValue(param.value)
                                         }
-                                    }
+                                    },
+                                position = smartPosition
                             )
                             "condition" -> ConditionNode(
                                 name = nodeName,
@@ -2301,12 +2507,14 @@ fun NodeDialog(
                                     ParameterValue.NodeReference(conditionRightValue)
                                 } else {
                                     ParameterValue.StaticValue(conditionRightValue)
-                                }
+                                },
+                                position = smartPosition
                             )
                             "logic" -> LogicNode(
                                 name = nodeName,
                                 description = description,
-                                operator = logicOperator
+                                operator = logicOperator,
+                                position = smartPosition
                             )
                             "extract" -> ExtractNode(
                                 name = nodeName,
@@ -2336,7 +2544,8 @@ fun NodeDialog(
                                 randomStringLength = extractRandomStringLengthText.toIntOrNull() ?: 8,
                                 randomStringCharset = extractRandomStringCharset,
                                 useFixed = extractUseFixed,
-                                fixedValue = extractFixedValue
+                                fixedValue = extractFixedValue,
+                                position = smartPosition
                             )
                             "mcp" -> MCPNode(
                                 name = nodeName,
@@ -2351,9 +2560,10 @@ fun NodeDialog(
                                         } else {
                                             ParameterValue.StaticValue(param.value)
                                         }
-                                    }
+                                    },
+                                position = smartPosition
                             )
-                            else -> TriggerNode(name = nodeName, description = description)
+                            else -> TriggerNode(name = nodeName, description = description, position = smartPosition)
                         }
                     }
                     onConfirm(resultNode)

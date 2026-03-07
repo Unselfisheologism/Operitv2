@@ -200,6 +200,7 @@
     <string name="workflow_confirm_delete_workflow_message">确定要删除工作流 "%1$s" 吗？此操作不可恢复。</string>
     <string name="workflow_confirm_delete_node_message">确定要删除节点 "%1$s" 吗？</string>
     <string name="workflow_execution_result_title">执行结果</string>
+    <string name="workflow_node_results_title">节点执行详情 (%1$d 个节点)</string>
     <string name="workflow_edit_dialog_title">编辑工作流</string>
     <string name="workflow_enabled_label">启用工作流</string>
     <string name="workflow_disabled">已禁用</string>

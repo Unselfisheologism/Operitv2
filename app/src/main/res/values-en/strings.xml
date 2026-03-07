@@ -195,6 +195,7 @@
     <string name="workflow_confirm_delete_workflow_message">Are you sure you want to delete workflow "%1$s"? This action cannot be undone.</string>
     <string name="workflow_confirm_delete_node_message">Are you sure you want to delete node "%1$s"?</string>
     <string name="workflow_execution_result_title">Execution Result</string>
+    <string name="workflow_node_results_title">Node Execution Details (%1$d nodes)</string>
     <string name="workflow_edit_dialog_title">Edit Workflow</string>
     <string name="workflow_enabled_label">Enable workflow</string>
     <string name="workflow_disabled">Disabled</string>
