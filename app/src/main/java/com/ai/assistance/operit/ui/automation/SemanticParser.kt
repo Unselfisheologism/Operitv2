@@ -4,14 +4,10 @@ import android.view.accessibility.AccessibilityNodeInfo
 
 /**
  * Semantic Parser - UI Element Parser
- * Parses raw UI hierarchy into structured data for the AI agent
- * Based on Blurr's SemanticParser implementation
+ * Parses raw UI hierarchy into structured data
  */
 class SemanticParser {
     
-    /**
-     * Parse node tree and create structured screen analysis
-     */
     fun parseNodeTree(rootNode: AccessibilityNodeInfo): ScreenAnalysis {
         val interactiveNodes = mutableMapOf<Int, InteractiveElement>()
         val uiRepresentation = StringBuilder()
@@ -37,7 +33,7 @@ class SemanticParser {
         depth: Int,
         currentIndex: Int
     ): Int {
-        if (!isVisibleToUser(node)) return currentIndex
+        if (!node.isVisibleToUser) return currentIndex
         
         val isImportant = isSemanticallyImportant(node)
         val isInteractive = isInteractive(node)
@@ -64,7 +60,6 @@ class SemanticParser {
             if (node.isFocused) extraInfo.add("focused")
             if (node.isSelected) extraInfo.add("selected")
             
-            // Add to element map if interactive
             if (isInteractive) {
                 val element = InteractiveElement(
                     index = elementIndex,
@@ -78,7 +73,6 @@ class SemanticParser {
                 )
                 interactiveNodes[elementIndex] = element
                 
-                // Add to UI representation
                 uiRepresentation.appendLine()
                 uiRepresentation.appendLine("#### Element $elementIndex")
                 uiRepresentation.appendLine("- **Text**: $text")
@@ -92,7 +86,6 @@ class SemanticParser {
             }
         }
         
-        // Recursively process children
         for (i in 0 until node.childCount) {
             val child = node.getChild(i)
             if (child != null) {
@@ -104,16 +97,11 @@ class SemanticParser {
         return elementIndex
     }
     
-    private fun isVisibleToUser(node: AccessibilityNodeInfo): Boolean {
-        return node.isVisibleToUser && node.visibility == AccessibilityNodeInfo.VISIBLE
-    }
-    
     private fun isSemanticallyImportant(node: AccessibilityNodeInfo): Boolean {
         val text = node.text?.toString()
         val contentDesc = node.contentDescription?.toString()
         val resourceId = node.resourceId?.toString()
         
-        // Important if has meaningful text, content description, or resource ID
         return (!text.isNullOrBlank() && text.length > 1) ||
                !contentDesc.isNullOrBlank() ||
                (!resourceId.isNullOrBlank() && resourceId != "null" && !resourceId.endsWith(":id/action_bar_root"))
@@ -128,59 +116,35 @@ class SemanticParser {
                (node.isFocusable && node.isEnabled)
     }
     
-    /**
-     * Find element by index
-     */
     fun findElementByIndex(elementMap: Map<Int, InteractiveElement>, index: Int): InteractiveElement? {
         return elementMap[index]
     }
     
-    /**
-     * Find element by text
-     */
     fun findElementByText(elementMap: Map<Int, InteractiveElement>, text: String): InteractiveElement? {
         return elementMap.values.find { it.text.equals(text, ignoreCase = true) }
     }
     
-    /**
-     * Find element by resource ID
-     */
     fun findElementByResourceId(elementMap: Map<Int, InteractiveElement>, resourceId: String): InteractiveElement? {
         return elementMap.values.find { it.resourceId == resourceId }
     }
     
-    /**
-     * Find elements by class name
-     */
     fun findElementsByClassName(elementMap: Map<Int, InteractiveElement>, className: String): List<InteractiveElement> {
         return elementMap.values.filter { it.className.contains(className, ignoreCase = true) }
     }
     
-    /**
-     * Find clickable elements
-     */
     fun findClickableElements(elementMap: Map<Int, InteractiveElement>): List<InteractiveElement> {
         return elementMap.values.filter { it.states.contains("clickable") }
     }
     
-    /**
-     * Find editable elements
-     */
     fun findEditableElements(elementMap: Map<Int, InteractiveElement>): List<InteractiveElement> {
         return elementMap.values.filter { it.states.contains("editable") }
     }
     
-    /**
-     * Find scrollable elements
-     */
     fun findScrollableElements(elementMap: Map<Int, InteractiveElement>): List<InteractiveElement> {
         return elementMap.values.filter { it.states.contains("scrollable") }
     }
 }
 
-/**
- * Data class for interactive UI element
- */
 data class InteractiveElement(
     val index: Int,
     val text: String,
@@ -192,9 +156,6 @@ data class InteractiveElement(
     val node: AccessibilityNodeInfo? = null
 )
 
-/**
- * Data class for screen analysis result
- */
 data class ScreenAnalysis(
     val uiRepresentation: String,
     val elementMap: Map<Int, InteractiveElement>,

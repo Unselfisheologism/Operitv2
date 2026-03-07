@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.accessibility.AccessibilityNodeInfo
+import com.ai.assistance.operit.util.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -58,6 +59,7 @@ class ActionExecutor(private val context: Context) {
             is TakeScreenshot -> executeTakeScreenshot()
             is OpenUrl -> executeOpenUrl(action.url)
             is CopyToClipboard -> executeCopyToClipboard(action.text)
+            else -> ActionResult(false, "Unknown action type")
         }
     }
     

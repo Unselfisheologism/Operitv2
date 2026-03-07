@@ -2,14 +2,15 @@ package com.ai.assistance.operit.services
 
 import android.accessibilityservice.AccessibilityService
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import com.ai.assistance.operit.util.AppLogger
 import com.ai.assistance.operit.ui.automation.*
 import kotlinx.coroutines.*
+import android.graphics.Rect
 
 /**
  * OperitAccessibilityService
  * Provides UI automation capabilities through Android AccessibilityService API
- * Integrates with the new UI automation framework
  */
 class OperitAccessibilityService : AccessibilityService() {
     
@@ -17,7 +18,7 @@ class OperitAccessibilityService : AccessibilityService() {
         private const val TAG = "OperitAccessibilityService"
         
         @Volatile
-        private var instance: OperitAccessibilityService? = null
+        var instance: OperitAccessibilityService? = null
         
         fun getInstance(): OperitAccessibilityService? = instance
     }
@@ -29,9 +30,6 @@ class OperitAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         instance = this
         AppLogger.d(TAG, "Accessibility service connected")
-        
-        // Initialize the ScreenInteractionService instance
-        ScreenInteractionService.instance = this
     }
     
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -39,15 +37,6 @@ class OperitAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 currentActivityName = event.packageName?.toString()
                 AppLogger.d(TAG, "Activity changed to: $currentActivityName")
-            }
-            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
-                // Handle content changes if needed
-            }
-            AccessibilityEvent.TYPE_VIEW_SCROLLED -> {
-                // Handle scroll events
-            }
-            AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED -> {
-                // Handle text changes
             }
         }
     }
@@ -59,13 +48,12 @@ class OperitAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         instance = null
-        ScreenInteractionService.instance = null
         serviceScope.cancel()
         AppLogger.d(TAG, "Accessibility service destroyed")
     }
     
     /**
-     * Get the current UI hierarchy as XML
+     * Get UI hierarchy as XML
      */
     fun getUIHierarchyXml(): String {
         return try {
@@ -81,7 +69,7 @@ class OperitAccessibilityService : AccessibilityService() {
     }
     
     /**
-     * Get simplified UI hierarchy
+     * Simplified UI hierarchy
      */
     fun getSimplifiedUIHierarchy(): String {
         return try {
@@ -127,6 +115,17 @@ class OperitAccessibilityService : AccessibilityService() {
         return performClick(x.toFloat(), y.toFloat())
     }
     
+    private fun performClick(x: Float, y: Float): Boolean {
+        val path = android.graphics.Path().apply {
+            moveTo(x, y)
+        }
+        
+        val builder = android.view.accessibility.AccessibilityGestureDescription.Builder(1)
+        builder.addStroke(0, 500, path)
+        
+        return dispatchGesture(builder.build(), null, null)
+    }
+    
     /**
      * Execute long press at coordinates
      */
@@ -135,12 +134,35 @@ class OperitAccessibilityService : AccessibilityService() {
         return performLongClick(x.toFloat(), y.toFloat())
     }
     
+    private fun performLongClick(x: Float, y: Float): Boolean {
+        val path = android.graphics.Path().apply {
+            moveTo(x, y)
+        }
+        
+        val builder = android.view.accessibility.AccessibilityGestureDescription.Builder(1)
+        builder.addStroke(0, 1500, path)
+        
+        return dispatchGesture(builder.build(), null, null)
+    }
+    
     /**
      * Execute swipe gesture
      */
     fun performSwipeGesture(startX: Int, startY: Int, endX: Int, endY: Int, duration: Long): Boolean {
         AppLogger.d(TAG, "Swipe: ($startX, $startY) -> ($endX, $endY), duration=$duration")
         return performSwipe(startX.toFloat(), startY.toFloat(), endX.toFloat(), endY.toFloat(), duration)
+    }
+    
+    private fun performSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
+        val path = android.graphics.Path().apply {
+            moveTo(x1, y1)
+            lineTo(x2, y2)
+        }
+        
+        val builder = android.view.accessibility.AccessibilityGestureDescription.Builder(1)
+        builder.addStroke(0, duration, path)
+        
+        return dispatchGesture(builder.build(), null, null)
     }
     
     /**
@@ -174,7 +196,7 @@ class OperitAccessibilityService : AccessibilityService() {
     }
     
     /**
-     * Input text into focused field
+     * Input text
      */
     fun performTextInput(text: String): Boolean {
         AppLogger.d(TAG, "Input text: $text")
@@ -195,19 +217,17 @@ class OperitAccessibilityService : AccessibilityService() {
     }
     
     /**
-     * Get current activity name
+     * Get current activity
      */
-    fun getCurrentActivity(): String? {
-        return currentActivityName
-    }
+    fun getCurrentActivity(): String? = currentActivityName
     
     /**
-     * Check if accessibility service is connected
+     * Check if connected
      */
     fun isConnected(): Boolean = instance != null
     
     /**
-     * Get all interactive elements as map
+     * Get interactive elements
      */
     fun getInteractiveElements(): Map<Int, InteractiveElement> {
         return try {
@@ -223,7 +243,7 @@ class OperitAccessibilityService : AccessibilityService() {
     }
     
     /**
-     * Execute a task using the AI Agent
+     * Execute a task using AI Agent
      */
     fun executeTask(task: String, callback: (AgentResult) -> Unit) {
         serviceScope.launch {

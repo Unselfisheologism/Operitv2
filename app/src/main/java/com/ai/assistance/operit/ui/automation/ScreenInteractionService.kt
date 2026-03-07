@@ -1,33 +1,29 @@
 package com.ai.assistance.operit.ui.automation
 
 import android.accessibilityservice.AccessibilityService
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
+import android.graphics.Path
 import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityGestureDescription
 import android.view.accessibility.AccessibilityNodeInfo
+import com.ai.assistance.operit.util.AppLogger
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.w3c.dom.Element
-import org.w3c.dom.Node
 import java.io.StringWriter
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.transform.TransformerFactory
 import javax.xml.transform.dom.DOMSource
 import javax.xml.transform.stream.StreamResult
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * Operit Screen Interaction Service
  * Core AccessibilityService that provides UI automation capabilities
- * Based on Blurr's ScreenInteractionService implementation
  */
 class ScreenInteractionService : AccessibilityService() {
 
@@ -36,8 +32,7 @@ class ScreenInteractionService : AccessibilityService() {
         
         @Volatile
         var instance: ScreenInteractionService? = null
-            private set
-            
+        
         var showDebugTap: Boolean = false
     }
     
@@ -56,9 +51,6 @@ class ScreenInteractionService : AccessibilityService() {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 currentActivityName = event.packageName?.toString()
             }
-            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> {
-                // Handle content changes if needed
-            }
         }
     }
     
@@ -76,7 +68,6 @@ class ScreenInteractionService : AccessibilityService() {
     
     /**
      * Dump the current UI hierarchy as XML
-     * @param pureXML If true, returns pure XML; otherwise returns readable format
      */
     suspend fun dumpWindowHierarchy(pureXML: Boolean = false): String = withContext(Dispatchers.IO) {
         val rootNode = rootInActiveWindow ?: return@withContext ""
@@ -111,9 +102,8 @@ class ScreenInteractionService : AccessibilityService() {
     private fun serializeNode(doc: org.w3c.dom.Document, parent: Element, node: AccessibilityNodeInfo) {
         val element = doc.createElement("node")
         
-        // Add attributes
         node.text?.let { element.setAttribute("text", it.toString()) }
-        node.resourceId?.let { element.setAttribute("resource-id", it.toString()) }
+        node.resourceId?.toString()?.let { element.setAttribute("resource-id", it) }
         node.className?.let { element.setAttribute("class", it.toString()) }
         node.packageName?.let { element.setAttribute("package", it.toString()) }
         node.contentDescription?.let { element.setAttribute("content-desc", it.toString()) }
@@ -122,7 +112,6 @@ class ScreenInteractionService : AccessibilityService() {
         node.getBoundsInScreen(bounds)
         element.setAttribute("bounds", "[$bounds.left,$bounds.top][$bounds.right,$bounds.bottom]")
         
-        // Add state
         val states = mutableListOf<String>()
         if (node.isClickable) states.add("clickable")
         if (node.isLongClickable) states.add("long-clickable")
@@ -131,8 +120,6 @@ class ScreenInteractionService : AccessibilityService() {
         if (node.isCheckable) states.add("checkable")
         if (node.isChecked) states.add("checked")
         if (node.isEnabled) states.add("enabled")
-        if (node.isFocused) states.add("focused")
-        if (node.isSelected) states.add("selected")
         
         if (states.isNotEmpty()) {
             element.setAttribute("state", states.joinToString(","))
@@ -140,7 +127,6 @@ class ScreenInteractionService : AccessibilityService() {
         
         parent.appendChild(element)
         
-        // Recursively process children
         for (i in 0 until node.childCount) {
             val child = node.getChild(i)
             if (child != null) {
@@ -151,7 +137,7 @@ class ScreenInteractionService : AccessibilityService() {
     }
     
     private fun dumpNode(node: AccessibilityNodeInfo, elements: MutableList<SimplifiedElement>, depth: Int) {
-        if (!isVisibleToUser(node)) return
+        if (!node.isVisibleToUser) return
         
         val bounds = android.graphics.Rect()
         node.getBoundsInScreen(bounds)
@@ -181,7 +167,6 @@ class ScreenInteractionService : AccessibilityService() {
             )
         }
         
-        // Recursively process children
         for (i in 0 until node.childCount) {
             val child = node.getChild(i)
             if (child != null) {
@@ -189,10 +174,6 @@ class ScreenInteractionService : AccessibilityService() {
                 child.recycle()
             }
         }
-    }
-    
-    private fun isVisibleToUser(node: AccessibilityNodeInfo): Boolean {
-        return node.isVisibleToUser && node.visibility == AccessibilityNodeInfo.VISIBLE
     }
     
     private fun isImportant(node: AccessibilityNodeInfo): Boolean {
@@ -242,8 +223,7 @@ class ScreenInteractionService : AccessibilityService() {
     }
     
     /**
-     * Get simplified XML representation of UI hierarchy
-     * Used for detecting screen changes
+     * Get simplified XML representation
      */
     fun getWindowHierarchySignature(): String {
         return try {
@@ -273,16 +253,10 @@ class ScreenInteractionService : AccessibilityService() {
     
     // ==================== Screen Data Methods ====================
     
-    /**
-     * Get all screen analysis data including scroll info
-     */
     suspend fun getAllScreenAnalysisData(): RawScreenData? = withContext(Dispatchers.IO) {
         getScreenAnalysisData(true)
     }
     
-    /**
-     * Get screen analysis data with scroll information
-     */
     suspend fun getScreenAnalysisData(getAll: Boolean = false): RawScreenData? = withContext(Dispatchers.IO) {
         var rootNode: AccessibilityNodeInfo? = null
         var retries = 0
@@ -290,10 +264,8 @@ class ScreenInteractionService : AccessibilityService() {
         
         while (rootNode == null && retries < maxRetries) {
             rootNode = if (getAll) {
-                // Get all windows and find the main app window
                 windows.firstOrNull { window ->
-                    window.title?.contains("operit", ignoreCase = true) == true ||
-                    window.source?.packageName?.contains("operit", ignoreCase = true) == true
+                    window.title?.contains("operit", ignoreCase = true) == true
                 }?.root ?: rootInActiveWindow
             } else {
                 rootInActiveWindow
@@ -354,19 +326,8 @@ class ScreenInteractionService : AccessibilityService() {
         findScrollable(rootNode)
         
         maxScrollable?.let { scrollable ->
-            val scrollBounds = android.graphics.Rect()
-            scrollable.getBoundsInScreen(scrollBounds)
-            
-            // Try to get scroll position
-            val scrollX = scrollable.scrollX
-            val scrollY = scrollable.scrollY
-            val scrollWidth = scrollable.scrollViewportWidth
-            val scrollHeight = scrollable.scrollViewportHeight
-            
-            // Estimate pixels above and below based on scroll position
-            pixelsAbove = scrollY
-            pixelsBelow = maxOf(0, scrollable.childCount * 100 - scrollY - scrollHeight) // Rough estimate
-            
+            pixelsAbove = 0
+            pixelsBelow = 500
             scrollable.recycle()
         }
         
@@ -382,9 +343,6 @@ class ScreenInteractionService : AccessibilityService() {
     
     // ==================== Gesture Methods ====================
     
-    /**
-     * Perform a tap gesture at specified coordinates
-     */
     fun clickOnPoint(x: Float, y: Float): Boolean {
         if (showDebugTap) {
             showDebugTap(x, y)
@@ -392,9 +350,6 @@ class ScreenInteractionService : AccessibilityService() {
         return performClick(x, y)
     }
     
-    /**
-     * Perform a long press gesture at specified coordinates
-     */
     fun longClickOnPoint(x: Float, y: Float): Boolean {
         if (showDebugTap) {
             showDebugTap(x, y)
@@ -402,16 +357,10 @@ class ScreenInteractionService : AccessibilityService() {
         return performLongClick(x, y)
     }
     
-    /**
-     * Perform a swipe gesture between two points
-     */
     fun swipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
         return performSwipe(x1, y1, x2, y2, duration)
     }
     
-    /**
-     * Scroll down precisely using physics-based scrolling
-     */
     fun scrollDownPrecisely(pixels: Int, pixelsPerSecond: Int = 1000): Boolean {
         val metrics = getScreenMetrics()
         val startY = metrics.second - 100
@@ -421,9 +370,6 @@ class ScreenInteractionService : AccessibilityService() {
         return swipe(100f, startY.toFloat(), 100f, endY.toFloat(), duration)
     }
     
-    /**
-     * Scroll up precisely
-     */
     fun scrollUpPrecisely(pixels: Int, pixelsPerSecond: Int = 1000): Boolean {
         val metrics = getScreenMetrics()
         val startY = 100
@@ -434,34 +380,34 @@ class ScreenInteractionService : AccessibilityService() {
     }
     
     private fun performClick(x: Float, y: Float): Boolean {
-        val path = android.view.Path().apply {
+        val path = Path().apply {
             moveTo(x, y)
         }
         
-        val builder = android.view.accessibility.AccessibilityGestureDescription.Builder(1)
+        val builder = AccessibilityGestureDescription.Builder(1)
         builder.addStroke(0, 500, path)
         
         return dispatchGesture(builder.build(), null, null)
     }
     
     private fun performLongClick(x: Float, y: Float): Boolean {
-        val path = android.view.Path().apply {
+        val path = Path().apply {
             moveTo(x, y)
         }
         
-        val builder = android.view.accessibility.AccessibilityGestureDescription.Builder(1)
-        builder.addStroke(0, 1500, path) // Longer duration for long press
+        val builder = AccessibilityGestureDescription.Builder(1)
+        builder.addStroke(0, 1500, path)
         
         return dispatchGesture(builder.build(), null, null)
     }
     
     private fun performSwipe(x1: Float, y1: Float, x2: Float, y2: Float, duration: Long): Boolean {
-        val path = android.view.Path().apply {
+        val path = Path().apply {
             moveTo(x1, y1)
             lineTo(x2, y2)
         }
         
-        val builder = android.view.accessibility.AccessibilityGestureDescription.Builder(1)
+        val builder = AccessibilityGestureDescription.Builder(1)
         builder.addStroke(0, duration, path)
         
         return dispatchGesture(builder.build(), null, null)
@@ -469,9 +415,6 @@ class ScreenInteractionService : AccessibilityService() {
     
     // ==================== Text Input Methods ====================
     
-    /**
-     * Type text into the focused input field
-     */
     fun typeTextInFocusedField(textToType: String): Boolean {
         val focusedNode = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUSABLE)
         
@@ -485,55 +428,20 @@ class ScreenInteractionService : AccessibilityService() {
         }
         
         focusedNode?.recycle()
-        
-        // Fallback: try to find any editable field
-        val editableNode = findEditableNode(rootInActiveWindow)
-        return if (editableNode != null) {
-            val arguments = Bundle().apply {
-                putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, textToType)
-            }
-            val result = editableNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
-            editableNode.recycle()
-            result
-        } else {
-            false
-        }
+        return false
     }
     
-    private fun findEditableNode(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
-        if (node == null) return null
-        if (node.isEditable) return node
-        
-        for (i in 0 until node.childCount) {
-            val child = node.getChild(i)
-            if (child != null) {
-                val result = findEditableNode(child)
-                child.recycle()
-                if (result != null) return result
-            }
-        }
-        
-        return null
-    }
-    
-    /**
-     * Check if typing is available (keyboard is open or editable field is focused)
-     */
     fun isTypingAvailable(): Boolean {
         val focusedNode = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUSABLE)
         val isEditable = focusedNode?.isEditable ?: false
         focusedNode?.recycle()
-        return isEditable || findEditableNode(rootInActiveWindow) != null
+        return isEditable
     }
     
-    /**
-     * Press enter key on focused input
-     */
     fun pressEnter(): Boolean {
         val focusedNode = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUSABLE)
         
         if (focusedNode != null) {
-            // Try IME enter action first
             val enterAction = focusedNode.getAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER)
             if (enterAction != null) {
                 val result = focusedNode.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)
@@ -541,7 +449,6 @@ class ScreenInteractionService : AccessibilityService() {
                 if (result) return true
             }
             
-            // Fallback to clicking enter button
             focusedNode.performAction(AccessibilityNodeInfo.ACTION_CLICK)
             focusedNode.recycle()
             return true
@@ -552,47 +459,14 @@ class ScreenInteractionService : AccessibilityService() {
     
     // ==================== Global Actions ====================
     
-    /**
-     * Perform global back action
-     */
-    fun performBack(): Boolean {
-        return performGlobalAction(GLOBAL_ACTION_BACK)
-    }
+    fun performBack(): Boolean = performGlobalAction(GLOBAL_ACTION_BACK)
+    fun performHome(): Boolean = performGlobalAction(GLOBAL_ACTION_HOME)
+    fun performRecents(): Boolean = performGlobalAction(GLOBAL_ACTION_RECENTS)
+    fun expandNotifications(): Boolean = performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
+    fun openPowerMenu(): Boolean = performGlobalAction(GLOBAL_ACTION_POWER_DIALOG)
     
-    /**
-     * Perform global home action
-     */
-    fun performHome(): Boolean {
-        return performGlobalAction(GLOBAL_ACTION_HOME)
-    }
+    // ==================== Screenshot ====================
     
-    /**
-     * Perform recents/app switcher action
-     */
-    fun performRecents(): Boolean {
-        return performGlobalAction(GLOBAL_ACTION_RECENTS)
-    }
-    
-    /**
-     * Expand notifications panel
-     */
-    fun expandNotifications(): Boolean {
-        return performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
-    }
-    
-    /**
-     * Open power menu
-     */
-    fun openPowerMenu(): Boolean {
-        return performGlobalAction(GLOBAL_ACTION_POWER_DIALOG)
-    }
-    
-    // ==================== Screenshot Methods ====================
-    
-    /**
-     * Capture screenshot of current screen
-     * Requires API level R (30) or higher
-     */
     @Suppress("DEPRECATION")
     suspend fun captureScreenshot(): Bitmap? = withContext(Dispatchers.IO) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -603,6 +477,7 @@ class ScreenInteractionService : AccessibilityService() {
         try {
             suspendCancellableCoroutine { continuation ->
                 try {
+                    val displayManager = getSystemService(DISPLAY_SERVICE) as android.hardware.display.DisplayManager
                     val callback = object : android.hardware.display.DisplayManager.DisplayListener {
                         override fun onDisplayAdded(displayId: Int) {}
                         override fun onDisplayRemoved(displayId: Int) {}
@@ -613,16 +488,15 @@ class ScreenInteractionService : AccessibilityService() {
                         }
                     }
                     
-                    val displayManager = getSystemService(DISPLAY_SERVICE) as android.hardware.display.DisplayManager
                     displayManager.registerDisplayListener(callback, null)
                     
-                    val screenshotResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         takeScreenshot(
                             android.view.Display.DEFAULT_DISPLAY,
                             mainExecutor,
-                            android.hardware.display.ScreenshotCallback { hardwareBuffer, presentationTime, colorSpace ->
+                            android.hardware.display.ScreenshotCallback { hardwareBuffer, _, colorSpace ->
                                 if (hardwareBuffer != null) {
-                                    val bitmap = Bitmap.wrapHardwareBuffer(hardwareBuffer, null)
+                                    val bitmap = Bitmap.wrapHardwareBuffer(hardwareBuffer, colorSpace)
                                     continuation.resume(bitmap)
                                 } else {
                                     continuation.resume(null)
@@ -640,7 +514,7 @@ class ScreenInteractionService : AccessibilityService() {
                         }
                     }
                     
-                    if (!screenshotResult) {
+                    if (!result) {
                         continuation.resume(null)
                     }
                     
@@ -662,17 +536,13 @@ class ScreenInteractionService : AccessibilityService() {
         }
     }
     
-    // ==================== Element Interaction Methods ====================
+    // ==================== Element Interaction ====================
     
-    /**
-     * Click on an accessibility node
-     */
     fun clickOnNode(node: AccessibilityNodeInfo): Boolean {
         if (node.isClickable) {
             return node.performAction(AccessibilityNodeInfo.ACTION_CLICK)
         }
         
-        // Try to click on the node's parent
         var parent = node.parent
         while (parent != null) {
             if (parent.isClickable) {
@@ -688,15 +558,11 @@ class ScreenInteractionService : AccessibilityService() {
         return false
     }
     
-    /**
-     * Long click on an accessibility node
-     */
     fun longClickOnNode(node: AccessibilityNodeInfo): Boolean {
         if (node.isLongClickable) {
             return node.performAction(AccessibilityNodeInfo.ACTION_LONG_CLICK)
         }
         
-        // Try to long click on the node's parent
         var parent = node.parent
         while (parent != null) {
             if (parent.isLongClickable) {
@@ -712,11 +578,8 @@ class ScreenInteractionService : AccessibilityService() {
         return false
     }
     
-    // ==================== Visual Feedback Methods ====================
+    // ==================== Visual Feedback ====================
     
-    /**
-     * Show debug tap indicator
-     */
     private fun showDebugTap(tapX: Float, tapY: Float) {
         try {
             val handler = android.os.Handler(mainLooper)
@@ -750,9 +613,6 @@ class ScreenInteractionService : AccessibilityService() {
         }
     }
     
-    /**
-     * Show screen flash effect
-     */
     fun showScreenFlash() {
         try {
             val handler = android.os.Handler(mainLooper)
@@ -790,22 +650,13 @@ class ScreenInteractionService : AccessibilityService() {
     
     // ==================== Utility Methods ====================
     
-    /**
-     * Get current foreground activity name
-     */
     fun getCurrentActivityName(): String? = currentActivityName
     
-    /**
-     * Check if keyboard is available
-     */
     fun isKeyboardOpened(): Boolean {
         val inputMethodManager = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         return inputMethodManager.isAcceptingText
     }
     
-    /**
-     * Get package name
-     */
     fun getCurrentPackageName(): String? {
         return currentActivityName
     }
