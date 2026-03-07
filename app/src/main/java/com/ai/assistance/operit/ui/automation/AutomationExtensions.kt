@@ -13,21 +13,21 @@ object AutomationExtensions {
      * Get the OperitAccessibilityService instance
      */
     fun getAccessibilityService(): OperitAccessibilityService? {
-        return OperitAccessibilityService.getInstance()
+        return OperitAccessibilityService.instance
     }
     
     /**
      * Check if UI automation is available
      */
     fun isAutomationAvailable(): Boolean {
-        return OperitAccessibilityService.getInstance() != null
+        return OperitAccessibilityService.instance != null
     }
     
     /**
      * Get Perception instance
      */
     fun getPerception(): Perception? {
-        val service = OperitAccessibilityService.getInstance() ?: return null
+        val service = OperitAccessibilityService.instance ?: return null
         return Perception(service)
     }
     
@@ -35,7 +35,7 @@ object AutomationExtensions {
      * Get Eyes instance
      */
     fun getEyes(): Eyes? {
-        val service = OperitAccessibilityService.getInstance() ?: return null
+        val service = OperitAccessibilityService.instance ?: return null
         return Eyes(service)
     }
     
@@ -43,7 +43,7 @@ object AutomationExtensions {
      * Get Finger instance
      */
     fun getFinger(): Finger? {
-        val service = OperitAccessibilityService.getInstance() ?: return null
+        val service = OperitAccessibilityService.instance ?: return null
         return Finger(service)
     }
     
@@ -51,7 +51,7 @@ object AutomationExtensions {
      * Get Agent instance
      */
     fun getAgent(): Agent? {
-        val service = OperitAccessibilityService.getInstance() ?: return null
+        val service = OperitAccessibilityService.instance ?: return null
         return Agent(service)
     }
     
@@ -59,7 +59,7 @@ object AutomationExtensions {
      * Get ActionExecutor instance
      */
     fun getActionExecutor(): ActionExecutor? {
-        val service = OperitAccessibilityService.getInstance() ?: return null
+        val service = OperitAccessibilityService.instance ?: return null
         return ActionExecutor(service)
     }
 }
@@ -68,7 +68,7 @@ object AutomationExtensions {
  * Extension function to get Perception instance
  */
 fun Context.perception(): Perception? {
-    val service = OperitAccessibilityService.getInstance() ?: return null
+    val service = OperitAccessibilityService.instance ?: return null
     return Perception(service)
 }
 
@@ -76,7 +76,7 @@ fun Context.perception(): Perception? {
  * Extension function to get Eyes instance
  */
 fun Context.eyes(): Eyes? {
-    val service = OperitAccessibilityService.getInstance() ?: return null
+    val service = OperitAccessibilityService.instance ?: return null
     return Eyes(service)
 }
 
@@ -84,7 +84,7 @@ fun Context.eyes(): Eyes? {
  * Extension function to get Finger instance
  */
 fun Context.finger(): Finger? {
-    val service = OperitAccessibilityService.getInstance() ?: return null
+    val service = OperitAccessibilityService.instance ?: return null
     return Finger(service)
 }
 
@@ -92,7 +92,7 @@ fun Context.finger(): Finger? {
  * Extension function to get Agent instance
  */
 fun Context.agent(): Agent? {
-    val service = OperitAccessibilityService.getInstance() ?: return null
+    val service = OperitAccessibilityService.instance ?: return null
     return Agent(service)
 }
 
@@ -100,7 +100,7 @@ fun Context.agent(): Agent? {
  * Extension function to get ActionExecutor instance
  */
 fun Context.actionExecutor(): ActionExecutor? {
-    val service = OperitAccessibilityService.getInstance() ?: return null
+    val service = OperitAccessibilityService.instance ?: return null
     return ActionExecutor(service)
 }
 

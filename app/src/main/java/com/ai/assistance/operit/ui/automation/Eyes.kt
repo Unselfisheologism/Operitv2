@@ -14,7 +14,7 @@ class Eyes(private val service: OperitAccessibilityService) {
          * Get singleton instance
          */
         fun getInstance(): Eyes? {
-            val service = OperitAccessibilityService.getInstance()
+            val service = OperitAccessibilityService.instance
             return service?.let { Eyes(it) }
         }
     }

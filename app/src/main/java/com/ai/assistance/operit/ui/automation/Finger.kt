@@ -16,7 +16,7 @@ class Finger(private val service: OperitAccessibilityService) {
          * Get singleton instance
          */
         fun getInstance(): Finger? {
-            val service = OperitAccessibilityService.getInstance()
+            val service = OperitAccessibilityService.instance
             return service?.let { Finger(it) }
         }
     }

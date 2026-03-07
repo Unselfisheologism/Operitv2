@@ -29,7 +29,7 @@ object UIHierarchyManager {
      * 从无障碍服务获取UI层次结构
      */
     suspend fun getUIHierarchy(context: Context): String {
-        val service = com.ai.assistance.operit.services.OperitAccessibilityService.getInstance()
+        val service = com.ai.assistance.operit.services.OperitAccessibilityService.instance
         if (service == null) {
             AppLogger.w(TAG, "无障碍服务未运行")
             return ""
@@ -79,7 +79,7 @@ object UIHierarchyManager {
      * 执行点击操作
      */
     suspend fun performClick(context: Context, x: Int, y: Int): Boolean {
-        val service = com.ai.assistance.operit.services.OperitAccessibilityService.getInstance()
+        val service = com.ai.assistance.operit.services.OperitAccessibilityService.instance
         if (service == null) {
             AppLogger.w(TAG, "无障碍服务未运行")
             return false
@@ -88,7 +88,7 @@ object UIHierarchyManager {
     }
 
     suspend fun performLongPress(context: Context, x: Int, y: Int): Boolean {
-        val service = com.ai.assistance.operit.services.OperitAccessibilityService.getInstance()
+        val service = com.ai.assistance.operit.services.OperitAccessibilityService.instance
         if (service == null) {
             AppLogger.w(TAG, "无障碍服务未运行")
             return false
@@ -100,7 +100,7 @@ object UIHierarchyManager {
      * 执行滑动操作
      */
     suspend fun performSwipe(context: Context, startX: Int, startY: Int, endX: Int, endY: Int, duration: Long): Boolean {
-        val service = com.ai.assistance.operit.services.OperitAccessibilityService.getInstance()
+        val service = com.ai.assistance.operit.services.OperitAccessibilityService.instance
         if (service == null) {
             AppLogger.w(TAG, "无障碍服务未运行")
             return false
@@ -148,7 +148,7 @@ object UIHierarchyManager {
      * 获取当前Activity名称
      */
     suspend fun getCurrentActivityName(context: Context): String? {
-        val service = com.ai.assistance.operit.services.OperitAccessibilityService.getInstance()
+        val service = com.ai.assistance.operit.services.OperitAccessibilityService.instance
         if (service == null) {
             AppLogger.w(TAG, "无障碍服务未运行")
             return null

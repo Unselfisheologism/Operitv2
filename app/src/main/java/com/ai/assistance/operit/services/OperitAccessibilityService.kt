@@ -24,11 +24,11 @@ class OperitAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "OperitAccessibilityService"
         
+        @JvmStatic
         @Volatile
         var instance: OperitAccessibilityService? = null
         
-        fun getInstance(): OperitAccessibilityService? = instance
-        
+        @JvmStatic
         fun isConnected(): Boolean = instance != null
     }
     
