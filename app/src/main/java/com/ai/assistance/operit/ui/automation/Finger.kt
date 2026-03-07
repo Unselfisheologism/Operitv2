@@ -36,8 +36,8 @@ class Finger(private val service: OperitAccessibilityService) {
      * Tap at element center
      */
     fun tap(element: InteractiveElement): Boolean {
-        val centerX = element.bounds[0] + element.bounds[2] / 2
-        val centerY = element.bounds[1] + element.bounds[3] / 2
+        val centerX = element.bounds.centerX()
+        val centerY = element.bounds.centerY()
         return tap(centerX, centerY)
     }
     
@@ -53,8 +53,8 @@ class Finger(private val service: OperitAccessibilityService) {
      * Long press at element center
      */
     fun longPress(element: InteractiveElement): Boolean {
-        val centerX = element.bounds[0] + element.bounds[2] / 2
-        val centerY = element.bounds[1] + element.bounds[3] / 2
+        val centerX = element.bounds.centerX()
+        val centerY = element.bounds.centerY()
         return longPress(centerX, centerY)
     }
     

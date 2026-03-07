@@ -215,7 +215,7 @@ class OperitAccessibilityService : AccessibilityService() {
     fun performTextInput(text: String): Boolean {
         AppLogger.d(TAG, "Input text: $text")
         
-        val focusedNode = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUSABLE)
+        val focusedNode = rootInActiveWindow?.findFocus(1)
         
         if (focusedNode != null && focusedNode.isEditable) {
             val arguments = android.os.Bundle().apply {

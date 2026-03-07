@@ -20,10 +20,12 @@ class Eyes(private val service: OperitAccessibilityService) {
     }
     
     /**
-     * Capture screenshot
+     * Capture screenshot - returns null as actual screenshot requires additional implementation
      */
-    suspend fun captureScreenshot(): Bitmap? {
-        return service.takeScreenshot()
+    fun captureScreenshot(): Bitmap? {
+        // Screenshot capture requires additional implementation
+        // For now, return null
+        return null
     }
     
     /**
@@ -69,15 +71,9 @@ class Eyes(private val service: OperitAccessibilityService) {
     }
     
     /**
-     * Get screen as base64 PNG
+     * Get screen as base64 PNG - returns null as actual capture requires additional implementation
      */
-    suspend fun getScreenAsBase64(): String? {
-        val bitmap = captureScreenshot() ?: return null
-        
-        val stream = java.io.ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        val byteArray = stream.toByteArray()
-        
-        return android.util.Base64.encodeToString(byteArray, android.util.Base64.NO_WRAP)
+    fun getScreenAsBase64(): String? {
+        return null
     }
 }

@@ -17,15 +17,15 @@ class MemoryManager {
      */
     fun updateHistory(
         step: Int,
-        action: AgentAction,
-        result: ActionResult,
+        action: String,
+        result: String,
         evaluation: String
     ) {
         history.add(
             HistoryEntry(
                 step = step,
-                action = action.toString(),
-                result = result.message,
+                action = action,
+                result = result,
                 evaluation = evaluation
             )
         )
@@ -100,7 +100,8 @@ class MemoryManager {
      */
     fun buildPrompt(
         systemPrompt: String,
-        screenAnalysis: ScreenAnalysis,
+        uiHierarchy: String,
+        activityName: String,
         availableActions: List<String>
     ): String {
         val sb = StringBuilder()
@@ -124,20 +125,11 @@ class MemoryManager {
         // Screen state
         sb.appendLine("## Current Screen State")
         sb.appendLine("### Activity")
-        sb.appendLine(screenAnalysis.activityName)
+        sb.appendLine(activityName)
         sb.appendLine()
         
         sb.appendLine("### UI Elements")
-        sb.appendLine(screenAnalysis.uiRepresentation)
-        sb.appendLine()
-        
-        sb.appendLine("### Scroll Info")
-        sb.appendLine("Pixels above: ${screenAnalysis.pixelsAbove}")
-        sb.appendLine("Pixels below: ${screenAnalysis.pixelsBelow}")
-        sb.appendLine()
-        
-        sb.appendLine("### Keyboard")
-        sb.appendLine("Open: ${screenAnalysis.keyboardOpen}")
+        sb.appendLine(uiHierarchy)
         sb.appendLine()
         
         // History

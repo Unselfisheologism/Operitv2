@@ -1,5 +1,6 @@
 package com.ai.assistance.operit.ui.automation
 
+import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 import com.ai.assistance.operit.util.AppLogger
 
@@ -21,7 +22,7 @@ data class InteractiveElement(
     val isChecked: Boolean,
     val isEnabled: Boolean,
     val isVisibleToUser: Boolean,
-    val bounds: IntArray,
+    val bounds: Rect,
     val depth: Int,
     val parentId: Int?
 ) {
@@ -88,7 +89,7 @@ class SemanticParser {
         val resourceIdStr = node.viewIdResourceName ?: ""
         val classNameStr = node.className?.toString() ?: ""
         
-        val bounds = IntArray(4)
+        val bounds = Rect()
         node.getBoundsInScreen(bounds)
         
         val element = InteractiveElement(
