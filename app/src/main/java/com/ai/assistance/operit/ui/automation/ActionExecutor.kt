@@ -55,8 +55,8 @@ class ActionExecutor(private val service: OperitAccessibilityService) {
                 val coords = param?.split(",")?.mapNotNull { it.trim().toIntOrNull() }
                 if (coords != null && coords.size >= 2) {
                     finger.tap(coords[0], coords[1])
-                } Try to find element else {
-                    // by text and click
+                } else {
+                    // Try to find element by text and click
                     val element = perception.findByText(param ?: "")
                     if (element != null) {
                         finger.tap(element)
