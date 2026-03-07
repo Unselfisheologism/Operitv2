@@ -68,6 +68,7 @@ class OperitVoiceInteractionSessionService : VoiceInteractionSessionService() {
                 val intent = Intent(context, FloatingChatService::class.java).apply {
                     putExtra("INITIAL_MODE", FloatingMode.FULLSCREEN.name)
                     putExtra(FloatingChatService.EXTRA_AUTO_ENTER_VOICE_CHAT, true)
+                    putExtra(FloatingChatService.EXTRA_WAKE_LAUNCHED, true)
                 }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent)
